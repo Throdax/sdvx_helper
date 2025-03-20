@@ -5,8 +5,9 @@ import shutil
 import sys
 from os import path
 from PIL import Image
-from datetime import datetime 
+from datetime import datetime, timedelta 
 from sdvxh_classes import OnePlayData
+from sdvxh_classes import SDVXLogger
 from gen_summary import GenSummary
 import xml.etree.ElementTree as ET
 
@@ -43,6 +44,9 @@ specialTitles = {
         '゜。Chantilly Fille。°':'゜*。Chantilly Fille。*°'
     }
 
+sdvx_logger = SDVXLogger("Throdax")
+time_offset_seconds = 0
+
 def restoreTitle(songTitle):       
     return specialTitles.get(songTitle.strip(),songTitle.strip())
 
@@ -78,31 +82,33 @@ def isSongInLog(songLog, songToSearch,fileNumber):
         if songFromLog.title == restoreTitle(songToSearch.title) and songFromLog.difficulty == songToSearch.difficulty:
             allPlaysOfSong.append(songFromLog)
     
-    songSSDate = datetime.strptime(songToSearch.date.split('_')[0], "%Y%m%d")            
-    songSSTime = datetime.strptime(songToSearch.date.split('_')[1], '%H%M%S')
+    songDate = datetime.strptime(songToSearch.date, "%Y%m%d_%H%M%S")
     
     for songFromLog in allPlaysOfSong:
                     
         if not "_" in songToSearch.date or len(songToSearch.date.split('_')) < 2 : 
             print(f'Mallformed song data: {songToSearch.disp()}')
             return True
+                
+        offsetLogDate = datetime.strptime(songFromLog.date, "%Y%m%d_%H%M%S")
         
-        songLogDate = datetime.strptime(songFromLog.date.split('_')[0], "%Y%m%d")
-        songLogTime = datetime.strptime(songFromLog.date.split('_')[1], '%H%M%S')
+        # Special case for when I mess around with the TZ because of SDVX
+        offsetLogDate += timedelta(seconds=-time_offset_seconds)
+        
                         
-        diferenceInSeconds = abs((songSSTime - songLogTime).total_seconds())
-        diferenceInDays = abs((songLogDate - songSSDate)).days
-        
+        diferenceInSeconds = abs((songDate - offsetLogDate).total_seconds())
+        diferenceInDays = abs((offsetLogDate - songDate)).days
+       
         if diferenceInDays == 0 and diferenceInSeconds < 120:
             songExists = True
-            if songDifferentDate == True :
-                print(f'[{fileNumber}] [{songToSearch.title}-{songToSearch.difficulty.upper()}] Found: Log: {songFromLog.date} | Screenshot: {songToSearch.date}\n')
+            #if songDifferentDate == True :
+            #    print(f'[{fileNumber}] [{songToSearch.title}-{songToSearch.difficulty.upper()}] Found: Log: {songFromLog.date} | Screenshot: {songToSearch.date}\n')
             break;
         elif diferenceInDays == 0 and diferenceInSeconds >= 120: 
-            print(f'[{fileNumber}] [{songToSearch.title}-{songToSearch.difficulty.upper()}] Difference time: Log: {songLogTime} | Screenshot: {songSSTime} ({diferenceInSeconds}s)')
+            #print(f'[{fileNumber}] [{songToSearch.title}-{songToSearch.difficulty.upper()}] Difference time: Log: {songLogTime} | Screenshot: {songSSTime} ({diferenceInSeconds}s)')
             songDifferentDate = True
         elif diferenceInDays > 0 :
-            print(f'[{fileNumber}] [{songToSearch.title}-{songToSearch.difficulty.upper()}] Difference date: Log: {songLogDate} | Screenshot: {songSSDate} ({diferenceInDays}d)')
+            #print(f'[{fileNumber}] [{songToSearch.title}-{songToSearch.difficulty.upper()}] Difference date: Log: {songLogDate} | Screenshot: {songSSDate} ({diferenceInDays}d)')
             songDifferentDate = True
 
     if songExists == False :
@@ -127,7 +133,7 @@ def print_logo():
     print('|_____\\___/ \\__, | |_|  |_|\\__,_|___/_|\\___| |____/ \\__, |_| |_|\\___|')
     print('            |___/                                   |___/            ')
     
-def main(songLogFolder, resultsFolder):
+def main(songLogFolder, resultsFolder, rebuild):
     
     print_logo()
     
@@ -144,6 +150,10 @@ def main(songLogFolder, resultsFolder):
         shutil.copyfile(f'{songLogFolder}/alllog.pkl', f'{songLogFolder}/{backupLogFile}')
         
         songLog = loadPlaysList(songLogFolder)
+        
+        if rebuild : 
+            print(f'Deleting and rebuilding play log!')
+            songLog.clear()
     else :
         print(f'Cannot run log sync: alllog folder \'{songLogFolder}\' is not a folder', file=sys.stderr)
         exit(1)
@@ -160,7 +170,10 @@ def main(songLogFolder, resultsFolder):
 
     updatedSongs = 0
     processedFiles = 0
-    for playScreenshotFileName in os.listdir(rootFolder):                
+    results = os.listdir(rootFolder)
+    results.sort(key=lambda s: os.path.getctime(os.path.join(rootFolder, s)))
+    
+    for playScreenshotFileName in results:                
         # We ignore files which are a summary and are not png
         if playScreenshotFileName.find('summary') > 0 :
             continue
@@ -265,10 +278,12 @@ def dump(songLogFolder, songListFolder):
     
     songLog = loadPlaysList(songLogFolder)
     songList = loadSongList(songListFolder)
+    songLog.sort(key=lambda s: s.date)
     
     songListElement = ET.Element("songList")
     xmlTree = ET.ElementTree(songListElement)
     plays={}
+    songs={}
     
     print(f'Dumping {len(songLog)} song plays to XML...')
     for songFromLog in songLog:
@@ -276,22 +291,32 @@ def dump(songLogFolder, songListFolder):
         title = restoreTitle(songFromLog.title)
         
         rating = findSongRating(songFromLog, songList)
-        songHash = str(hash(title+"_"+songFromLog.difficulty+"_"+rating))
+        songHashPlay = str(hash(title+"_"+songFromLog.difficulty+"_"+rating))
+        songHashTitle = str(hash(title))
                 
-        existingNode = plays.get(songHash,None)
+        existingPlayNode = plays.get(songHashPlay,None)
+        existingSongNode = songs.get(songHashTitle,None)
         
         #Format the date to more similar to ISO
         songDate = datetime.strptime(songFromLog.date, '%Y%m%d_%H%M%S')
         formatted_date = songDate.strftime("%Y-%m-%d %H:%M:%S")
         
+        if existingSongNode is not None :
+            if existingPlayNode is not None : 
+                ET.SubElement(existingPlayNode,"play",score=str(songFromLog.cur_score), lamp=songFromLog.lamp, date=formatted_date)
+            else : 
+                playsNode = ET.SubElement(existingSongNode,"plays", difficulty=songFromLog.difficulty, rating=rating)
+                ET.SubElement(playsNode,"play",score=str(songFromLog.cur_score), lamp=songFromLog.lamp, date=formatted_date)
+                plays[songHashPlay] = playsNode                            
         # If we already added this song, create new "play" entry under the same song and difficulty / rating
-        if existingNode is not None:       
-            ET.SubElement(existingNode,"play",score=str(songFromLog.cur_score), lamp=songFromLog.lamp, date=formatted_date)
+#        if existingPlayNode is not None:       
+#            ET.SubElement(existingPlayNode,"play",score=str(songFromLog.cur_score), lamp=songFromLog.lamp, date=formatted_date)        
         else :
             songNode = ET.SubElement(songListElement, "song", title=title)
             playsNode = ET.SubElement(songNode,"plays", difficulty=songFromLog.difficulty, rating=rating)
             ET.SubElement(playsNode,"play",score=str(songFromLog.cur_score), lamp=songFromLog.lamp, date=formatted_date)
-            plays[songHash] = playsNode
+            plays[songHashPlay] = playsNode
+            songs[songHashTitle] = songNode
         
         
     print(f'Writing XML to {songLogFolder}/played_songs.xml')
@@ -306,9 +331,10 @@ if __name__ == '__main__':
     parser.add_argument('--results', required=True, help='The directory containing the result screenshots')
     parser.add_argument('--dump', required=False, help='Dumps the alllog.pkl into an xml file', action='store_true')
     parser.add_argument('--songList', required=False, help='The directory containing the song list (musiclist.pkl) file, only used with the --dump option')
+    parser.add_argument('--rebuildSongLog', required=False, help='Rebuilds the whole song log from the result screenshots', action='store_true')
     
     args = parser.parse_args()
-    main(args.songLog, args.results)
+    main(args.songLog, args.results,args.rebuildSongLog)
     
     if args.dump :
         dump(args.songLog, args.songList)
