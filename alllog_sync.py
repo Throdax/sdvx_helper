@@ -24,10 +24,9 @@ specialTitles = {
         'The Sampling Paradise (PLight Remix)':'The Sampling Paradise (P*Light Remix)',
         'Finale  フィナーレ':'Finale / フィナーレ',
         'コンベア速度Max!しゃいにん☆廻転ズシSushi&Peace':'コンベア速度Max!? しゃいにん☆廻転ズシ"Sushi&Peace"',
-        'VoynichManuscript':'Voynich:Manuscript',
-        #'Pure Evil':'Pure Evil',
+        'VoynichManuscript':'Voynich:Manuscript',        
         'Believe (y)our Wings {VIVID RAYS}':'Believe (y)our Wings {V:IVID RAYS}',
-        'チルノのパーフェクトさんすう教室 ⑨周年バージョン':'チルノのパーフェクトさんすう教室　⑨周年バージョン',
+        'チルノのパーフェクトさんすう教室　⑨周年バージョン':'チルノのパーフェクトさんすう教室　⑨周年バージョン',
         'Wuv U(picoustic rmx)':'Wuv U(pico/ustic rmx)',
         'Battle Against a True Hero  本物のヒーローとの戦い':'Battle Against a True Hero / 本物のヒーローとの戦い',
         'rEVoltagers':'rE:Voltagers',
@@ -41,7 +40,20 @@ specialTitles = {
         'BLACK or WHITE':'BLACK or WHITE?',
         'MrVIRTUALIZER':'Mr.VIRTUALIZER',
         '#Fairy dancing in lake':'#Fairy_dancing_in_lake',
-        '゜。Chantilly Fille。°':'゜*。Chantilly Fille。*°'
+        '゜。Chantilly Fille。°':'゜*。Chantilly Fille。*°',
+        '侵蝕コード 666 -今日ちょっと指 (略-':'侵蝕コード : 666 -今日ちょっと指 (略-',
+        '隅田川夏恋歌IO Angel mix':'隅田川夏恋歌 (I/O Angel mix)',
+        '隅田川純恋歌IO Angel mix':'隅田川夏恋歌 (I/O Angel mix)',
+        'ハナビラリンクス':'ハナビラ:リンクス'
+    }
+
+directOverides = {
+    'Pure Evil': {'NOV:5','ADV:12','EXH:17'},
+    'チルノのパーフェクトさんすう教室　⑨周年バージョン':{'NOV:5','ADV:11','EXH:13','APPEND:16'},
+    'チルノのパーフェクトさんすう教室 ⑨周年バージョン':{'NOV:5','ADV:11','EXH:13','APPEND:16'},
+    'グレイスちゃんの超～絶!!グラビティ講座w':{'APPEND:1'},
+    'マキシマ先生の満開!!ヘヴンリー講座♥':{'APPEND:1'},
+    'エクシード仮面ちゃんのちょっと一線をえくしーどしたEXCEED講座':{'APPEND:1'}
     }
 
 sdvx_logger = SDVXLogger("Throdax")
@@ -184,41 +196,58 @@ def main(songLogFolder, resultsFolder, rebuild):
         if not playScreenshotFileName.startswith("sdvx") :
             continue
 
-        nameSplits = playScreenshotFileName.split("_")                
-                        
-        songTitle = ''
-        for i in range(1,len(nameSplits)) :
-            
-            # Read all chunks as song title until we hit and difficulty identifier
-            if nameSplits[i] != 'NOV' and nameSplits[i] != 'ADV' and nameSplits[i] != 'EXH' :         
-                songTitle += nameSplits[i] + ' '
-                lastIndexOfName = i
-                continue
-            else :
-                break;
-         
-        # Set the rest of the data based on offset of the last chunk of the title       
-        dif = nameSplits[lastIndexOfName+1]
+        nameSplits = playScreenshotFileName.split("_")
         
-        # If the chunk after the difficulty is 'class' we know it's a screenshot of the Skill Analyser mode and we skip that chunk
-        if nameSplits[lastIndexOfName+2] == 'class' :
-            lastIndexOfName+=1
-            
-        lamp = nameSplits[lastIndexOfName+2]
+        if(len(nameSplits) == 3) :
+            songWithoutOCR = true
         
-        # It can happen that the score is empty and we have a file of type
-        # sdvx_プナイプナイたいそう_NOV_failed__20250111_173755
-        # In the case, consider the score 0 otherwise things might break later 
-        # if the playDate chunks are not assigned correctly
-        if nameSplits[lastIndexOfName+3] == '' :
-            score = 0
         else :
-            score = nameSplits[lastIndexOfName+3]
+                        
+            songTitle = ''
+            for i in range(1,len(nameSplits)) :
+                
+                # Read all chunks as song title until we hit and difficulty identifier
+                if nameSplits[i] != 'NOV' and nameSplits[i] != 'ADV' and nameSplits[i] != 'EXH' and nameSplits[i] != 'APPEND':         
+                    songTitle += nameSplits[i] + ' '
+                    lastIndexOfName = i
+                    continue
+                else :
+                    break;
+            try:
+            # Set the rest of the data based on offset of the last chunk of the title       
+                dif = nameSplits[lastIndexOfName+1]
+            except:
+                print(f'Split error on {playScreenshotFileName}!')
             
-        playDate = nameSplits[lastIndexOfName+4]+'_'+nameSplits[lastIndexOfName+5]
-        playDate = playDate.removesuffix('.png')
+            # If the chunk after the difficulty is 'class' we know it's a screenshot of the Skill Analyser mode and we skip that chunk
+            if nameSplits[lastIndexOfName+2] == 'class' :
+                lastIndexOfName+=1
+                
+            lamp = nameSplits[lastIndexOfName+2]
+            
+            # It can happen that the score is empty and we have a file of type
+            # sdvx_プナイプナイたいそう_NOV_failed__20250111_173755
+            # In the case, consider the score 0 otherwise things might break later 
+            # if the playDate chunks are not assigned correctly
+            if nameSplits[lastIndexOfName+3] == '' :
+                score = 0
+            else :
+                score = nameSplits[lastIndexOfName+3]
+            
+            try:    
+                playDate = nameSplits[lastIndexOfName+4]+'_'+nameSplits[lastIndexOfName+5]
+            except:
+                print(f'Split error on {playScreenshotFileName}!')
+                    
+            playDate = playDate.removesuffix('.png')
                 
         #print(f'Read from file: {songTitle} / {dif} / {lamp} / {score} / {playDate}')
+        
+        img = Image.open(os.path.abspath(f'{rootFolder}/{playScreenshotFileName}'))
+        scoreFromImage = genSummary.get_score(img)                
+        
+#        if songWithoutOCR : 
+#            genSummary.ocr_only_jacket(img)
 
         if songTitle != '':
             
@@ -229,10 +258,7 @@ def main(songLogFolder, resultsFolder, rebuild):
                         print(f'Removed incorrect song with title {songTitle} from play log.')
                         break                                                                    
                         
-            songTitle = restoreTitle(songTitle)
-            
-            img = Image.open(os.path.abspath(f'{rootFolder}/{playScreenshotFileName}'))
-            scoreFromImage = genSummary.get_score(img)                
+            songTitle = restoreTitle(songTitle)                                    
             
             songFromScreenshot = OnePlayData(songTitle, scoreFromImage[0], scoreFromImage[1], lamp, dif.lower(), playDate.removesuffix('.png_'))
 
@@ -256,8 +282,10 @@ def findSongRating(songFromLog, songList):
     
     rating = 0
     
+    restoredSongTitle = restoreTitle(songFromLog.title)
+    
     # Find the numeric value of the song rating based on it's difficulty category
-    song = songList['titles'].get(restoreTitle(songFromLog.title),None)
+    song = songList['titles'].get(restoredSongTitle,None)
     
     if song is not None :
         if songFromLog.difficulty == 'nov' : 
@@ -270,7 +298,23 @@ def findSongRating(songFromLog, songList):
             rating = song[6]
                 
     if rating == 0 :
-        print(f'Could not find song in song list for rating: {songFromLog.title}')
+        print(f'[{restoredSongTitle}-{songFromLog.difficulty.upper()}] Could not find song in song list for rating. Searching for direct overrides...')
+        override = directOverides.get(restoredSongTitle)
+        
+        if override is not None:
+            for overrideRating in override :
+                if overrideRating.split(":")[0].lower() == songFromLog.difficulty.lower() :
+                   rating = overrideRating.split(":")[1]
+                   print(f'[{restoredSongTitle}-{songFromLog.difficulty.upper()}] Direct override found with rating {rating}')
+                   break
+               
+            if rating == 0 :
+                print(f'[{restoredSongTitle}-{songFromLog.difficulty.upper()}] No rating found for {songFromLog.difficulty.upper()}')
+               
+        else :
+            print(f'[{restoredSongTitle}-{songFromLog.difficulty.upper()}] not found in direct override')
+
+                            
         
     return str(rating)
     
