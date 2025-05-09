@@ -21,6 +21,7 @@ import urllib
 import logging, logging.handlers
 from tkinter import filedialog
 import re
+from poor_man_resource_bundle import *
 
 SETTING_FILE = 'settings.json'
 sg.theme('SystemDefault')
@@ -40,6 +41,7 @@ hdl.setLevel(logging.DEBUG)
 hdl_formatter = logging.Formatter('%(asctime)s %(filename)s:%(lineno)5d %(funcName)s() [%(levelname)s] %(message)s')
 hdl.setFormatter(hdl_formatter)
 logger.addHandler(hdl)
+bundle = PoorManResourceBundle('ja')
 
 class Reporter:
     def __init__(self, chk_update:bool=True):
@@ -47,6 +49,7 @@ class Reporter:
         self.load_settings()
         if chk_update:
             self.update_musiclist()
+        #self.gen_summary = GenSummary(start,autosave_dir='D:/Tools/SoundVoltex/results')
         self.gen_summary = GenSummary(start)
         self.load_musiclist()
         self.read_bemaniwiki()
@@ -195,7 +198,7 @@ class Reporter:
                 numtd = len(tds)
                 title_flg = 0
                 rowspan_flg = 0
-                if re.search('\d{4}/\d{2}/\d{2}', tds[0].text):
+                if re.search('\\d{4}/\\d{2}/\\d{2}', tds[0].text):
                     title_flg = 1 # タイトル行がどっちかのみ、これ以降ずらさない
                     rowspan_flg = 1 # 難易度の先頭ポインタ
                 if numtd in (7+rowspan_flg,8+rowspan_flg):
@@ -203,7 +206,7 @@ class Reporter:
                         title  = tds[0+title_flg].text
                         artist = tds[1+title_flg].text
                         bpm    = tds[2+title_flg].text
-                        if re.search('\A\d{4}/\d{2}/\d{2}\Z', tds[0].text):
+                        if re.search('\\A\\d{4}/\\d{2}/\\d{2}\\Z', tds[0].text):
                             title = tds[1].text
                         #print(tds)
                         if 'rowspan' in tds[1+title_flg].attrs.keys(): # rowspanありの行はずらさない
@@ -221,17 +224,17 @@ class Reporter:
                             bpm = pre_bpm
                         if tds[3+rowspan_flg].text != '-': # ごりらがいるんだ等、1つ上と曲違いのやつ
                             tmp = [title, artist, bpm]
-                            tmp.append(int(re.findall('\d+', tds[3+rowspan_flg].text)[-1]))
-                            tmp.append(int(re.findall('\d+', tds[4+rowspan_flg].text)[-1]))
-                            tmp.append(int(re.findall('\d+', tds[5+rowspan_flg].text)[-1]))
+                            tmp.append(int(re.findall('\\d+', tds[3+rowspan_flg].text)[-1]))
+                            tmp.append(int(re.findall('\\d+', tds[4+rowspan_flg].text)[-1]))
+                            tmp.append(int(re.findall('\\d+', tds[5+rowspan_flg].text)[-1]))
                             if tds[6+rowspan_flg].text not in ('', '-'):
-                                tmp.append(int(re.findall('\d+', tds[6+rowspan_flg].text)[-1]))
+                                tmp.append(int(re.findall('\\d+', tds[6+rowspan_flg].text)[-1]))
                             else:
                                 tmp.append(None)
                             if title not in titles:
                                 titles[title] = tmp
                         else:
-                            tmp[-1] = int(re.findall('\d+', tds[6+rowspan_flg].text)[-1])
+                            tmp[-1] = int(re.findall('\\d+', tds[6+rowspan_flg].text)[-1])
                             titles[title] = tmp
                         #if ('Spear of Justice' in tds[0].text) or ('ASGORE' in tds[1].text):
                         #    print([tds[i].text for i in range(len(tds))])
@@ -312,9 +315,9 @@ class Reporter:
         layout_db = [
             [
                 sg.Text('difficulty:'), sg.Combo(['', 'nov', 'adv', 'exh', 'APPEND'], default_value='exh', key='combo_diff_db', font=(None,16), enable_events=True)
-                ,sg.Button('外部pklのマージ', key='merge')
+                ,sg.Button(bundle.getText('button.merge.pkl'), key='merge')
                 ,sg.Text('0', key='num_hash'), sg.Text('曲')
-                ,sg.Button('pklを送信', key='send_pkl')
+                ,sg.Button(bundle.getText('button.send.pkl'), key='send_pkl')
             ],
             [
                 sg.Table(
@@ -333,21 +336,24 @@ class Reporter:
         ]
         layout = [
             [
-                sg.Text('search:', font=(None,16)), sg.Input('', size=(40,1), key='filter', font=(None,16), enable_events=True), sg.Button('clear', font=(None,16)), sg.Text('(登録済: ', font=(None,16)), sg.Text('0', key='num_added_fumen', font=(None,16)), sg.Text('譜面)', font=(None,16))
+                sg.Text('Language/言語', font=(None,16)),sg.Combo(['JA', 'EN'], key='locale', font=(None,16), default_value='JA',enable_events=True)
+            ],
+            [
+                sg.Text('search:', font=(None,16)), sg.Input('', size=(40,1), key='filter', font=(None,16), enable_events=True), sg.Button('clear', font=(None,16)), sg.Text('('+bundle.getText('text.registered')+': ', font=(None,16)), sg.Text('0', key='num_added_fumen', font=(None,16)), sg.Text(bundle.getText('text.music_score')+')', font=(None,16))
             ],
             [
                 sg.Text('title:', font=(None,16)), sg.Input('', key='txt_title', font=(None,16), size=(50,1))
             ],
             [
                 sg.Text('hash_jacket:', font=(None,16)), sg.Input('', key='hash_jacket', size=(20,1), font=(None,16)), sg.Text('hash_info:'), sg.Input('', key='hash_info', size=(20,1))
-                ,sg.Text('難易度:', font=(None,16)), sg.Combo(['', 'nov', 'adv', 'exh', 'APPEND'], key='combo_difficulty', font=(None,16))
+                ,sg.Text(bundle.getText('text.difficulty')+':', font=(None,16)), sg.Combo(['', 'nov', 'adv', 'exh', 'APPEND'], key='combo_difficulty', font=(None,16))
             ],
-            [sg.Button('曲登録', key='register'), sg.Button('ファイル一覧に色付け(重いです)', key='coloring')],
+            [sg.Button(bundle.getText('button.resgister'), key='register'), sg.Button(bundle.getText('button.rescan'), key='coloring')],
             [sg.Column(layout_tables, key='column_table'), sg.Column(layout_db, key='column_db')],
             [sg.Text('', text_color="#ff0000", key='state', font=(None,16))],
             [sg.Image(None, size=(100,100), key='jacket'), sg.Column(layout_info)]
         ]
-        self.window = sg.Window(f"SDVX helper - OCR未検出曲報告ツール", layout, resizable=True, grab_anywhere=True,return_keyboard_events=True,finalize=True,enable_close_attempted_event=True,icon=self.ico,location=(self.settings['lx'], self.settings['ly']), size=(900,780))
+        self.window = sg.Window(f"{bundle.getText('window.title')}", layout, resizable=True, grab_anywhere=True,return_keyboard_events=True,finalize=True,enable_close_attempted_event=True,icon=self.ico,location=(self.settings['lx'], self.settings['ly']), size=(900,780))
         self.window['musics'].expand(expand_x=True, expand_y=True)
         self.window['files'].expand(expand_x=True, expand_y=True)
         self.window['column_table'].expand(expand_x=True, expand_y=True)
@@ -392,7 +398,7 @@ class Reporter:
         ret = []
         bgcs = []
         for i,f in enumerate(self.gen_summary.get_result_files()):
-            ret.append(f)
+            ret.append(f.replace('\\','/'))
             if i%2 == 0:
                 bgcs.append([len(bgcs), '#000000', '#ffffff'])
             else:
@@ -436,7 +442,13 @@ class Reporter:
             else:
                 self.filelist_bgcolor[i][1] = '#dddddd'
                 self.filelist_bgcolor[i][2] = '#333333'
-        self.window['files'].update(list(self.gen_summary.get_result_files()),row_colors=self.filelist_bgcolor)
+
+        updateList = []
+        for i,f in enumerate(self.gen_summary.get_result_files()):
+            updateList.append(f.replace('\\','/'))
+                       
+                
+        self.window['files'].update(list(updateList),row_colors=self.filelist_bgcolor)
         self.window['state'].update('色付けを完了しました。', text_color='#000000')
 
     def main(self):
@@ -445,7 +457,7 @@ class Reporter:
             if ev in (sg.WIN_CLOSED, 'Escape:27', '-WINDOW CLOSE ATTEMPTED-', 'btn_close_info', 'btn_close_setting'):
                 self.save()
                 if self.num_added_fumen > 0:
-                    self.send_pkl()
+                    #self.send_pkl()
                 break
             elif ev == 'files': # ファイル選択時
                 if len(val[ev]) > 0:
@@ -510,7 +522,7 @@ class Reporter:
                     pat = re.compile(r'[0-9a-f]{16}')
                     if (difficulty != '') and bool(pat.search(hash_jacket)):
                         # TODO ジャケットなしの曲はinfoを登録する
-                        self.send_webhook(music, difficulty, hash_jacket, hash_info)
+                        # self.send_webhook(music, difficulty, hash_jacket, hash_info)
                         if music not in self.musiclist['jacket'][difficulty].keys():
                             self.window['state'].update(f'曲が未登録。全譜面の情報を登録します。({music} / {hash_jacket})', text_color='#000000')
                             print('登録されていません。全譜面の情報を登録します。')
@@ -551,6 +563,10 @@ class Reporter:
             elif ev == 'send_pkl':
                 self.save()
                 self.send_pkl()
+            elif ev == 'locale':
+                bundle = PoorManResourceBundle(val['locale'].lower())
+                #self.window                
+                
 
 if __name__ == '__main__':
     a = Reporter(chk_update = False)

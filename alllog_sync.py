@@ -44,7 +44,11 @@ specialTitles = {
         '侵蝕コード 666 -今日ちょっと指 (略-':'侵蝕コード : 666 -今日ちょっと指 (略-',
         '隅田川夏恋歌IO Angel mix':'隅田川夏恋歌 (I/O Angel mix)',
         '隅田川純恋歌IO Angel mix':'隅田川夏恋歌 (I/O Angel mix)',
-        'ハナビラリンクス':'ハナビラ:リンクス'
+        '隅田川純恋歌I/O Angel mix':'隅田川夏恋歌 (I/O Angel mix)',
+        'ハナビラリンクス':'ハナビラ:リンクス',
+        'Heartache  心の痛み':'Heartache / 心の痛み',
+        'Chantilly Fille':'゜*。Chantilly Fille。*°',
+        'infinite youniverse':'infinite:youniverse'
     }
 
 directOverides = {
@@ -81,6 +85,17 @@ def loadPlaysList(allogFolder):
 def save(dat:dict, allogFolder):
     with open(f'{allogFolder}/alllog.pkl', 'wb') as f:
         pickle.dump(dat, f)
+        
+def getSongFromLog(songLog, songTitle, dificulty):
+    
+    allPlaysOfSong = []
+    
+    for songFromLog in songLog:
+        if songFromLog.title == songTitle and songFromLog.difficulty == dificulty:
+            allPlaysOfSong.append(songFromLog)
+            
+    return allPlaysOfSong
+    
 
         
 def isSongInLog(songLog, songToSearch,fileNumber):
@@ -88,11 +103,11 @@ def isSongInLog(songLog, songToSearch,fileNumber):
     songExists = False
     songDifferentDate = False
     
-    allPlaysOfSong = []
+    allPlaysOfSong = getSongFromLog(songLog,songToSearch.title,songToSearch.difficulty);
     
-    for songFromLog in songLog:
-        if songFromLog.title == restoreTitle(songToSearch.title) and songFromLog.difficulty == songToSearch.difficulty:
-            allPlaysOfSong.append(songFromLog)
+#    for songFromLog in songLog:
+#        if songFromLog.title == restoreTitle(songToSearch.title) and songFromLog.difficulty == songToSearch.difficulty:
+#            allPlaysOfSong.append(songFromLog)
     
     songDate = datetime.strptime(songToSearch.date, "%Y%m%d_%H%M%S")
     
@@ -199,7 +214,8 @@ def main(songLogFolder, resultsFolder, rebuild):
         nameSplits = playScreenshotFileName.split("_")
         
         if(len(nameSplits) == 3) :
-            songWithoutOCR = true
+            songWithoutOCR = True
+            print(f'Song with no ocr: {playScreenshotFileName}')
         
         else :
                         
@@ -258,9 +274,25 @@ def main(songLogFolder, resultsFolder, rebuild):
                         print(f'Removed incorrect song with title {songTitle} from play log.')
                         break                                                                    
                         
-            songTitle = restoreTitle(songTitle)                                    
+            songTitle = restoreTitle(songTitle)
             
-            songFromScreenshot = OnePlayData(songTitle, scoreFromImage[0], scoreFromImage[1], lamp, dif.lower(), playDate.removesuffix('.png_'))
+            playScore = scoreFromImage[0];
+            previousScore = scoreFromImage[1]
+            
+#            songPlays = getSongFromLog(songLog, songTitle, dif.lower())
+#            if len(songPlays) > 0 :
+#                
+#                lastPlay = None
+#
+#                for songPlay in songPlays :
+#                    if lastPlay == None :
+#                        lastPlay = songPlay
+#                    elif lastPlay.date > songPlay.date :
+#                        lasPlay = songPlay
+#                
+#                previousScore = lastPlay.pre_Scor
+            
+            songFromScreenshot = OnePlayData(songTitle, playScore, previousScore, lamp, dif.lower(), playDate.removesuffix('.png_'))
 
             # If the song is not in the long, with a tolerance of 120 seconds, add it to the log                
             if not isSongInLog(songLog, songFromScreenshot,processedFiles):
