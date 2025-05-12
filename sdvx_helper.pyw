@@ -21,6 +21,7 @@ from sdvxh_classes import *
 import urllib
 import webbrowser
 from decimal import Decimal
+from PoorManResourceBundle import *
 # フラットウィンドウ、右下モード(左に上部側がくる)
 # フルスクリーン、2560x1440に指定してもキャプは1920x1080で撮れてるっぽい
 
@@ -55,6 +56,8 @@ except Exception:
 
 class SDVXHelper:
     def __init__(self):
+        self.bundle = PoorManResourceBundle('ja')
+        self.defaultLocale = 'JA'
         self.ico=self.ico_path('icon.ico')
         self.detect_mode = detect_mode.init
         self.gui_mode    = gui_mode.init
@@ -238,7 +241,7 @@ class SDVXHelper:
         self.th_webhook.start()
             
         self.gen_summary.generate() # ここでサマリも更新
-        print(f"スクリーンショットを保存しました -> {dst}")
+        print(f"{self.bundle.getText('message.screenshot.saved')} -> {dst}")
 
         # ライバル欄更新
         if type(title) == str:
@@ -672,6 +675,9 @@ class SDVXHelper:
         layout = [
             [sg.Menubar(menuitems, key='menu')],
             [
+                sg.Text('Language/言語', font=(None,12)),sg.Combo(['JA', 'EN'], key='locale', font=(None,12), default_value=self.defaultLocale,enable_events=True)
+            ],
+            [
                 par_text('plays:'), par_text(str(self.plays), key='txt_plays')
                 ,par_text('mode:'), par_text(self.detect_mode.name, key='txt_mode')
                 ,par_text('error! OBS接続不可', key='txt_obswarning', text_color="#ff0000")],
@@ -1087,7 +1093,7 @@ class SDVXHelper:
             if self.detect_mode == detect_mode.init:
                 if not done_thissong:
                     if self.is_ondetect():
-                        print(f"曲決定画面を検出")
+                        print(f"{self.bundle.getText('message.on.detect')}")
                         time.sleep(self.params['detect_wait'])
                         self.get_capture_after_rotate()
                         self.gen_summary.update_musicinfo(self.img_rot)
@@ -1419,7 +1425,12 @@ class SDVXHelper:
                     else:
                         print(f'取得失敗。スキップします。({title},{diff},{sc},{lamp})')
                 else:
-                    print(f'選曲画面ではないのでスキップします。')
+                    print(f'選曲画面ではないのでスキップします。')                    
+            elif ev == 'locale':
+                self.bundle = PoorManResourceBundle(val['locale'].lower())
+                self.defaultLocale = val['locale']
+                self.window.close()
+                self.gui_main()
 
 if __name__ == '__main__':
     a = SDVXHelper()

@@ -9,6 +9,7 @@ from manage_settings import *
 from sdvxh_classes import *
 from functools import partial
 import urllib
+from PoorManResourceBundle import *
 
 os.makedirs('log', exist_ok=True)
 os.makedirs('out', exist_ok=True)

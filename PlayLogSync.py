@@ -60,6 +60,10 @@ directOverides = {
     'エクシード仮面ちゃんのちょっと一線をえくしーどしたEXCEED講座':{'APPEND:1'}
     }
 
+ignoredNames = {
+    'Help me, CODYYYYYY!!'
+}
+
 sdvx_logger = SDVXLogger("Throdax")
 time_offset_seconds = 0
 
@@ -99,6 +103,9 @@ def getSongFromLog(songLog, songTitle, dificulty):
 
         
 def isSongInLog(songLog, songToSearch,fileNumber):
+    
+    if not ignoredNames.get(songToSearch.title) == None :
+        return true
         
     songExists = False
     songDifferentDate = False
