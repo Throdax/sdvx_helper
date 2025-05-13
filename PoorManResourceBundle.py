@@ -9,11 +9,12 @@ bundles = {
         'text.difficulty': 'difficulty',
         'text.registered': 'Registered',
         'text.music_score': 'Music Score',
+        'text.songs': "Songs",
         
         'window.title': 'SDVX helper - OCR undetected song reporting tool',
         
-        'message.coloring':'File list is being colored according to OCR results. Please wait.',
-        'message.coloring.complete':'Coloring completed.',
+        'message.coloring':'File list is being coloured according to OCR results. Please wait...',
+        'message.coloring.complete':'Colouring completed.',
         'message.song.registered':'The song has not been registered. All score information will be registered.',
         'message.song.not.registered':'This song is not registered in the song title database. Please select the song and then click "Register Song".',
         'message.song.already.registered':'The song has already been registered.',
@@ -30,9 +31,15 @@ bundles = {
         'log.hash.fixed':'Only fixes the hash.',
         'log.filename.exists':'Skip as the file name already exists.',
         'log.file.not.found':'File not found, skipping.',
+        'log.song.db':'Song DB',
+        'log.song.wiki':'Song information (based on bemaniwiki)',
         
         'webhook.number.added.scores':'Number of added scores',
-        'webhook.number.added.songs':'Number of songs'
+        'webhook.number.added.songs':'Number of songs',
+        'webhook.ocr.title': 'Title',
+        'webhook.ocr.hash.jacket': 'Jacket Hash',
+        'webhook.ocr.hash.info': 'Info Hash',
+        'webhook.ocr.difficulty': 'Difficulty'
         
     },
     'ja': {
@@ -44,6 +51,7 @@ bundles = {
         'text.difficulty': '難易度',
         'text.registered': '登録済',
         'text.music_score': '譜面',
+        'text.songs': "曲",
         
         'window.title': 'SDVX helper - OCR未検出曲報告ツール',
         
@@ -65,9 +73,15 @@ bundles = {
         'log.hash.fixed':'のみhashを修正します。',
         'log.filename.exists':'既に存在するファイル名なのでskip。',
         'log.file.not.found':'ファイルが見つかりません。スキップします。',
+        'log.song.db':'認識用DB',
+        'log.song.wiki':'曲情報(bemaniwikiベース)',
         
         'webhook.number.added.scores':'追加した譜面数',
-        'webhook.number.added.songs':'曲数'
+        'webhook.number.added.songs':'曲数',
+        'webhook.ocr.title': '',
+        'webhook.ocr.hash.jacket': '',
+        'webhook.ocr.hash.info': '',
+        'webhook.ocr.difficulty': 'Difficulty'
     }
 }
 

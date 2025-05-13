@@ -24,6 +24,7 @@ specialTitles = {
         'The Sampling Paradise (PLight Remix)':'The Sampling Paradise (P*Light Remix)',
         'Finale  フィナーレ':'Finale / フィナーレ',
         'コンベア速度Max!しゃいにん☆廻転ズシSushi&Peace':'コンベア速度Max!? しゃいにん☆廻転ズシ"Sushi&Peace"',
+        'コンベア速度Max! しゃいにん☆廻転ズシSushi&Peace':'コンベア速度Max!? しゃいにん☆廻転ズシ"Sushi&Peace"',
         'VoynichManuscript':'Voynich:Manuscript',        
         'Believe (y)our Wings {VIVID RAYS}':'Believe (y)our Wings {V:IVID RAYS}',
         'チルノのパーフェクトさんすう教室　⑨周年バージョン':'チルノのパーフェクトさんすう教室　⑨周年バージョン',
@@ -48,7 +49,8 @@ specialTitles = {
         'ハナビラリンクス':'ハナビラ:リンクス',
         'Heartache  心の痛み':'Heartache / 心の痛み',
         'Chantilly Fille':'゜*。Chantilly Fille。*°',
-        'infinite youniverse':'infinite:youniverse'
+        'infinite youniverse':'infinite:youniverse',
+        'infiniteyouniverse':'infinite:youniverse'
     }
 
 directOverides = {
@@ -104,8 +106,8 @@ def getSongFromLog(songLog, songTitle, dificulty):
         
 def isSongInLog(songLog, songToSearch,fileNumber):
     
-    if not ignoredNames.get(songToSearch.title) == None :
-        return true
+    if songToSearch.title in ignoredNames:
+        return True
         
     songExists = False
     songDifferentDate = False

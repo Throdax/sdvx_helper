@@ -44,14 +44,14 @@ logger.addHandler(hdl)
 
 class Reporter:
     def __init__(self, chk_update:bool=True):
-        self.bundle = PoorManResourceBundle('ja')
+        self.defaultLocale = 'EN'
+        self.bundle = PoorManResourceBundle(self.defaultLocale)
         start = datetime.datetime.now()
         self.load_settings()
         if chk_update:
             self.update_musiclist()
         #self.gen_summary = GenSummary(start,autosave_dir='D:/Tools/SoundVoltex/results')
         self.gen_summary = GenSummary(start)
-        self.defaultLocale = 'JA'
         self.load_musiclist()
         self.read_bemaniwiki()
         self.ico=self.ico_path('icon.ico')
@@ -101,8 +101,8 @@ class Reporter:
         try:
             with open('resources/musiclist.pkl', 'rb') as f:
                 self.musiclist = pickle.load(f)
-            print(f"認識用DB: {len(self.musiclist['jacket']['exh'])}")
-            print(f'曲情報(bemaniwikiベース): {len(self.musiclist["titles"].keys())}')
+            print(f"{self.bundle.getText('log.song.db')}: {len(self.musiclist['jacket']['exh'])}")
+            print(f'{self.bundle.getText("log.song.wiki")}: {len(self.musiclist["titles"].keys())}')
         except:
             logger.debug('musiclist読み込み時エラー。新規作成します。')
             self.musiclist = {}
@@ -251,10 +251,10 @@ class Reporter:
     def send_webhook(self, title, difficulty, hash_jacket, hash_info):
         try:
             webhook = DiscordWebhook(url=url_webhook_reg, username="unknown title info")
-            msg = f"**{title}**\n"
-            msg += f" - **{hash_jacket}**"
+            msg = f"{self.bundle.getText('webhook.ocr.title')}: **{title}**\n"
+            msg += f" - {self.bundle.getText('webhook.ocr.hash.jacket')}: **{hash_jacket}**"
             if hash_info != "":
-                msg += f" - **{hash_info}**"
+                msg += f" - {self.bundle.getText('webhook.ocr.hash.info')}: **{hash_info}**"
             if self.gen_summary.result_parts != False:
                 img_bytes = io.BytesIO()
                 self.gen_summary.result_parts['info'].crop((0,0,260,65)).save(img_bytes, format='PNG')
@@ -262,7 +262,7 @@ class Reporter:
                 img_bytes = io.BytesIO()
                 self.gen_summary.result_parts['difficulty'].save(img_bytes, format='PNG')
                 webhook.add_file(file=img_bytes.getvalue(), filename=f'difficulty.png')
-            msg += f"(difficulty: **{difficulty.upper()}**)"
+            msg += f"({self.bundle.getText('webhook.ocr.difficulty')}: **{difficulty.upper()}**)"
             webhook.content=msg
             res = webhook.execute()
         except Exception:
@@ -317,7 +317,7 @@ class Reporter:
             [
                 sg.Text('difficulty:'), sg.Combo(['', 'nov', 'adv', 'exh', 'APPEND'], default_value='exh', key='combo_diff_db', font=(None,16), enable_events=True)
                 ,sg.Button(self.bundle.getText('button.merge.pkl'), key='merge')
-                ,sg.Text('0', key='num_hash'), sg.Text('曲')
+                ,sg.Text('0', key='num_hash'), sg.Text(self.bundle.getText('text.songs'))
                 ,sg.Button(self.bundle.getText('button.send.pkl'), key='send_pkl')
             ],
             [
@@ -415,10 +415,23 @@ class Reporter:
         self.filelist_bgcolor = bgcs
         return ret, bgcs
     
+    def applyColoring(self):
+        
+        updateList = []
+        for i,f in enumerate(self.gen_summary.get_result_files()):
+            updateList.append(f.replace('\\','/'))
+        
+        self.window['files'].update(list(updateList),row_colors=self.filelist_bgcolor)
+    
+    def updateColoringStatus(self,current,total):
+        self.window['state'].update(self.bundle.getText('message.coloring')+' ('+str(current)+'/'+str(total)+') ', text_color='#000000')
+        
+    
     # ファイル一覧に対し、OCR結果に応じた色を付ける
     def do_coloring(self):
         self.gen_summary.load_hashes()
-        for i,f in enumerate(list(self.gen_summary.get_result_files())):
+        resultFiles = list(self.gen_summary.get_result_files())
+        for i,f in enumerate(resultFiles):
             try:
                 img = Image.open(f)
             except Exception:
@@ -447,13 +460,10 @@ class Reporter:
             else:
                 self.filelist_bgcolor[i][1] = '#dddddd'
                 self.filelist_bgcolor[i][2] = '#333333'
-
-        updateList = []
-        for i,f in enumerate(self.gen_summary.get_result_files()):
-            updateList.append(f.replace('\\','/'))
-                       
                 
-        self.window['files'].update(list(updateList),row_colors=self.filelist_bgcolor)
+            self.updateColoringStatus(i+1,len(resultFiles))    
+                       
+        self.applyColoring()
         self.window['state'].update(self.bundle.getText('message.coloring.complete'), text_color='#000000')
 
     def main(self):
@@ -573,6 +583,7 @@ class Reporter:
                 self.defaultLocale = val['locale']
                 self.window.close()
                 self.gui(False)
+                self.applyColoring()
                 
                 
 
