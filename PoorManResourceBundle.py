@@ -25,6 +25,8 @@ bundles = {
         'message.error.no.title':'No song title entered',
         'message.screenshot.saved':'Screenshot saved',
         'message.on.detect':'Detect the song selection screen',
+        'message.obs.error':'Error!! Failed to connect to OBS.',
+        'message.version':'Your version is the latest',
         
         'log.song.registered':'Not registered. Register all score information.',
         'log.song.already.registered':'The song itself has been registered.',
@@ -67,6 +69,8 @@ bundles = {
         'message.error.no.title':'曲名が入力されていません',
         'message.screenshot.saved':'スクリーンショットを保存しました',
         'message.on.detect':'曲決定画面を検出',
+        'message.obs.error':'Error!! OBSとの接続に失敗しました。',
+        'message.version':'お使いのバージョンは最新です',
         
         'log.song.registered':'登録されていません。全譜面の情報を登録します。',
         'log.song.already.registered':'曲自体の登録はされています。この譜面',

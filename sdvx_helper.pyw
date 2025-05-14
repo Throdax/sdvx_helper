@@ -53,11 +53,11 @@ try:
         SWVER = f.readline().strip()
 except Exception:
     SWVER = "v?.?.?"
-
+    
 class SDVXHelper:
     def __init__(self):
-        self.bundle = PoorManResourceBundle('ja')
-        self.defaultLocale = 'JA'
+        self.defaultLocale = 'EN'
+        self.bundle = PoorManResourceBundle(self.defaultLocale)
         self.ico=self.ico_path('icon.ico')
         self.detect_mode = detect_mode.init
         self.gui_mode    = gui_mode.init
@@ -100,6 +100,14 @@ class SDVXHelper:
         self.gen_summary = False
         logger.debug('created.')
         logger.debug(f'settings:{self.settings}')
+        
+        
+    def logToWindow(self, msg):
+        if self.window  :
+            self.window['output'].print(msg)
+        else :
+            print(msg)
+    
 
     def ico_path(self, relative_path:str):
         """アイコン表示用
@@ -124,7 +132,7 @@ class SDVXHelper:
                 with urllib.request.urlopen(self.params['url_musiclist']) as wf:
                     with open('resources/musiclist.pkl', 'wb') as f:
                         f.write(wf.read())
-                print('musiclist.pklを更新しました。')
+                self.logToWindow('musiclist.pklを更新しました。')
         except Exception:
             print(traceback.format_exc())
 
@@ -154,15 +162,15 @@ class SDVXHelper:
         try:
             with open(SETTING_FILE) as f:
                 ret = json.load(f)
-                print(f"設定をロードしました。\n")
+                self.logToWindow(f"設定をロードしました。\n")
         except Exception as e:
             logger.debug(traceback.format_exc())
-            print(f"有効な設定ファイルなし。デフォルト値を使います。")
+            self.logToWindow(f"有効な設定ファイルなし。デフォルト値を使います。")
 
         ### 後から追加した値がない場合にもここでケア
         for k in default_val.keys():
             if not k in ret.keys():
-                print(f"{k}が設定ファイル内に存在しません。デフォルト値({default_val[k]}を登録します。)")
+                self.logToWindow(f"{k}が設定ファイル内に存在しません。デフォルト値({default_val[k]}を登録します。)")
                 ret[k] = default_val[k]
         self.settings = ret
         self.check_legacy_settings()
@@ -185,7 +193,7 @@ class SDVXHelper:
             else:
                 self.settings['orientation_top'] = 'left'
             self.settings.pop('top_is_right')
-            print('old parameter is updated.\n(top_is_right -> orientation_top)')
+            self.logToWindow('old parameter is updated.\n(top_is_right -> orientation_top)')
 
     def save_screenshot_general(self):
         """ゲーム画面のスクショを保存する。ホットキーで呼び出す用。
@@ -228,7 +236,7 @@ class SDVXHelper:
                     self.rta_endtime = datetime.datetime.now()
                     rta_time = (self.rta_endtime - self.rta_starttime)
                     self.obs.change_text('sdvx_helper_rta_timer', str(rta_time).split('.')[0])
-                    print(f"Timer stop! ({str(rta_time).split('.')[0]}), vf:{self.rta_vf_cur}")
+                    self.logToWindow(f"Timer stop! ({str(rta_time).split('.')[0]}), vf:{self.rta_vf_cur}")
                     self.rta_logger.rta_timer = str(rta_time).split('.')[0]
                     self.rta_logger.update_stats()
                 rta_vf_str = f"{self.settings['obs_txt_vf_header']}{self.rta_vf_cur:.3f}{self.settings['obs_txt_vf_footer']}"
@@ -241,7 +249,7 @@ class SDVXHelper:
         self.th_webhook.start()
             
         self.gen_summary.generate() # ここでサマリも更新
-        print(f"{self.bundle.getText('message.screenshot.saved')} -> {dst}")
+        self.logToWindow(f"{self.bundle.getText('message.screenshot.saved')} -> {dst}")
 
         # ライバル欄更新
         if type(title) == str:
@@ -317,7 +325,7 @@ class SDVXHelper:
                                     out[p].append(new) # title, diff, score, diffだけ保持
                                     logger.debug(f'added! {new}')
                 if len(out[p]) > 0:
-                    print(f'ライバル:{p}から挑戦状が{len(out[p])}件届いています。')
+                    self.logToWindow(f'ライバル:{p}から挑戦状が{len(out[p])}件届いています。')
                 logger.debug(f'ライバル:{p}から挑戦状が{len(out[p])}件届いています。')
             #self.rival_log[p] = self.sdvx_logger.rival_score[i] # ライバルの一時スコアを保存する場合はこれ
 
@@ -354,11 +362,11 @@ class SDVXHelper:
         try:
             self.update_mybest()
             self.sdvx_logger.get_rival_score(self.settings['player_name'], self.settings['rival_names'], self.settings['rival_googledrive'])
-            print(f"ライバルのスコアを取得完了しました。")
+            self.logToWindow(f"ライバルのスコアを取得完了しました。")
             self.check_rival_update()
         except Exception:
             logger.debug(traceback.format_exc())
-            print('ライバルのログ取得に失敗しました。') # ネットワーク接続やURL設定を見直す必要がある
+            self.logToWindow('ライバルのログ取得に失敗しました。') # ネットワーク接続やURL設定を見直す必要がある
 
     def save_playerinfo(self):
         """プレイヤー情報(VF,段位)を切り出して画像として保存する。
@@ -384,7 +392,7 @@ class SDVXHelper:
         self.rta_target_vf = Decimal(self.settings['rta_target_vf'])
         rta_vf_str = f"{self.settings['obs_txt_vf_header']}0.000{self.settings['obs_txt_vf_footer']}"
         self.obs.change_text('sdvx_helper_rta_vf', rta_vf_str)
-        print(f'RTAモードを開始します。\ntarget VF = {self.rta_target_vf}')
+        self.logToWindow(f'RTAモードを開始します。\ntarget VF = {self.rta_target_vf}')
 
     def get_capture_after_rotate(self):
         """ゲーム画面のキャプチャを取得し、正しい向きに直す。self.img_rotにも格納する。
@@ -685,9 +693,11 @@ class SDVXHelper:
             [par_text('', size=(40,1), key='txt_info')],
         ]
         if self.settings['dbg_enable_output']:
-            layout.append([sg.Output(size=(63,8), key='output', font=(None, 9))])
+            layout.append([sg.Multiline(size=(63,8), key='output', font=(None, 9))])
         self.gui_mode = gui_mode.main
+        
         self.window = sg.Window('SDVX helper', layout, grab_anywhere=True,return_keyboard_events=True,resizable=False,finalize=True,enable_close_attempted_event=True,icon=self.ico,location=(self.settings['lx'], self.settings['ly']))
+        
         if self.connect_obs():
             self.window['txt_obswarning'].update('')
 
@@ -728,15 +738,15 @@ class SDVXHelper:
             self.obs = OBSSocket(self.settings['host'], self.settings['port'], self.settings['passwd'], self.settings['obs_source'], self.imgpath)
             if self.gui_mode == gui_mode.main:
                 self.window['txt_obswarning'].update('')
-                print('OBSに接続しました')
+                self.logToWindow('OBSに接続しました')
             return True
         except:
             logger.debug(traceback.format_exc())
             self.obs = False
-            print('obs socket error!')
+            self.logToWindow('obs socket error!')
             if self.gui_mode == gui_mode.main:
                 self.window['txt_obswarning'].update('error! OBS接続不可')
-                print('Error!! OBSとの接続に失敗しました。')
+                self.logToWindow(self.bundle.getText('message.obs.error'))
             return False
 
     def control_obs_sources(self, name:str):
@@ -1000,7 +1010,7 @@ class SDVXHelper:
             try:
                 res = webhook.execute()
             except Exception:
-                print('webhook送出エラー(URLがおかしい？)')
+                self.logToWindow('webhook送出エラー(URLがおかしい？)')
                 logger.debug(traceback.format_exc())
 
     def import_score_on_select_with_dialog(self):
@@ -1018,7 +1028,7 @@ class SDVXHelper:
             logger.debug('cannot connect to OBS -> exit')
             return False
         if self.settings['obs_source'] == '':
-            print("\nゲーム画面用ソースが設定されていません。\nメニュー->OBS制御設定からゲーム画面の指定を行ってください。")
+            self.logToWindow("\nゲーム画面用ソースが設定されていません。\nメニュー->OBS制御設定からゲーム画面の指定を行ってください。")
             self.window['txt_obswarning'].update('error! ゲーム画面未設定')
             return False
         obsv = self.obs.ws.get_version()
@@ -1079,7 +1089,7 @@ class SDVXHelper:
                         #if (sc!=best_sc) or (lamp_table.index(lamp) != lamp_table.index(best_lamp)):
                         if sc <= 10000000:
                             if (sc>best_sc) or (lamp_table.index(lamp) < lamp_table.index(best_lamp)):
-                                print(f"選曲画面から自己ベストを登録しました。\n-> {title}({diff.upper()}): {sc:,}, {lamp}")
+                                self.logToWindow(f"選曲画面から自己ベストを登録しました。\n-> {title}({diff.upper()}): {sc:,}, {lamp}")
                                 self.sdvx_logger.push(title, sc, 0, lamp, diff, fmtnow)
                                 if self.rta_mode:
                                     self.rta_logger.push(title, sc, 0, lamp, diff, fmtnow)
@@ -1093,7 +1103,7 @@ class SDVXHelper:
             if self.detect_mode == detect_mode.init:
                 if not done_thissong:
                     if self.is_ondetect():
-                        print(f"{self.bundle.getText('message.on.detect')}")
+                        self.logToWindow(f"{self.bundle.getText('message.on.detect')}")
                         time.sleep(self.params['detect_wait'])
                         self.get_capture_after_rotate()
                         self.gen_summary.update_musicinfo(self.img_rot)
@@ -1170,10 +1180,10 @@ class SDVXHelper:
         if self.settings['get_rival_score']:
             try:
                 self.sdvx_logger.get_rival_score(self.settings['player_name'], self.settings['rival_names'], self.settings['rival_googledrive'])
-                print(f"ライバルのスコアを取得完了しました。")
+                self.logToWindow(f"ライバルのスコアを取得完了しました。")
             except Exception: # 関数全体が落ちる=Googleドライブへのアクセスでコケたときの対策
                 logger.debug(traceback.format_exc())
-                print('ライバルのログ取得に失敗しました。') # ネットワーク接続やURL設定を見直す必要がある
+                self.logToWindow('ライバルのログ取得に失敗しました。') # ネットワーク接続やURL設定を見直す必要がある
         self.load_rivallog()
         self.check_rival_update()
         self.th = False
@@ -1197,13 +1207,13 @@ class SDVXHelper:
                     self.save_settings()
                     self.control_obs_sources('quit')
                     summary_filename = f"{self.settings['autosave_dir']}/{self.starttime.strftime('%Y%m%d')}_summary.png"
-                    print(f"本日の成果一覧を保存中...\n==> {summary_filename}")
+                    self.logToWindow(f"本日の成果一覧を保存中...\n==> {summary_filename}")
                     self.gen_summary.generate_today_all(summary_filename)
                     self.sdvx_logger.save_alllog()
                     self.sdvx_logger.gen_playcount_csv(self.settings['my_googledrive']+'/playcount.csv')
                     self.update_mybest()
                     self.save_rivallog()
-                    print(f"プレーログを保存しました。")
+                    self.logToWindow(f"プレーログを保存しました。")
                     vf_filename = f"{self.settings['autosave_dir']}/{self.starttime.strftime('%Y%m%d')}_total_vf.png"
                     #print(f"VF対象一覧を保存中 (OBSに設定していれば保存されます) ...\n==> {vf_filename}")
                     try:
@@ -1211,7 +1221,7 @@ class SDVXHelper:
                         if self.obs.enable_source(tmps, tmpid):
                             time.sleep(2)
                             self.obs.ws.save_source_screenshot('sdvx_stats.html', 'png', vf_filename, 3000, 2300, 100)
-                            print(f"VF対象一覧を保存しました。")
+                            self.logToWindow(f"VF対象一覧を保存しました。")
                             self.obs.disable_source(tmps, tmpid)
                     except Exception:
                         pass
@@ -1220,7 +1230,7 @@ class SDVXHelper:
                         if self.obs.enable_source(tmps, tmpid):
                             time.sleep(2)
                             self.obs.ws.save_source_screenshot('sdvx_stats_v2.html', 'png', vf_filename, 3500, 2700, 100)
-                            print(f"VF対象一覧を保存しました。")
+                            self.logToWindow(f"VF対象一覧を保存しました。")
                             self.obs.disable_source(tmps, tmpid)
                     except Exception:
                         pass
@@ -1231,7 +1241,7 @@ class SDVXHelper:
                                 time.sleep(2)
                                 rta_filename = f"{self.settings['autosave_dir']}/{self.starttime.strftime('%Y%m%d')}_rta_result.png"
                                 self.obs.ws.save_source_screenshot('rta_sdvx_stats_v2.html', 'png', rta_filename, 3500, 2700, 100)
-                                print(f"RTAのリザルトを保存しました。")
+                                self.logToWindow(f"RTAのリザルトを保存しました。")
                                 self.obs.disable_source(tmps, tmpid)
                         except Exception:
                             pass
@@ -1309,7 +1319,7 @@ class SDVXHelper:
             elif ev == 'アップデートを確認':
                 ver = self.get_latest_version()
                 if ver != SWVER:
-                    print(f'現在のバージョン: {SWVER}, 最新版:{ver}')
+                    self.logToWindow(f'現在のバージョン: {SWVER}, 最新版:{ver}')
                     ans = sg.popup_yes_no(f'アップデートが見つかりました。\n\n{SWVER} -> {ver}\n\nアプリを終了して更新します。', icon=self.ico)
                     if ans == "Yes":
                         self.save_settings()
@@ -1321,7 +1331,7 @@ class SDVXHelper:
                         else:
                             sg.popup_error('update.exeがありません', icon=self.ico)
                 else:
-                    print(f'お使いのバージョンは最新です({SWVER})')
+                    self.logToWindow(f'{self.bundle.getText("message.version")} ({SWVER})')
 
             elif ev in ('btn_setting', '設定'):
                 self.stop_detect()
@@ -1417,15 +1427,15 @@ class SDVXHelper:
                     if sc <= 10000000:
                         ans = sg.popup_yes_no(f'以下の自己ベストを登録しますか？\ntitle:{title} ({diff})\nscore:{sc}, lamp:{lamp}, ACのスコアか?:{is_arcade}', icon=self.ico)
                         if ans == "Yes":
-                            print(f"選曲画面から自己ベストを登録しました。\n-> {title}({diff.upper()}): {sc:,}, {lamp}")
+                            self.logToWindow(f"選曲画面から自己ベストを登録しました。\n-> {title}({diff.upper()}): {sc:,}, {lamp}")
                             self.sdvx_logger.push(title, sc, 0, lamp, diff, fmtnow)
                             if self.rta_mode:
                                 self.rta_logger.push(title, sc, 0, lamp, diff, fmtnow)
                             self.check_rival_update() # お手紙ビューを更新
                     else:
-                        print(f'取得失敗。スキップします。({title},{diff},{sc},{lamp})')
+                        self.logToWindow(f'取得失敗。スキップします。({title},{diff},{sc},{lamp})')
                 else:
-                    print(f'選曲画面ではないのでスキップします。')                    
+                    self.logToWindow(f'選曲画面ではないのでスキップします。')                    
             elif ev == 'locale':
                 self.bundle = PoorManResourceBundle(val['locale'].lower())
                 self.defaultLocale = val['locale']

@@ -68,7 +68,7 @@ ignoredNames = {
 }
 
 directRemoves = {
-    '侵蝕コード：666　-今日ちょっと指（略-'
+    '侵蝕コード：666　-今日ちょっと指（略-',    
     }
 
 sdvx_logger = SDVXLogger("Throdax")
