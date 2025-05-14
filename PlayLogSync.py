@@ -42,7 +42,8 @@ specialTitles = {
         'MrVIRTUALIZER':'Mr.VIRTUALIZER',
         '#Fairy dancing in lake':'#Fairy_dancing_in_lake',
         '゜。Chantilly Fille。°':'゜*。Chantilly Fille。*°',
-        '侵蝕コード 666 -今日ちょっと指 (略-':'侵蝕コード : 666 -今日ちょっと指 (略-',
+        '侵蝕コード 666 -今日ちょっと指 (略-':'侵蝕コード：666　-今日ちょっと指（略-',
+        '侵蝕コード：666　-今日ちょっと指（略-':'侵蝕コード：666　-今日ちょっと指（略-',
         '隅田川夏恋歌IO Angel mix':'隅田川夏恋歌 (I/O Angel mix)',
         '隅田川純恋歌IO Angel mix':'隅田川夏恋歌 (I/O Angel mix)',
         '隅田川純恋歌I/O Angel mix':'隅田川夏恋歌 (I/O Angel mix)',
@@ -65,6 +66,10 @@ directOverides = {
 ignoredNames = {
     'Help me, CODYYYYYY!!'
 }
+
+directRemoves = {
+    '侵蝕コード：666　-今日ちょっと指（略-'
+    }
 
 sdvx_logger = SDVXLogger("Throdax")
 time_offset_seconds = 0
@@ -190,6 +195,17 @@ def main(songLogFolder, resultsFolder, rebuild):
         if rebuild : 
             print(f'Deleting and rebuilding play log!')
             songLog.clear()
+        else:
+            print('--------------------------------------------------')
+            print('Searching for direct removal songs...')
+            for i,song in enumerate(songLog) :
+                if song.title in directRemoves :
+                    print(f'Song \'{song.title}\' marked as direct removal. Removing from log...')
+                    songLog.pop(i)
+                    
+            print('Searching finishing.')
+            print('--------------------------------------------------')
+                    
     else :
         print(f'Cannot run log sync: alllog folder \'{songLogFolder}\' is not a folder', file=sys.stderr)
         exit(1)
