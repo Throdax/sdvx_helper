@@ -6,7 +6,7 @@ bundles = {}
 class PoorManResourceBundle:
     bundle = None
     
-    def __init__(self, locale:str='ja'):
+    def __init__(self, locale:str='JA'):
         """
         Initializes a PoorManResourceBundle instance with a specified locale.
     
@@ -18,7 +18,7 @@ class PoorManResourceBundle:
         """
         
         self.load_bundles()
-        self.bundle = bundles.get(locale.lower());
+        self.bundle = bundles.get(locale.upper());
 
     def load_bundle(self, bundle_file, locale):
         """
@@ -77,25 +77,11 @@ class PoorManResourceBundle:
             if bundle_file.startswith("messages_") and bundle_file.endswith(".properties"):
                 
                 locale = bundle_file[len("messages_"):-len(".properties")]
-                self.loadBundle(bundle_file, locale)
+                self.load_bundle(bundle_file, locale.upper())
                 
             else:
                 print(f'File "{bundle_file}" is not a valid bundle file. Skipping...')
         
-    def get_text(self, key: str):
-        """
-        Retrieves a list of all available locale bundles.
-    
-        This method returns the keys of the global `bundles` dictionary, which
-        represent the locales for which resource bundles have been loaded.
-    
-        :return: A list of available locale codes.
-        """
-        if self.bundle != None:
-            return self.bundle.get(key)
-        else:
-            raise RuntimeError('Bundle not initialized')
-
     def get_text(self, key: str, *args):
         """
         Formats a message using a key and a variable number of arguments.
@@ -106,15 +92,22 @@ class PoorManResourceBundle:
         :raises ValueError: If there are more arguments than placeholders.
         """
         try:
-            message = getText(key)
-            placeholder_count = message.count("{")
-
-            # Check if there are more arguments than placeholders
-            if len(args) > placeholder_count:
-                raise ValueError("Too many arguments provided for the placeholders in the key.")
+            if self.bundle != None:
+            
+                message = self.bundle.get(key)
+                if len(args) == 0 :
+                    return message
+                
+                placeholder_count = message.count("{")
     
-            # Format the message
-            return message.format(*args)
+                # Check if there are more arguments than placeholders
+                if len(args) > placeholder_count:
+                    raise ValueError("Too many arguments provided for the placeholders in the key.")
+        
+                # Format the message
+                return message.format(*args)
+            else:
+                    raise RuntimeError('Bundle not initialized')
         except IndexError as e:
             raise ValueError("Not enough arguments provided for the placeholders in the key.") from e
 
@@ -131,6 +124,6 @@ class PoorManResourceBundle:
 
 
 if __name__ == '__main__':
-    a = PoorManResourceBundle(locale='ja')        
+    a = PoorManResourceBundle(locale='JA')        
         
         

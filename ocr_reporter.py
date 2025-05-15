@@ -338,7 +338,7 @@ class Reporter:
         ]
         layout = [
             [
-                sg.Text('Language/言語', font=(None,16)),sg.Combo(['JA', 'EN'], key='locale', font=(None,16), default_value=self.defaultLocale,enable_events=True)
+                sg.Text('Language/言語', font=(None,16)),sg.Combo(self.bundle.get_available_bundles(), key='locale', font=(None,16), default_value=self.defaultLocale,enable_events=True)
             ],
             [ 
                 sg.Text('search:', font=(None,16)), sg.Input('', size=(40,1), key='filter', font=(None,16), enable_events=True), sg.Button('clear', font=(None,16)), sg.Text('('+self.i18n('text.registered')+': ', font=(None,16)), sg.Text('0', key='num_added_fumen', font=(None,16)), sg.Text(self.i18n('text.music_score')+')', font=(None,16))

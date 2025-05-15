@@ -58,6 +58,7 @@ class SDVXHelper:
     def __init__(self):
         self.defaultLocale = 'EN'
         self.bundle = PoorManResourceBundle(self.defaultLocale)
+        self.i18n = self.bundle.get_text
         self.ico=self.ico_path('icon.ico')
         self.detect_mode = detect_mode.init
         self.gui_mode    = gui_mode.init
@@ -98,7 +99,7 @@ class SDVXHelper:
             self.obs.change_text(self.settings['obs_txt_vf_with_diff'], vf_str)
 
         self.gen_summary = False
-        self.i18n = self.bundle.get_text
+        
         logger.debug('created.')
         logger.debug(f'settings:{self.settings}')
         
@@ -171,7 +172,7 @@ class SDVXHelper:
         ### 後から追加した値がない場合にもここでケア
         for k in default_val.keys():
             if not k in ret.keys():
-                self.logToWindow(f"{k} {self.i18n("message.settings.key.not.found")} ({default_val[k]} {self.i18n("message.settings.key.not.found.used")})")
+                self.logToWindow(f"{k} {self.i18n('message.settings.key.not.found')} ({default_val[k]} {self.i18n('message.settings.key.not.found.used')})")
                 ret[k] = default_val[k]
         self.settings = ret
         self.check_legacy_settings()
@@ -654,7 +655,7 @@ class SDVXHelper:
                 par_text(self.i18n('text.settings.rta.title')), par_text(self.i18n('text.settings.rta.target')), sg.Combo(list_vf, key='rta_target_vf', default_value=self.settings['rta_target_vf'], enable_events=True)
             ],
             [sg.Checkbox(self.i18n('checkbox.settings.blasterGaugeMax'),self.settings['alert_blastermax'],key='alert_blastermax', enable_events=True)],
-            [sg.Text(self.i18n('text.settings.logWindowTransparency'), sg.Combo([i for i in range(256)],default_value=self.settings['logpic_bg_alpha'],key='logpic_bg_alpha', enable_events=True)],
+            [sg.Text(self.i18n('text.settings.logWindowTransparency'), sg.Combo([i for i in range(256)],default_value=self.settings['logpic_bg_alpha'],key='logpic_bg_alpha', enable_events=True))],
             [sg.Checkbox(self.i18n('checkbox.settings.checkForUpdatesAtStart'),self.settings['auto_update'],key='chk_auto_update', enable_events=True)],
             [sg.Text(self.i18n('text.settings.statsPlayerName')),sg.Input(self.settings['player_name'], key='player_name', size=(30,1))],
             [sg.Checkbox(self.i18n('checkbox.settings.importFromSelect'),self.settings['import_from_select'],key='import_from_select', enable_events=True),sg.Checkbox(self.i18n('checkbox.settings.includeArcadeScores'),self.settings['import_arcade_score'],key='import_arcade_score', enable_events=True)],
