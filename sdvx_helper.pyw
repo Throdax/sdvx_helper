@@ -326,7 +326,7 @@ class SDVXHelper:
                                     out[p].append(new) # title, diff, score, diffだけ保持
                                     logger.debug(f'added! {new}')
                 if len(out[p]) > 0:
-                    self.logToWindow(f'{self.i18n("message.rivals.chalenge.received.part1")}:{p} {self.i18n("message.rivals.chalenge.received.part2")} {len(out[p])} {self.i18n("message.rivals.chalenge.received.part3")}')
+                    self.logToWindow(f'{self.i18n("message.rivals.chalenge.received.part",p,len(out[p]))}')
                 logger.debug(f'ライバル:{p}から挑戦状が{len(out[p])}件届いています。')
             #self.rival_log[p] = self.sdvx_logger.rival_score[i] # ライバルの一時スコアを保存する場合はこれ
 
@@ -641,7 +641,7 @@ class SDVXHelper:
             [sg.Button(self.i18n('button.settings.generateJackets'), key='gen_jacket_imgs')], 
             [sg.Checkbox(self.i18n('checkbox.settings.autoSaveCover'), self.settings['save_jacketimg'], key='save_jacketimg')],
             [
-                sg.Text(self.i18n('text.settings.textNumberOfNumbersPlayed'), tooltip=f'{self.i18n("text.settinss.textNumberOfNumbersPlayed.tooltip1")} {self.settings["obs_txt_plays"]} {self.i18n("text.settinss.textNumberOfNumbersPlayed.tooltip2")}'),
+                sg.Text(self.i18n('text.settings.textNumberOfNumbersPlayed'), tooltip=f'{self.i18n("text.settinss.textNumberOfNumbersPlayed.tooltip",self.settings["obs_txt_plays"])}'),
                 sg.Text(self.i18n('text.settings.textNumberOfNumbersPlayed.prefix'), tooltip=self.i18n('text.settings.textNumberOfNumbersPlayed.prefix.tooltip')),sg.Input(self.settings['obs_txt_plays_header'], key='obs_txt_plays_header', size=(10,1)),
                 sg.Text(self.i18n('text.settings.textNumberOfNumbersPlayed.suffix'), tooltip=self.i18n('text.settings.textNumberOfNumbersPlayed.suffix.tooltip')), sg.Input(self.settings['obs_txt_plays_footer'], key='obs_txt_plays_footer', size=(10,1)),
             ],
