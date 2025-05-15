@@ -98,7 +98,7 @@ class SDVXHelper:
             self.obs.change_text(self.settings['obs_txt_vf_with_diff'], vf_str)
 
         self.gen_summary = False
-        self.i18n = self.bundle.getText
+        self.i18n = self.bundle.get_text
         logger.debug('created.')
         logger.debug(f'settings:{self.settings}')
         
