@@ -685,7 +685,7 @@ class SDVXHelper:
         layout = [
             [sg.Menubar(menuitems, key='menu')],
             [
-                sg.Text('Language/言語', font=(None,12)),sg.Combo(['JA', 'EN'], key='locale', font=(None,12), default_value=self.defaultLocale,enable_events=True)
+                sg.Text('Language/言語', font=(None,12)),sg.Combo(self.bundle.get_available_bundles(), key='locale', font=(None,12), default_value=self.defaultLocale,enable_events=True)
             ],
             [
                 par_text(f'{self.i18n("text.main.plays")}:'), par_text(str(self.plays), key='txt_plays')
