@@ -5,6 +5,7 @@ bundles = {}
 
 class PoorManResourceBundle:
     bundle = None
+    activeLocale = None
     
     def __init__(self, locale:str='JA'):
         """
@@ -19,6 +20,7 @@ class PoorManResourceBundle:
         
         self.load_bundles()
         self.bundle = bundles.get(locale.upper());
+        self.activeLocale = locale
 
     def load_bundle(self, bundle_file, locale):
         """
@@ -95,6 +97,10 @@ class PoorManResourceBundle:
             if self.bundle != None:
             
                 message = self.bundle.get(key)
+                
+                if message is None :
+                    raise ValueError(f"No i18n message for key '{key}' in bundle '{self.activeLocale}'")
+                
                 if len(args) == 0 :
                     return message
                 

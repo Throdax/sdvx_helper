@@ -422,7 +422,7 @@ def dump(songLogFolder, songListFolder):
         
     print(f'Writing XML to {songLogFolder}/played_songs.xml')
     ET.indent(xmlTree, space="\t", level=0)
-    xmlTree.write(songLogFolder+"/played_songs.xml",encoding="UTF-8",xml_declaration=True)
+    xmlTree.write(songLogFolder+"played_songs.xml",encoding="UTF-8",xml_declaration=True)
         
         
 if __name__ == '__main__':
