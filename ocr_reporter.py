@@ -47,6 +47,7 @@ class Reporter:
         self.defaultLocale = 'EN'
         self.bundle = PoorManResourceBundle(self.defaultLocale)
         self.i18n = self.bundle.get_text
+        
         start = datetime.datetime.now()
         self.load_settings()
         if chk_update:
@@ -356,9 +357,9 @@ class Reporter:
             [sg.Image(None, size=(100,100), key='jacket'), sg.Column(layout_info)]
         ]
         if not refresh : 
-            self.window = sg.Window(f"{self.i18n('window.title')}", layout, resizable=True, grab_anywhere=True,return_keyboard_events=True,finalize=True,enable_close_attempted_event=True,icon=self.ico,location=(self.settings['lx'], self.settings['ly']), size=(900,780))
+            self.window = sg.Window(f"{self.i18n('window.ocr.title')}", layout, resizable=True, grab_anywhere=True,return_keyboard_events=True,finalize=True,enable_close_attempted_event=True,icon=self.ico,location=(self.settings['lx'], self.settings['ly']), size=(900,780))
         else :
-            self.window.Title = self.i18n('window.title')
+            self.window.Title = self.i18n('window.ocr.title')
              
         self.window['musics'].expand(expand_x=True, expand_y=True)
         self.window['files'].expand(expand_x=True, expand_y=True)
@@ -582,6 +583,7 @@ class Reporter:
             elif ev == 'locale':
                 self.bundle = PoorManResourceBundle(val['locale'].lower())
                 self.defaultLocale = val['locale']
+                self.i18n = self.bundle.get_text
                 self.window.close()
                 self.gui(False)
                 self.applyColoring()

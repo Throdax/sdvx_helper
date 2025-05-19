@@ -44,6 +44,10 @@ lamp_table = ['FAILED', 'COMP', 'EXC', 'UC', 'PUC']
 
 class ScoreViewer:
     def __init__(self):
+        self.defaultLocale = 'EN'
+        self.bundle = PoorManResourceBundle(self.defaultLocale)
+        self.i18n = self.bundle.get_text
+        
         self.load_settings()
         self.update_musiclist()
         self.load_musiclist()
@@ -122,33 +126,33 @@ class ScoreViewer:
     
     def gui(self):
         layout_filter = [
-            [sg.Checkbox('all', key='alllv', default=True, enable_events=True)],
+            [sg.Checkbox(self.i18n('checkbox.score.filter.all'), key='alllv', default=True, enable_events=True)],
             [sg.Checkbox(f"{lv:02d}", key=f'lv{lv}', default=True, enable_events=True) for lv in range(1,11)],
             [sg.Checkbox(lv, key=f'lv{lv}', default=True, enable_events=True) for lv in range(11,21)],
-            [par_text('search'), sg.Input('', key='txt_filter', enable_events=True), par_btn('clear', key='btn_clear')]
+            [par_text(self.i18n('text.score.search')), sg.Input('', key='txt_filter', enable_events=True), par_btn('clear', key='btn_clear')]
         ]
         layout_sort = [
             [
-                sg.Radio('降順', key='order_descend', group_id='order', default=True, enable_events=True),
-                sg.Radio('昇順', group_id='order', key='order_ascend', enable_events=True),
+                sg.Radio(self.i18n('radio.score.order.descending'), key='order_descend', group_id='order', default=True, enable_events=True),
+                sg.Radio(self.i18n('radio.score.order.ascending'), group_id='order', key='order_ascend', enable_events=True),
             ],
-            [par_text('ソート対象')],
+            [par_text(self.i18n('text.score.sort'))],
             [
-                sg.Radio('VF', group_id='sort_key', enable_events=True, key='sort_vf', default=True),
-                sg.Radio('Lv', group_id='sort_key', enable_events=True, key='sort_lv'),
-                sg.Radio('Tier', group_id='sort_key', enable_events=True, key='sort_tier'),
-                sg.Radio('曲名', group_id='sort_key', enable_events=True, key='sort_title'),
+                sg.Radio(self.i18n('text.score.sort.byVolforce'), group_id='sort_key', enable_events=True, key='sort_vf', default=True),
+                sg.Radio(self.i18n('text.score.sort.byLevel'), group_id='sort_key', enable_events=True, key='sort_lv'),
+                sg.Radio(self.i18n('text.score.sort.byTier'), group_id='sort_key', enable_events=True, key='sort_tier'),
+                sg.Radio(self.i18n('text.score.sort.byTitle'), group_id='sort_key', enable_events=True, key='sort_title'),
             ],
             [
-                sg.Radio('スコア', group_id='sort_key', enable_events=True, key='sort_score'),
-                sg.Radio('ランプ', group_id='sort_key', enable_events=True, key='sort_lamp'),
-                sg.Radio('最終プレー日', group_id='sort_key', enable_events=True, key='sort_date'),
+                sg.Radio(self.i18n('text.score.sort.byScore'), group_id='sort_key', enable_events=True, key='sort_score'),
+                sg.Radio(self.i18n('text.score.sort.byLamp'), group_id='sort_key', enable_events=True, key='sort_lamp'),
+                sg.Radio(self.i18n('text.score.sort.byDate'), group_id='sort_key', enable_events=True, key='sort_date'),
             ],
         ]
         layout_edit = [
             [sg.Text('', key='edit_title')],
             [sg.Listbox([], size=(40,4), key='edit_list', enable_events=True)],
-            [sg.Button('削除', key='edit_delete', enable_events=True),],
+            [sg.Button(self.i18n('button.score.delete'), key='edit_delete', enable_events=True),],
         ]
         layout_rival = [
             [
@@ -168,9 +172,19 @@ class ScoreViewer:
                 )
             ]
         ]
-        header = ['lv', 'Tier', 'title', 'diff', 'score', 'lamp', 'VF', 'last played']
+        header = [self.i18n('table.header.level'),
+                  self.i18n('table.header.tier'),
+                  self.i18n('table.header.title'),
+                  self.i18n('table.header.difficulty'),
+                  self.i18n('table.header.score'),
+                  self.i18n('table.header.lamp'),
+                  self.i18n('table.header.volforce'),
+                  self.i18n('table.header.lastPlayed')]
         layout = [
-            [sg.Frame(title='filter', layout=layout_filter), sg.Frame(title='sort', layout=layout_sort), sg.Frame(title='Rival', layout=layout_rival), sg.Frame(title='edit', layout=layout_edit)],
+            [
+                sg.Text('Language/言語', font=(None,16)),sg.Combo(self.bundle.get_available_bundles(), key='locale', font=(None,16), default_value=self.defaultLocale,enable_events=True)
+            ],
+            [sg.Frame(title=self.i18n('text.score.frame.filter'), layout=layout_filter), sg.Frame(title=self.i18n('text.score.frame.sort'), layout=layout_sort), sg.Frame(title=self.i18n('text.score.frame.rival'), layout=layout_rival), sg.Frame(title=self.i18n('text.score.frame.edit'), layout=layout_edit)],
             [
                 sg.Table(
                     []
@@ -189,7 +203,7 @@ class ScoreViewer:
             ]
         ]
         ico = self.ico_path('icon.ico')
-        self.window = sg.Window("sdvx_helper score viewer", layout, resizable=True, return_keyboard_events=True, finalize=True, enable_close_attempted_event=True, icon=ico, size=(800,600))
+        self.window = sg.Window(self.i18n('window.score.title'), layout, resizable=True, return_keyboard_events=True, finalize=True, enable_close_attempted_event=True, icon=ico, size=(800,600))
         self.window['table'].expand(expand_x=True, expand_y=True)
         self.update_table()
 
@@ -409,6 +423,12 @@ class ScoreViewer:
                     self.update_edit_list(val)
                 except Exception:
                     print(traceback.format_exc())
+            elif ev == 'locale':
+                self.bundle = PoorManResourceBundle(val['locale'])
+                self.defaultLocale = val['locale']
+                self.i18n = self.bundle.get_text
+                self.window.close()
+                self.gui()                
     
 if __name__ == '__main__':
     #b = SDVXLogger()

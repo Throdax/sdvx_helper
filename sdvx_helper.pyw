@@ -596,8 +596,8 @@ class SDVXHelper:
             [sg.Frame(self.i18n("text.obs.settings.resultScreen"),layout=layout_result, title_color='#000044')],
         ]
         layout_r = [
-            [sg.Frame(self.i18n('text.obs.settings.keyStrokeActivation'.start), layout=layout_boot, title_color='#000044')],
-            [sg.Frame(self.i18n('text.obs.settings.keyStrokeActivation'.end), layout=layout_quit, title_color='#000044')],
+            [sg.Frame(self.i18n('text.obs.settings.keyStrokeActivation.start'), layout=layout_boot, title_color='#000044')],
+            [sg.Frame(self.i18n('text.obs.settings.keyStrokeActivation.end'), layout=layout_quit, title_color='#000044')],
         ]
 
         col_l = sg.Column(layout_r)
@@ -655,7 +655,7 @@ class SDVXHelper:
                 par_text(self.i18n('text.settings.rta.title')), par_text(self.i18n('text.settings.rta.target')), sg.Combo(list_vf, key='rta_target_vf', default_value=self.settings['rta_target_vf'], enable_events=True)
             ],
             [sg.Checkbox(self.i18n('checkbox.settings.blasterGaugeMax'),self.settings['alert_blastermax'],key='alert_blastermax', enable_events=True)],
-            [sg.Text(self.i18n('text.settings.logWindowTransparency'), sg.Combo([i for i in range(256)],default_value=self.settings['logpic_bg_alpha'],key='logpic_bg_alpha', enable_events=True))],
+            [sg.Text(self.i18n('text.settings.logWindowTransparency')), sg.Combo([i for i in range(256)],default_value=self.settings['logpic_bg_alpha'],key='logpic_bg_alpha', enable_events=True)],
             [sg.Checkbox(self.i18n('checkbox.settings.checkForUpdatesAtStart'),self.settings['auto_update'],key='chk_auto_update', enable_events=True)],
             [sg.Text(self.i18n('text.settings.statsPlayerName')),sg.Input(self.settings['player_name'], key='player_name', size=(30,1))],
             [sg.Checkbox(self.i18n('checkbox.settings.importFromSelect'),self.settings['import_from_select'],key='import_from_select', enable_events=True),sg.Checkbox(self.i18n('checkbox.settings.includeArcadeScores'),self.settings['import_arcade_score'],key='import_arcade_score', enable_events=True)],
@@ -1258,13 +1258,13 @@ class SDVXHelper:
                     except Exception as e:
                         print(traceback.format_exc())
             
-            elif ev == 'OBS制御設定':
+            elif ev == self.i18n('menu.file.obs'):
                 self.stop_detect()
                 if self.connect_obs():
                     self.gui_obs_control()
                 else:
                     sg.popup_error(self.i18n('popup.obsFail'))
-            elif ev == 'RTA開始':
+            elif ev == self.i18n('menu.rta.start'):
                 self.start_rta_mode()
             elif ev == 'btn_savefig':
                 self.save_screenshot_general()
@@ -1318,7 +1318,7 @@ class SDVXHelper:
                     self.settings['my_googledrive'] = tmp
                     self.window['txt_my_googledrive'].update(tmp)
 
-            elif ev == 'アップデートを確認':
+            elif ev == self.i18n('menu.file.updates'):
                 ver = self.get_latest_version()
                 if ver != SWVER:
                     self.logToWindow(f'{self.i18n("message.main.currentVersion")}: {SWVER}, {self.i18n("message.main.latestVersion")}: {ver}')
@@ -1335,7 +1335,7 @@ class SDVXHelper:
                 else:
                     self.logToWindow(f'{self.i18n("message.version")} ({SWVER})')
 
-            elif ev in ('btn_setting', '設定'):
+            elif ev in ('btn_setting', self.i18n('menu.file.settings')):
                 self.stop_detect()
                 self.gui_setting()
             elif ev == 'read_from_result':
@@ -1343,13 +1343,13 @@ class SDVXHelper:
             elif ev == 'gen_jacket_imgs':
                 self.sdvx_logger.gen_jacket_imgs()
             ### webhook関連
-            elif ev == 'カスタムWebhook設定':
+            elif ev == self.i18n('menu.file.webhook'):
                 self.stop_detect()
                 self.gui_webhook()
-            elif ev == 'Googleドライブ設定(ライバル関連)':
+            elif ev == self.i18n('menu.rivals.google'):
                 self.stop_detect()
                 self.gui_googledrive()
-            elif ev == 'ライバルのスコアを取得':
+            elif ev == self.i18n('menu.rivals.get'):
                 self.update_rival()
             elif ev == 'webhook_add':
                 self.webhook_add(val)
@@ -1393,11 +1393,11 @@ class SDVXHelper:
                     webbrowser.open(f"https://drive.google.com/file/d/{id}/view")
 
             ### ツイート機能
-            elif ev == 'VF内訳をツイート':
+            elif ev == self.i18n('menu.analysis.tweet'):
                 msg = self.sdvx_logger.analyze()
                 encoded_msg = urllib.parse.quote(f"{msg}")
                 webbrowser.open(f"https://twitter.com/intent/tweet?text={encoded_msg}")
-            elif ev == '全プレーログをCSV出力':
+            elif ev == self.i18n('menu.analysis.csv'):
                 tmp = filedialog.asksaveasfilename(defaultextension='csv', filetypes=[("csv file", "*.csv")], initialdir='./', initialfile='sdvx_helper_alllog.csv')
                 if tmp != '':
                     ret = self.sdvx_logger.gen_alllog_csv(tmp)
@@ -1405,7 +1405,7 @@ class SDVXHelper:
                         sg.popup_ok(f'{self.i18n("popup.csvOutput.success")}\n\n(-> {tmp})')
                     else:
                         sg.popup_error(self.i18n('popup.csvOutput.fail'))
-            elif ev == '自己ベストをCSV出力':
+            elif ev == self.i18n('menu.analysis.csvBest'):
                 tmp = filedialog.asksaveasfilename(defaultextension='csv', filetypes=[("csv file", "*.csv")], initialdir='./', initialfile='sdvx_helper_best.csv')
                 if tmp != '':
                     ret = self.sdvx_logger.gen_best_csv(tmp)
@@ -1441,6 +1441,7 @@ class SDVXHelper:
             elif ev == 'locale':
                 self.bundle = PoorManResourceBundle(val['locale'].lower())
                 self.defaultLocale = val['locale']
+                self.i18n = self.bundle.get_text
                 self.window.close()
                 self.gui_main()
 
