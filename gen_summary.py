@@ -502,8 +502,8 @@ class GenSummary:
             hash_exh = imagehash.average_hash(Image.open('resources/difficulty_exh.png'))
             hash_cur = imagehash.average_hash(diff)
 
-            hash_jacket = imagehash.average_hash(self.result_parts['jacket_org'])
-            hash_info   = imagehash.average_hash(self.result_parts['info'])
+            hash_jacket = imagehash.average_hash(self.result_parts['jacket_org'],10)
+            hash_info   = imagehash.average_hash(self.result_parts['info'],10)
             rsum = np.array(diff)[:,:,0].sum()
             gsum = np.array(diff)[:,:,1].sum()
             bsum = np.array(diff)[:,:,2].sum()
@@ -516,9 +516,10 @@ class GenSummary:
             else:
                 difficulty = 'APPEND'
             self.difficulty = difficulty
+            
             for h in self.musiclist_hash['jacket'][difficulty].keys():
                 h = imagehash.hex_to_hash(h)
-                if abs(h - hash_jacket) < 5:
+                if len(h) == len(hash_jacket) and abs(h - hash_jacket) == 0:
                     self.hash_hit = h
                     if self.settings['save_jacketimg']:
                         tt = f"jackets/{str(h)}.png"
@@ -526,8 +527,10 @@ class GenSummary:
                             self.result_parts['jacket_org'].save(tt)
                     detected = True
                     ret = self.musiclist_hash['jacket'][difficulty][str(h)]
-                    logger.debug(f"OCR pass: {abs(h - hash_jacket)<5}, h:{str(h)}, cur:{str(hash_jacket)}, diff:{abs(h - hash_jacket)<5}")
+                    logger.debug(f"OCR pass: {abs(h - hash_jacket)==0}, h:{str(h)}, cur:{str(hash_jacket)}, diff:{abs(h - hash_jacket)==0}")
                     break
+                elif len(h) == len(hash_jacket) :
+                    logger.debug(f"Comparing old length hash (8) with new length hash (10): {str(hash_jacket)}. Skipping...")
             if not detected:
                 if notify and self.settings['send_webhook']:
                     self.send_webhook()

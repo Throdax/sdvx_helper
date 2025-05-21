@@ -213,6 +213,9 @@ class SDVXHelper:
             title = res_ocr
             for ch in ('\\', '/', ':', '*', '?', '"', '<', '>', '|'):
                 title = title.replace(ch, '')
+            # The OCR reader doesn't handle well spaces in the file name and will re-add them, so might as well add them here    
+            for ch in (' ', '　'):
+                title = title.replace(ch, '_')
             dst = f"{self.settings['autosave_dir']}/sdvx_{title[:120]}_{self.gen_summary.difficulty.upper()}_{self.gen_summary.lamp}_{str(cur)[:-4]}_{fmtnow}.png"
         tmp.save(dst)
         lamp = ''

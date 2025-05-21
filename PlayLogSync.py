@@ -51,7 +51,9 @@ specialTitles = {
         'Heartache  心の痛み':'Heartache / 心の痛み',
         'Chantilly Fille':'゜*。Chantilly Fille。*°',
         'infinite youniverse':'infinite:youniverse',
-        'infiniteyouniverse':'infinite:youniverse'
+        'infiniteyouniverse':'infinite:youniverse',
+        '#FairyJoke #SDVX Edit':'#FairyJoke #SDVX_Edit',
+        'Spear of Justice  正義の槍':'Spear of Justice / 正義の槍'
     }
 
 directOverides = {

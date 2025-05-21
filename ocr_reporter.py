@@ -348,7 +348,7 @@ class Reporter:
                 sg.Text('title:', font=(None,16)), sg.Input('', key='txt_title', font=(None,16), size=(50,1))
             ],
             [
-                sg.Text('hash_jacket:', font=(None,16)), sg.Input('', key='hash_jacket', size=(20,1), font=(None,16)), sg.Text('hash_info:'), sg.Input('', key='hash_info', size=(20,1))
+                sg.Text('hash_jacket:', font=(None,16)), sg.Input('', key='hash_jacket', size=(25,1), font=(None,16)), sg.Text('hash_info:',font=(None,16)), sg.Input('', key='hash_info', size=(25,1),font=(None,16))
                 ,sg.Text(self.i18n('text.difficulty')+':', font=(None,16)), sg.Combo(['', 'nov', 'adv', 'exh', 'APPEND'], key='combo_difficulty', font=(None,16))
             ],
             [sg.Button(self.i18n('button.resgister'), key='register'), sg.Button(self.i18n('button.rescan'), key='coloring')],
@@ -433,6 +433,8 @@ class Reporter:
     def do_coloring(self):
         self.gen_summary.load_hashes()
         resultFiles = list(self.gen_summary.get_result_files())
+        found = 0
+        not_found = 0
         for i,f in enumerate(resultFiles):
             try:
                 img = Image.open(f)
@@ -459,14 +461,18 @@ class Reporter:
                         os.rename(f, dst)
                     except Exception:
                         print(f'{self.i18n("log.filename.exists")} ({dst})')
+                    
+                    found = found + 1
             else:
                 self.filelist_bgcolor[i][1] = '#dddddd'
                 self.filelist_bgcolor[i][2] = '#333333'
                 
+                not_found =  not_found + 1
+                
             self.updateColoringStatus(i+1,len(resultFiles))    
                        
         self.applyColoring()
-        self.window['state'].update(self.i18n('message.coloring.complete'), text_color='#000000')
+        self.window['state'].update(self.i18n('message.coloring.complete',found,not_found), text_color='#000000')
 
     def main(self):
         while True:
@@ -490,8 +496,8 @@ class Reporter:
                             self.window['info'].update('out/tmp_info.png')
                             self.window['difficulty'].update('out/tmp_difficulty.png')
                             self.window['state'].update('')
-                            self.window['hash_jacket'].update(str(imagehash.average_hash(parts['jacket_org'])))
-                            self.window['hash_info'].update(str(imagehash.average_hash(parts['info'])))
+                            self.window['hash_jacket'].update(str(imagehash.average_hash(parts['jacket_org'],10)))
+                            self.window['hash_info'].update(str(imagehash.average_hash(parts['info'],10)))
                             res_ocr = self.gen_summary.ocr()
                             if self.gen_summary.difficulty != False:
                                 self.window['combo_difficulty'].update(self.gen_summary.difficulty)
