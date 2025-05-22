@@ -23,6 +23,8 @@ from tkinter import filedialog
 import re
 from poor_man_resource_bundle import *
 import concurrent.futures
+#from datetime import * 
+
 
 SETTING_FILE = 'settings.json'
 sg.theme('SystemDefault')
@@ -48,18 +50,19 @@ class Reporter:
     color_lock = threading.Lock()
     ocr_found = 0
     ocr_not_found = 0
+    ocr_processed = 0
     
     def __init__(self, chk_update:bool=True):
         self.default_locale = 'EN'
         self.bundle = PoorManResourceBundle(self.default_locale)
         self.i18n = self.bundle.get_text
         
-        start = datetime.datetime.now()
+        self.start = datetime.datetime.now()
         self.load_settings()
         if chk_update:
             self.update_musiclist()
         #self.gen_summary = GenSummary(start,autosave_dir='D:/Tools/SoundVoltex/results')
-        self.gen_summary = GenSummary(start)
+        self.gen_summary = GenSummary(self.start)
         self.load_musiclist()
         self.read_bemaniwiki()
         self.ico=self.ico_path('icon.ico')
@@ -436,22 +439,22 @@ class Reporter:
     def update_coloring_status(self,current,total):
         self.window['state'].update(self.i18n('message.coloring')+' ('+str(current)+'/'+str(total)+') ', text_color='#000000')
         
-    def color_file(self,i:int, f:str):
+    def color_file(self,parent,i:int, f:str):
         
-        gen_summary_local = GenSummary(start)
+        gen_summary_local = GenSummary(parent.start)        
         
         try:
             img = Image.open(f)
         except Exception:
             print(f'{self.i18n("log.file.not.ocr_found")} ({f})')
-            continue
+            return
         if gen_summary_local.is_result(img):
             gen_summary_local.cut_result_parts(img)
             res = gen_summary_local.ocr()
             if res != False:
-                with color_lock :
-                    self.filelist_bgcolor[i][1] = '#dddddd'
-                    self.filelist_bgcolor[i][2] = '#333333'
+                with parent.color_lock :
+                    parent.filelist_bgcolor[i][1] = '#dddddd'
+                    parent.filelist_bgcolor[i][2] = '#333333'
                 title = res
                 cur,pre = gen_summary_local.get_score(img)
                 ts = os.path.getmtime(f)
@@ -461,19 +464,25 @@ class Reporter:
                     title = title.replace(ch, '')
                 for ch in (' ', '　'):
                     title = title.replace(ch, '_')
-                dst = f"{self.settings['autosave_dir']}/sdvx_{title[:120]}_{gen_summary_local.difficulty.upper()}_{gen_summary_local.lamp}_{str(cur)[:-4]}_{fmtnow}.png"
+                dst = f"{parent.settings['autosave_dir']}/sdvx_{title[:120]}_{gen_summary_local.difficulty.upper()}_{gen_summary_local.lamp}_{str(cur)[:-4]}_{fmtnow}.png"
                 try:
                     os.rename(f, dst)
                 except Exception:
-                    print(f'{self.i18n("log.filename.exists")} ({dst})')
+                    print(f'{parent.i18n("log.filename.exists")} ({dst})')
                 
-                with color_lock : self.found = self.found + 1
+                with parent.color_lock : parent.ocr_found += 1
+            else :
+                with parent.color_lock :
+                    parent.ocr_not_found += 1  
         else:
-            with color_lock :
-                self.filelist_bgcolor[i][1] = '#dddddd'
-                self.filelist_bgcolor[i][2] = '#333333'
+            with parent.color_lock :
+                parent.filelist_bgcolor[i][1] = '#dddddd'
+                parent.filelist_bgcolor[i][2] = '#333333'
             
-                self.not_found =  self.not_found + 1                
+        
+#        with parent.color_lock :
+#            parent.ocr_processed += 1
+        return [parent.filelist_bgcolor[i][1],parent.filelist_bgcolor[i][2],parent.ocr_found,parent.ocr_not_found]
             
     
     # ファイル一覧に対し、OCR結果に応じた色を付ける
@@ -481,15 +490,35 @@ class Reporter:
         self.gen_summary.load_hashes()
         result_files = list(self.gen_summary.get_result_files())
         
-        with ThreadPoolExecutor(max_workers=10) as executor:
-            future_color = {executor.submit(self.color_file, i, f): (i,f) for i,f in enumerate(result_files)}
-            for future in concurrent.futures.as_completed(future_color) :
-                with color_lock :
-                    self.update_coloring_status(future_color[future][0]+1,len(result_files))
+        ocr_processed = 0
+        
+        dt_start = datetime.datetime.now()
+        
+        # Not as fast as I would though. Python threads...
+#        with concurrent.futures.ThreadPoolExecutor(max_workers=20) as executor:
+#            future_color = {executor.submit(self.color_file, self, i, f): (i,f) for i,f in enumerate(result_files)}
+#            for future in concurrent.futures.as_completed(future_color) :
+#                ocr_processed += 1
+#                inputs = future_color[future]
+#                outputs = future.result()
+#                self.filelist_bgcolor[inputs[0]][1] = outputs[0]
+#                self.filelist_bgcolor[inputs[0]][2] = outputs[1]
+#                self.ocr_found += outputs[2]
+#                self.ocr_not_found += outputs[3] 
+#                self.update_coloring_status(ocr_processed,len(result_files))
+
+        # Non threaded mode, the original mode
+        for i,f in enumerate(result_files) :
+            self.color_file(self, i, f)
+            self.update_coloring_status(i+1,len(result_files))
                        
         self.apply_coloring()
-        self.window['state'].update(self.i18n('message.coloring.complete',found,not_found), text_color='#000000')
-
+         
+        dt_end = datetime.datetime.now()
+        duration = dt_end - dt_start
+         
+        self.window['state'].update(self.i18n('message.coloring.complete',self.ocr_not_found,self.ocr_found,round(duration.total_seconds(),2)), text_color='#000000')
+        
     def main(self):
         while True:
             ev, val = self.window.read()
