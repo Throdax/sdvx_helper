@@ -437,20 +437,23 @@ class Reporter:
         self.window['state'].update(self.i18n('message.coloring')+' ('+str(current)+'/'+str(total)+') ', text_color='#000000')
         
     def color_file(self,i:int, f:str):
+        
+        gen_summary_local = GenSummary(start)
+        
         try:
             img = Image.open(f)
         except Exception:
             print(f'{self.i18n("log.file.not.ocr_found")} ({f})')
             continue
-        if self.gen_summary.is_result(img):
-            self.gen_summary.cut_result_parts(img)
-            res = self.gen_summary.ocr()
+        if gen_summary_local.is_result(img):
+            gen_summary_local.cut_result_parts(img)
+            res = gen_summary_local.ocr()
             if res != False:
                 with color_lock :
                     self.filelist_bgcolor[i][1] = '#dddddd'
                     self.filelist_bgcolor[i][2] = '#333333'
                 title = res
-                cur,pre = self.gen_summary.get_score(img)
+                cur,pre = gen_summary_local.get_score(img)
                 ts = os.path.getmtime(f)
                 now = datetime.datetime.fromtimestamp(ts)
                 fmtnow = format(now, "%Y%m%d_%H%M%S")
@@ -458,7 +461,7 @@ class Reporter:
                     title = title.replace(ch, '')
                 for ch in (' ', '　'):
                     title = title.replace(ch, '_')
-                dst = f"{self.settings['autosave_dir']}/sdvx_{title[:120]}_{self.gen_summary.difficulty.upper()}_{self.gen_summary.lamp}_{str(cur)[:-4]}_{fmtnow}.png"
+                dst = f"{self.settings['autosave_dir']}/sdvx_{title[:120]}_{gen_summary_local.difficulty.upper()}_{gen_summary_local.lamp}_{str(cur)[:-4]}_{fmtnow}.png"
                 try:
                     os.rename(f, dst)
                 except Exception:
