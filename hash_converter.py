@@ -2,6 +2,7 @@
 # musiclist.pklに手動追加するやつなど
 import pickle
 from gen_summary import *
+from datetime import datetime, timedelta 
 
 def load():
     ret = None
@@ -23,7 +24,7 @@ if __name__ == '__main__':
     root_folder = 'D:/Tools/SoundVoltex/results'
 
     start = datetime(year=2023, month=10, day=15, hour=0)
-    gen_summary = GenSummary(start, rootFolder + '/sync', 'true', 255, 2)
+    gen_summary = GenSummary(start, root_folder + '/sync', 'true', 255, 2)
     
     results = os.listdir(root_folder)
     results.sort(key=lambda s: os.path.getctime(os.path.join(root_folder, s)))
@@ -34,21 +35,22 @@ if __name__ == '__main__':
         img = Image.open(root_folder+'/'+playScreenshotFileName)
         
         if gen_summary.is_result(img):
-            gen_summary.cut_result_parts(img)
-            res = gen_summary.ocr()
+            parts = gen_summary.cut_result_parts(img)
+            res = gen_summary.ocr(hash_size=8)
             if res != False:
                 title = res
                 diff = gen_summary.difficulty
                 
                 existing_hash = a['jacket'][diff][title]
                 
-                if len(existing_hash) == 64 :
-                    print(f'Old hash found for {title} {diff}, Upading...')
-                    new_hash = gen_summary.hash_jacket
-                    new_info = gen_summary.hash_info
-                    a['jacket'][diff][title] = new_hash
-                    a['info'][diff][title] = new_hash
-                    print(f'Updated {title} {diff} hash to {new_hash}')
+                if len(str(existing_hash)) == 16 :
+                    
+                    print(f'[{title}-{diff}] Old hash: {existing_hash}')
+                    new_hash = imagehash.average_hash(parts['jacket_org'],10)
+                    new_info = imagehash.average_hash(parts['info'],10)
+                    a['jacket'][diff][title] = str(new_hash)
+                    a['info'][diff][title] = str(new_hash)
+                    print(f'[{title}-{diff}] New hash: {new_hash}')
                     updated_hashes += 1
         
         
