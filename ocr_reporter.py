@@ -21,7 +21,7 @@ import urllib
 import logging, logging.handlers
 from tkinter import filedialog
 import re
-from PoorManResourceBundle import *
+from poor_man_resource_bundle import *
 import concurrent.futures
 
 SETTING_FILE = 'settings.json'
@@ -50,8 +50,8 @@ class Reporter:
     ocr_not_found = 0
     
     def __init__(self, chk_update:bool=True):
-        self.defaultLocale = 'EN'
-        self.bundle = PoorManResourceBundle(self.defaultLocale)
+        self.default_locale = 'EN'
+        self.bundle = PoorManResourceBundle(self.default_locale)
         self.i18n = self.bundle.get_text
         
         start = datetime.datetime.now()
@@ -156,6 +156,8 @@ class Reporter:
     def read_bemaniwiki(self):
         req = requests.get('https://bemaniwiki.com/index.php?%A5%B3%A5%CA%A5%B9%A5%C6/SOUND+VOLTEX+EXCEED+GEAR/%B3%DA%B6%CA%A5%EA%A5%B9%A5%C8')
 
+        stop_string = '[STOP]'
+
         soup = BeautifulSoup(req.text, 'html.parser')
         titles = self.musiclist['titles']
         for tr in soup.find_all('tr'):
@@ -165,26 +167,26 @@ class Reporter:
                 if tds[2].text != 'BPM':
                     tmp = [tds[0].text, tds[1].text, tds[2].text]
                     
-                    novText = tds[3].text
-                    if novText.startswith('[STOP]') :
-                        novText = novText[len('[STOP]')].strip()
-                    tmp.append(int(novText))
+                    nov_text = tds[3].text
+                    if nov_text.startswith(stop_string) :
+                        nov_text = nov_text[len(stop_string)].strip()
+                    tmp.append(int(nov_text))
                     
-                    advText = tds[4].text
-                    if advText.startswith('[STOP]') :
-                        advText = advText[len('[STOP]')].strip()
-                    tmp.append(int(advText))
+                    adv_text = tds[4].text
+                    if adv_text.startswith(stop_string) :
+                        adv_text = adv_text[len(stop_string)].strip()
+                    tmp.append(int(adv_text))
                                         
-                    exhText = tds[5].text
-                    if exhText.startswith('[STOP]') :
-                        exhText = exhText[len('[STOP]')].strip()
-                    tmp.append(int(exhText))
+                    exh_text = tds[5].text
+                    if exh_text.startswith(stop_string) :
+                        exh_text = exh_text[len(stop_string)].strip()
+                    tmp.append(int(exh_text))
                                         
                     if tds[6].text not in ('', '-'):
-                        appendText = tds[6].text
-                        if appendText.startswith('[STOP]') :
-                            appendText = appendText[len('[STOP]')].strip()
-                        tmp.append(int(appendText))
+                        append_text = tds[6].text
+                        if append_text.startswith(stop_string) :
+                            append_text = append_text[len(stop_string)].strip()
+                        tmp.append(int(append_text))
                     else:
                         tmp.append(None)
                     titles[tds[0].text] = tmp
@@ -345,7 +347,7 @@ class Reporter:
         ]
         layout = [
             [
-                sg.Text('Language/言語', font=(None,16)),sg.Combo(self.bundle.get_available_bundles(), key='locale', font=(None,16), default_value=self.defaultLocale,enable_events=True)
+                sg.Text('Language/言語', font=(None,16)),sg.Combo(self.bundle.get_available_bundles(), key='locale', font=(None,16), default_value=self.default_locale,enable_events=True)
             ],
             [ 
                 sg.Text('search:', font=(None,16)), sg.Input('', size=(40,1), key='filter', font=(None,16), enable_events=True), sg.Button('clear', font=(None,16)), sg.Text('('+self.i18n('text.registered')+': ', font=(None,16)), sg.Text('0', key='num_added_fumen', font=(None,16)), sg.Text(self.i18n('text.music_score')+')', font=(None,16))
@@ -601,7 +603,7 @@ class Reporter:
                 self.send_pkl()
             elif ev == 'locale':
                 self.bundle = PoorManResourceBundle(val['locale'].lower())
-                self.defaultLocale = val['locale']
+                self.default_locale = val['locale']
                 self.i18n = self.bundle.get_text
                 self.window.close()
                 self.gui(False)

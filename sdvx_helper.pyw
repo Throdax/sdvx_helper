@@ -21,7 +21,7 @@ from sdvxh_classes import *
 import urllib
 import webbrowser
 from decimal import Decimal
-from PoorManResourceBundle import *
+from poor_man_resource_bundle import *
 # フラットウィンドウ、右下モード(左に上部側がくる)
 # フルスクリーン、2560x1440に指定してもキャプは1920x1080で撮れてるっぽい
 
@@ -56,8 +56,8 @@ except Exception:
     
 class SDVXHelper:
     def __init__(self):
-        self.defaultLocale = 'EN'
-        self.bundle = PoorManResourceBundle(self.defaultLocale)
+        self.default_locale = 'EN'
+        self.bundle = PoorManResourceBundle(self.default_locale)
         self.i18n = self.bundle.get_text
         self.ico=self.ico_path('icon.ico')
         self.detect_mode = detect_mode.init
@@ -688,7 +688,7 @@ class SDVXHelper:
         layout = [
             [sg.Menubar(menuitems, key='menu')],
             [
-                sg.Text('Language/言語', font=(None,12)),sg.Combo(self.bundle.get_available_bundles(), key='locale', font=(None,12), default_value=self.defaultLocale,enable_events=True)
+                sg.Text('Language/言語', font=(None,12)),sg.Combo(self.bundle.get_available_bundles(), key='locale', font=(None,12), default_value=self.default_locale,enable_events=True)
             ],
             [
                 par_text(f'{self.i18n("text.main.plays")}:'), par_text(str(self.plays), key='txt_plays')
@@ -1443,7 +1443,7 @@ class SDVXHelper:
                     self.logToWindow(self.i18n('message.main.error.noSongSelection'))                    
             elif ev == 'locale':
                 self.bundle = PoorManResourceBundle(val['locale'].lower())
-                self.defaultLocale = val['locale']
+                self.default_locale = val['locale']
                 self.i18n = self.bundle.get_text
                 self.window.close()
                 self.gui_main()
