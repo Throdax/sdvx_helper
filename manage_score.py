@@ -9,7 +9,7 @@ from manage_settings import *
 from sdvxh_classes import *
 from functools import partial
 import urllib
-from PoorManResourceBundle import *
+from poor_man_resource_bundle import *
 
 os.makedirs('log', exist_ok=True)
 os.makedirs('out', exist_ok=True)
@@ -44,8 +44,8 @@ lamp_table = ['FAILED', 'COMP', 'EXC', 'UC', 'PUC']
 
 class ScoreViewer:
     def __init__(self):
-        self.defaultLocale = 'EN'
-        self.bundle = PoorManResourceBundle(self.defaultLocale)
+        self.default_locale = 'EN'
+        self.bundle = PoorManResourceBundle(self.default_locale)
         self.i18n = self.bundle.get_text
         
         self.load_settings()
@@ -182,7 +182,7 @@ class ScoreViewer:
                   self.i18n('table.header.lastPlayed')]
         layout = [
             [
-                sg.Text('Language/言語', font=(None,16)),sg.Combo(self.bundle.get_available_bundles(), key='locale', font=(None,16), default_value=self.defaultLocale,enable_events=True)
+                sg.Text('Language/言語', font=(None,16)),sg.Combo(self.bundle.get_available_bundles(), key='locale', font=(None,16), default_value=self.default_locale,enable_events=True)
             ],
             [sg.Frame(title=self.i18n('text.score.frame.filter'), layout=layout_filter), sg.Frame(title=self.i18n('text.score.frame.sort'), layout=layout_sort), sg.Frame(title=self.i18n('text.score.frame.rival'), layout=layout_rival), sg.Frame(title=self.i18n('text.score.frame.edit'), layout=layout_edit)],
             [
@@ -425,7 +425,7 @@ class ScoreViewer:
                     print(traceback.format_exc())
             elif ev == 'locale':
                 self.bundle = PoorManResourceBundle(val['locale'])
-                self.defaultLocale = val['locale']
+                self.default_locale = val['locale']
                 self.i18n = self.bundle.get_text
                 self.window.close()
                 self.gui()                
