@@ -22,6 +22,7 @@ import logging, logging.handlers
 from tkinter import filedialog
 import re
 from PoorManResourceBundle import *
+import concurrent.futures
 
 SETTING_FILE = 'settings.json'
 sg.theme('SystemDefault')
@@ -43,6 +44,11 @@ hdl.setFormatter(hdl_formatter)
 logger.addHandler(hdl)
 
 class Reporter:
+    
+    color_lock = threading.Lock()
+    ocr_found = 0
+    ocr_not_found = 0
+    
     def __init__(self, chk_update:bool=True):
         self.defaultLocale = 'EN'
         self.bundle = PoorManResourceBundle(self.defaultLocale)
@@ -417,61 +423,66 @@ class Reporter:
         self.filelist_bgcolor = bgcs
         return ret, bgcs
     
-    def applyColoring(self):
+    def apply_coloring(self):
         
-        updateList = []
+        update_list = []
         for i,f in enumerate(self.gen_summary.get_result_files()):
-            updateList.append(f.replace('\\','/'))
+            update_list.append(f.replace('\\','/'))
         
-        self.window['files'].update(list(updateList),row_colors=self.filelist_bgcolor)
+        self.window['files'].update(list(update_list),row_colors=self.filelist_bgcolor)
     
-    def updateColoringStatus(self,current,total):
+    def update_coloring_status(self,current,total):
         self.window['state'].update(self.i18n('message.coloring')+' ('+str(current)+'/'+str(total)+') ', text_color='#000000')
         
+    def color_file(self,i:int, f:str):
+        try:
+            img = Image.open(f)
+        except Exception:
+            print(f'{self.i18n("log.file.not.ocr_found")} ({f})')
+            continue
+        if self.gen_summary.is_result(img):
+            self.gen_summary.cut_result_parts(img)
+            res = self.gen_summary.ocr()
+            if res != False:
+                with color_lock :
+                    self.filelist_bgcolor[i][1] = '#dddddd'
+                    self.filelist_bgcolor[i][2] = '#333333'
+                title = res
+                cur,pre = self.gen_summary.get_score(img)
+                ts = os.path.getmtime(f)
+                now = datetime.datetime.fromtimestamp(ts)
+                fmtnow = format(now, "%Y%m%d_%H%M%S")
+                for ch in ('\\', '/', ':', '*', '?', '"', '<', '>', '|'):
+                    title = title.replace(ch, '')
+                for ch in (' ', '　'):
+                    title = title.replace(ch, '_')
+                dst = f"{self.settings['autosave_dir']}/sdvx_{title[:120]}_{self.gen_summary.difficulty.upper()}_{self.gen_summary.lamp}_{str(cur)[:-4]}_{fmtnow}.png"
+                try:
+                    os.rename(f, dst)
+                except Exception:
+                    print(f'{self.i18n("log.filename.exists")} ({dst})')
+                
+                with color_lock : self.found = self.found + 1
+        else:
+            with color_lock :
+                self.filelist_bgcolor[i][1] = '#dddddd'
+                self.filelist_bgcolor[i][2] = '#333333'
+            
+                self.not_found =  self.not_found + 1                
+            
     
     # ファイル一覧に対し、OCR結果に応じた色を付ける
     def do_coloring(self):
         self.gen_summary.load_hashes()
-        resultFiles = list(self.gen_summary.get_result_files())
-        found = 0
-        not_found = 0
-        for i,f in enumerate(resultFiles):
-            try:
-                img = Image.open(f)
-            except Exception:
-                print(f'{self.i18n("log.file.not.found")} ({f})')
-                continue
-            if self.gen_summary.is_result(img):
-                self.gen_summary.cut_result_parts(img)
-                res = self.gen_summary.ocr()
-                if res != False:
-                    self.filelist_bgcolor[i][1] = '#dddddd'
-                    self.filelist_bgcolor[i][2] = '#333333'
-                    title = res
-                    cur,pre = self.gen_summary.get_score(img)
-                    ts = os.path.getmtime(f)
-                    now = datetime.datetime.fromtimestamp(ts)
-                    fmtnow = format(now, "%Y%m%d_%H%M%S")
-                    for ch in ('\\', '/', ':', '*', '?', '"', '<', '>', '|'):
-                        title = title.replace(ch, '')
-                    for ch in (' ', '　'):
-                        title = title.replace(ch, '_')
-                    dst = f"{self.settings['autosave_dir']}/sdvx_{title[:120]}_{self.gen_summary.difficulty.upper()}_{self.gen_summary.lamp}_{str(cur)[:-4]}_{fmtnow}.png"
-                    try:
-                        os.rename(f, dst)
-                    except Exception:
-                        print(f'{self.i18n("log.filename.exists")} ({dst})')
-                    
-                    found = found + 1
-            else:
-                self.filelist_bgcolor[i][1] = '#dddddd'
-                self.filelist_bgcolor[i][2] = '#333333'
-                
-                not_found =  not_found + 1
-                
-            self.updateColoringStatus(i+1,len(resultFiles))    
+        result_files = list(self.gen_summary.get_result_files())
+        
+        with ThreadPoolExecutor(max_workers=10) as executor:
+            future_color = {executor.submit(self.color_file, i, f): (i,f) for i,f in enumerate(result_files)}
+            for future in concurrent.futures.as_completed(future_color) :
+                with color_lock :
+                    self.update_coloring_status(future_color[future][0]+1,len(result_files))
                        
-        self.applyColoring()
+        self.apply_coloring()
         self.window['state'].update(self.i18n('message.coloring.complete',found,not_found), text_color='#000000')
 
     def main(self):
@@ -519,7 +530,7 @@ class Reporter:
                             self.window['difficulty'].update(None)
                             self.window['state'].update(self.i18n('message.non.result.images'), text_color='#ff0000')
                     except Exception:
-                        self.window['state'].update(self.i18n('message.error.file.not.found'), text_color='#ff0000')
+                        self.window['state'].update(self.i18n('message.error.file.not.ocr_found'), text_color='#ff0000')
                         print(traceback.format_exc())
             elif ev == 'musics':
                 if len(val['musics']) > 0:
@@ -532,6 +543,8 @@ class Reporter:
                 self.window['musics'].update(self.get_musiclist())
                 self.get_dblist()
             elif ev == 'coloring':
+                self.ocr_found = 0
+                self.ocr_not_found = 0
                 self.th_coloring = threading.Thread(target=self.do_coloring, daemon=True)
                 self.th_coloring.start()
                 self.window['state'].update(self.i18n('message.coloring'), text_color='#000000')
@@ -592,7 +605,7 @@ class Reporter:
                 self.i18n = self.bundle.get_text
                 self.window.close()
                 self.gui(False)
-                self.applyColoring()
+                self.apply_coloring()
                 
                 
 
