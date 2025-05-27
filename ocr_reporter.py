@@ -519,6 +519,47 @@ class Reporter:
          
         self.window['state'].update(self.i18n('message.coloring.complete',self.ocr_not_found,self.ocr_found,round(duration.total_seconds(),2)), text_color='#000000')
         
+
+    def register_song(self, val, len, str, print, music, hash_jacket, hash_info):
+        difficulty = val['combo_difficulty']
+        print(difficulty, hash_jacket, hash_info)
+        pat = re.compile(r'[0-9a-f]{16}')
+        if (difficulty != '') and bool(pat.search(hash_jacket)):
+            # TODO ジャケットなしの曲はinfoを登録する
+            self.send_webhook(music, difficulty, hash_jacket, hash_info)
+            if music not in self.musiclist['jacket'][difficulty].keys():
+                self.window['state'].update(f'{self.i18n("message.song.registered")} ({music} / {hash_jacket})', text_color='#000000')
+                print(self.i18n('log.song.registered'))
+                for i, diff in enumerate(diff_table):
+                    self.num_added_fumen += 1
+                    self.musiclist['jacket'][diff][music] = str(hash_jacket)
+                    if hash_info != '':
+                        self.musiclist['info'][diff][music] = str(hash_info)
+                
+                if len(val['files']) > 0:
+                    self.filelist_bgcolor[val['files'][0]][-2] = '#dddddd'
+                    self.filelist_bgcolor[val['files'][0]][-1] = '#333399'
+                    self.window['files'].update(row_colors=self.filelist_bgcolor)
+            else:
+                self.num_added_fumen += 1
+                self.window['state'].update(f'{self.i18n("message.song.already.registered")} {difficulty} {self.i18n("message.hash.fixed")} ({music} / {hash_jacket})', text_color='#000000')
+                print(f'{self.i18n("log.song.already.registered")} ({difficulty}) {self.i18n("log.hash.fixed")}')
+                self.musiclist['jacket'][difficulty][music] = str(hash_jacket)
+                if hash_info != '':
+                    self.musiclist['info'][difficulty][music] = str(hash_info)
+                if len(val['files']) > 0:
+                    self.filelist_bgcolor[val['files'][0]][-2] = '#dddddd'
+                    self.filelist_bgcolor[val['files'][0]][-1] = '#333399'
+                    self.window['files'].update(row_colors=self.filelist_bgcolor)
+            self.window['num_added_fumen'].update(self.num_added_fumen)
+            self.save()
+            self.window['hash_jacket'].update('')
+            self.window['hash_info'].update('')
+            self.window['txt_title'].update('')
+        else:
+            print('難易度 or ハッシュ値エラー')
+            self.window['state'].update(self.i18n('message.error.cannot.obtain'), text_color='#000000')
+
     def main(self):
         while True:
             ev, val = self.window.read()
@@ -587,43 +628,14 @@ class Reporter:
                 if music != '':
                     hash_jacket = self.window['hash_jacket'].get()
                     hash_info = self.window['hash_info'].get()
-                    difficulty = val['combo_difficulty']
-                    print(difficulty, hash_jacket, hash_info)
-                    pat = re.compile(r'[0-9a-f]{16}')
-                    if (difficulty != '') and bool(pat.search(hash_jacket)):
-                        # TODO ジャケットなしの曲はinfoを登録する
-                        self.send_webhook(music, difficulty, hash_jacket, hash_info)
-                        if music not in self.musiclist['jacket'][difficulty].keys():
-                            self.window['state'].update(f'{self.i18n("message.song.registered")} ({music} / {hash_jacket})', text_color='#000000')
-                            print(self.i18n('log.song.registered'))
-                            for i,diff in enumerate(diff_table):
-                                self.num_added_fumen += 1
-                                self.musiclist['jacket'][diff][music] = str(hash_jacket)
-                                if hash_info != '':
-                                    self.musiclist['info'][diff][music] = str(hash_info)
-                            if len(val['files']) > 0:
-                                self.filelist_bgcolor[val['files'][0]][-2] = '#dddddd'
-                                self.filelist_bgcolor[val['files'][0]][-1] = '#333399'
-                                self.window['files'].update(row_colors=self.filelist_bgcolor)
-                        else:
-                            self.num_added_fumen += 1
-                            self.window['state'].update(f'{self.i18n("message.song.already.registered")} {difficulty} {self.i18n("message.hash.fixed")} ({music} / {hash_jacket})', text_color='#000000')
-                            print(f'{self.i18n("log.song.already.registered")} ({difficulty}) {self.i18n("log.hash.fixed")}')
-                            self.musiclist['jacket'][difficulty][music] = str(hash_jacket)
-                            if hash_info != '':
-                                self.musiclist['info'][difficulty][music] = str(hash_info)
-                            if len(val['files']) > 0:
-                                self.filelist_bgcolor[val['files'][0]][-2] = '#dddddd'
-                                self.filelist_bgcolor[val['files'][0]][-1] = '#333399'
-                                self.window['files'].update(row_colors=self.filelist_bgcolor)
-                        self.window['num_added_fumen'].update(self.num_added_fumen)
-                        self.save()
-                        self.window['hash_jacket'].update('')
-                        self.window['hash_info'].update('')
-                        self.window['txt_title'].update('')
-                    else:
-                        print('難易度 or ハッシュ値エラー')
-                        self.window['state'].update(self.i18n('message.error.cannot.obtain'), text_color='#000000')
+                    
+                    tmp = Image.open('resources/no_jacket.png')
+                    hash_no_jacket = imagehash.average_hash(tmp,hash_size)
+                    
+                    if hash_jacket == hash_no_jacket :
+                        self.window['state'].update(self.i18n('message.song.jacketJHashIsNotFound',music))
+                    else :    
+                        self.register_song(val, len, str, print, music, hash_jacket, hash_info)
                 else:
                     self.window['state'].update(self.i18n('message.error.no.title'), text_color='#000000')
             elif ev == 'combo_diff_db': # hash値リスト側の難易度設定を変えた時に入る
