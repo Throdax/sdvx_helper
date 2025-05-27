@@ -378,7 +378,7 @@ class SDVXHelper:
         """
         vf_cur = self.img_rot.crop(self.get_detect_points('vf'))
         threshold = 1400000 if self.settings['save_on_capture'] else 700000
-        if np.array(vf_cur).sum() > threshold:
+        if np.array(vf_cur).sum() > threshold or self.settings['always_update_vf']:
             vf_cur.save('out/vf_cur.png')
             class_cur = self.img_rot.crop(self.get_detect_points('class'))
             class_cur.save('out/class_cur.png')
@@ -471,6 +471,7 @@ class SDVXHelper:
             self.settings['import_from_select'] = val['import_from_select']
             self.settings['import_arcade_score'] = val['import_arcade_score']
             self.settings['autosave_prewait'] = val['autosave_prewait']
+            self.settings['always_update_vf'] = val['update_vf']
 
     def build_layout_one_scene(self, name, LR=None):
         """OBS制御設定画面におけるシーン1つ分のGUIを出力する。
@@ -663,6 +664,7 @@ class SDVXHelper:
             [sg.Text(self.i18n('text.settings.statsPlayerName')),sg.Input(self.settings['player_name'], key='player_name', size=(30,1))],
             [sg.Checkbox(self.i18n('checkbox.settings.importFromSelect'),self.settings['import_from_select'],key='import_from_select', enable_events=True),sg.Checkbox(self.i18n('checkbox.settings.includeArcadeScores'),self.settings['import_arcade_score'],key='import_arcade_score', enable_events=True)],
             [sg.Checkbox(self.i18n('checkbox.settings.correctWindowsCoordinates'),self.settings['clip_lxly'],key='clip_lxly', enable_events=True, tooltip=self.i18n('checkbox.settings.correctWindowsCoordinates.tooltip'))],
+            [sg.Checkbox(self.i18n('checkbox.settings.allwaysUpdateVF'),self.settings['always_update_vf'],key='update_vf', enable_events=True, tooltip=self.i18n('checkbox.settings.allwaysUpdateVF.tooltip'))],
         ]
         layout = [
             [sg.Frame(self.i18n('text.settings.obsSettings.title'), layout=layout_obs, title_color='#000044')],
@@ -698,7 +700,7 @@ class SDVXHelper:
             [par_text('', size=(40,1), key='txt_info')],
         ]
         if self.settings['dbg_enable_output']:
-            layout.append([sg.Multiline(size=(63,8), key='output', font=(None, 9))])
+            layout.append([sg.Multiline(size=(100,8), key='output', font=(None, 9))])
         self.gui_mode = gui_mode.main
         
         self.window = sg.Window(self.i18n('window.main.title'), layout, grab_anywhere=True,return_keyboard_events=True,resizable=False,finalize=True,enable_close_attempted_event=True,icon=self.ico,location=(self.settings['lx'], self.settings['ly']))

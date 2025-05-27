@@ -2,7 +2,7 @@
 set target_sdvx=sdvx_helper
 set target_ocr=ocr_reporter
 set target_manager=manage_score
-set pyin="D:\Program Files\Python312\Scripts\pyinstaller.exe"
+set pyin="%userprofile%\AppData\Roaming\Python\Python313\Scripts\pyinstaller.exe"
 
 %pyin% %target_sdvx%.pyw --clean --noconsole --onefile --icon=icon.ico --add-data "icon.ico;./" --hidden-import=tkinter --hidden-import=tkinter.filedialog -y
 %pyin% %target_ocr%.py --clean --noconsole --onefile --icon=icon.ico --add-data "icon.ico;./" --hidden-import=tkinter --hidden-import=tkinter.filedialog -y

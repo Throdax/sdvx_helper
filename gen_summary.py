@@ -261,7 +261,7 @@ class GenSummary:
         val2 = imagehash.average_hash(img2)
         return abs(val2-val1) < threshold
     
-    def send_webhook(self):
+    def send_webhook(self,hash_size:int=10):
         try:
             if (self.result_parts != False) and self.settings['send_webhook']:
                 url = url_webhook_unknown
@@ -274,7 +274,7 @@ class GenSummary:
                 webhook = DiscordWebhook(url=url, username="unknown title info")
                 msg = ''
                 for i in ('jacket_org', 'info'):
-                    msg += f"- **{imagehash.average_hash(self.result_parts[i])}**\n"
+                    msg += f"- **{imagehash.average_hash(self.result_parts[i],hash_size)}**\n"
                 # 添付ファイル
                 img_bytes = io.BytesIO()
                 self.result_parts['info'].crop((0,0,260,65)).save(img_bytes, format='PNG')
@@ -423,8 +423,8 @@ class GenSummary:
     
     # ジャケット画像を与えた時のOCR結果を返す(選曲画面からの利用を想定)
     # 返り値: 曲名, hash差分の最小値
-    def ocr_only_jacket(self, jacket, nov, adv, exh, APPEND):
-        hash_jacket = imagehash.average_hash(jacket)
+    def ocr_only_jacket(self, jacket, nov, adv, exh, APPEND,hash_size:int=10):
+        hash_jacket = imagehash.average_hash(jacket,hash_size)
         title = False
         minval = 99999
         sum_nov = np.array(nov).sum()
@@ -444,12 +444,12 @@ class GenSummary:
         # 曲名を検出
         for h in self.musiclist_hash['jacket'][difficulty].keys():
             hash_cur = imagehash.hex_to_hash(h)
-            if abs(hash_cur - hash_jacket) < minval:
+            if len(hash_cur) == len(hash_jacket) and abs(hash_cur - hash_jacket) < minval:
                 minval = abs(hash_cur - hash_jacket)
                 title = self.musiclist_hash['jacket'][difficulty][h]
         return title, minval, difficulty
 
-    def ocr_from_detect(self):
+    def ocr_from_detect(self,hash_size:int=10):
         """曲決定画面から曲名情報を抽出。曲中で表示するライバル欄などに使う。
 
         Returns:
@@ -458,7 +458,7 @@ class GenSummary:
             str: 難易度
         """
         jacket      = Image.open('out/select_jacket.png')
-        hash_jacket = imagehash.average_hash(jacket)
+        hash_jacket = imagehash.average_hash(jacket,hash_size)
         diff        = Image.open('out/select_difficulty.png')
         target = {}
         target['nov'] = imagehash.hex_to_hash('267e7c787a787c7e')
@@ -485,7 +485,7 @@ class GenSummary:
         # 曲名を検出
         for h in self.musiclist_hash['jacket'][difficulty].keys():
             hash_cur = imagehash.hex_to_hash(h)
-            if abs(hash_cur - hash_jacket) < minval:
+            if len(hash_cur) == len(hash_jacket) and abs(hash_cur - hash_jacket) < minval:
                 minval = abs(hash_cur - hash_jacket)
                 title = self.musiclist_hash['jacket'][difficulty][h]
         logger.debug(f"title:{title}, difficulty:{difficulty}, minval:{minval}")

@@ -47,6 +47,7 @@ special_titles = {
         '隅田川夏恋歌IO Angel mix':'隅田川夏恋歌 (I/O Angel mix)',
         '隅田川純恋歌IO Angel mix':'隅田川夏恋歌 (I/O Angel mix)',
         '隅田川純恋歌I/O Angel mix':'隅田川夏恋歌 (I/O Angel mix)',
+        '隅田川夏恋歌 (IO Angel mix)':'隅田川夏恋歌 (I/O Angel mix)',
         'ハナビラリンクス':'ハナビラ:リンクス',
         'Heartache  心の痛み':'Heartache / 心の痛み',
         'Chantilly Fille':'゜*。Chantilly Fille。*°',
