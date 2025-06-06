@@ -392,7 +392,7 @@ class ScoreViewer:
             ev, val = self.window.read()
             if ev in (sg.WIN_CLOSED, 'Escape:27', '-WINDOW CLOSE ATTEMPTED-'): # 終了処理
                 if self.modflg: # 削除されている
-                    ans = sg.popup_yes_no(f'プレーデータが{self.num_del}件削除されています。\nプレーデータを保存しますか？', icon=self.ico_path('icon.ico'))
+                    ans = sg.popup_yes_no(f'self.i18n("dialog.manager.exit",{self.num_del}', icon=self.ico_path('icon.ico'))
                     if ans == 'Yes':
                         with open('alllog.pkl', 'wb') as f:
                             pickle.dump(self.sdvx_logger.alllog, f)

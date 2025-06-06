@@ -443,10 +443,11 @@ class GenSummary:
         
         # 曲名を検出
         for h in self.musiclist_hash['jacket'][difficulty].keys():
-            hash_cur = imagehash.hex_to_hash(h)
-            if len(hash_cur) == len(hash_jacket) and abs(hash_cur - hash_jacket) < minval:
-                minval = abs(hash_cur - hash_jacket)
-                title = self.musiclist_hash['jacket'][difficulty][h]
+            if h != '' :
+                hash_cur = imagehash.hex_to_hash(h)
+                if len(hash_cur) == len(hash_jacket) and abs(hash_cur - hash_jacket) < minval:
+                    minval = abs(hash_cur - hash_jacket)
+                    title = self.musiclist_hash['jacket'][difficulty][h]
         return title, minval, difficulty
 
     def ocr_from_detect(self,hash_size:int=10):

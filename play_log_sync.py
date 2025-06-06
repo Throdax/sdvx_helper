@@ -10,69 +10,7 @@ from sdvxh_classes import OnePlayData
 from sdvxh_classes import SDVXLogger
 from gen_summary import GenSummary
 import xml.etree.ElementTree as ET
-
-special_titles = {
-        'Death by Glamour  華麗なる死闘':  'Death by Glamour / 華麗なる死闘',
-        'Electric Sister Bitch':'Electric "Sister" Bitch',
-        'Lunatic Dial':'Lunartic Dial',
-        'ASGORE  アズゴア':'ASGORE / アズゴア',
-        'archivezip':'archive::zip',
-        'Sakura Reflection (PLight Slayer Remix)':'Sakura Reflection (P*Light Slayer Remix)',
-        'Spider Dance  スパイダーダンス':'Spider Dance / スパイダーダンス',
-        'U.N. Owen was her (Hyuji Remix)':'U.N. Owen was her? (Hyuji Remix)',
-        'I’m Your Treasure Box ＊あなたは マリンせんちょうを たからばこからみつけた。':'I’m Your Treasure Box ＊あなたは マリンせんちょうを たからばこからみつけた。',
-        'The Sampling Paradise (PLight Remix)':'The Sampling Paradise (P*Light Remix)',
-        'Finale  フィナーレ':'Finale / フィナーレ',
-        'コンベア速度Max!しゃいにん☆廻転ズシSushi&Peace':'コンベア速度Max!? しゃいにん☆廻転ズシ"Sushi&Peace"',
-        'コンベア速度Max! しゃいにん☆廻転ズシSushi&Peace':'コンベア速度Max!? しゃいにん☆廻転ズシ"Sushi&Peace"',
-        'VoynichManuscript':'Voynich:Manuscript',        
-        'Believe (y)our Wings {VIVID RAYS}':'Believe (y)our Wings {V:IVID RAYS}',
-        'チルノのパーフェクトさんすう教室　⑨周年バージョン':'チルノのパーフェクトさんすう教室　⑨周年バージョン',
-        'Wuv U(picoustic rmx)':'Wuv U(pico/ustic rmx)',
-        'Battle Against a True Hero  本物のヒーローとの戦い':'Battle Against a True Hero / 本物のヒーローとの戦い',
-        'rEVoltagers':'rE:Voltagers',
-        'S1CK F41RY':'S1CK_F41RY',
-        'ニ分間の世界':'二分間の世界',
-        'ReRose Gun Shoooot!':'Re:Rose Gun Shoooot!',
-        'gigadelic (かめりあ\'s The TERA RMX)':'gigadelic (かめりあ\'s "The TERA" RMX)',
-        'PROVOESPROPOSE êl fine':'PROVOES*PROPOSE <<êl fine>>',
-        'LuckyClover':'Lucky*Clover',
-        '壊Raveit!! 壊Raveit!!':'壊Rave*it!! 壊Rave*it!!',
-        'BLACK or WHITE':'BLACK or WHITE?',
-        'MrVIRTUALIZER':'Mr.VIRTUALIZER',
-        '#Fairy dancing in lake':'#Fairy_dancing_in_lake',
-        '゜。Chantilly Fille。°':'゜*。Chantilly Fille。*°',
-        '侵蝕コード 666 -今日ちょっと指 (略-':'侵蝕コード：666　-今日ちょっと指（略-',
-        '侵蝕コード：666　-今日ちょっと指（略-':'侵蝕コード：666　-今日ちょっと指（略-',
-        '隅田川夏恋歌IO Angel mix':'隅田川夏恋歌 (I/O Angel mix)',
-        '隅田川純恋歌IO Angel mix':'隅田川夏恋歌 (I/O Angel mix)',
-        '隅田川純恋歌I/O Angel mix':'隅田川夏恋歌 (I/O Angel mix)',
-        '隅田川夏恋歌 (IO Angel mix)':'隅田川夏恋歌 (I/O Angel mix)',
-        'ハナビラリンクス':'ハナビラ:リンクス',
-        'Heartache  心の痛み':'Heartache / 心の痛み',
-        'Chantilly Fille':'゜*。Chantilly Fille。*°',
-        'infinite youniverse':'infinite:youniverse',
-        'infiniteyouniverse':'infinite:youniverse',
-        '#FairyJoke #SDVX Edit':'#FairyJoke #SDVX_Edit',
-        'Spear of Justice  正義の槍':'Spear of Justice / 正義の槍'
-    }
-
-direct_overides = {
-    'Pure Evil': {'NOV:5','ADV:12','EXH:17'},
-    'チルノのパーフェクトさんすう教室　⑨周年バージョン':{'NOV:5','ADV:11','EXH:13','APPEND:16'},
-    'チルノのパーフェクトさんすう教室 ⑨周年バージョン':{'NOV:5','ADV:11','EXH:13','APPEND:16'},
-    'グレイスちゃんの超～絶!!グラビティ講座w':{'APPEND:1'},
-    'マキシマ先生の満開!!ヘヴンリー講座♥':{'APPEND:1'},
-    'エクシード仮面ちゃんのちょっと一線をえくしーどしたEXCEED講座':{'APPEND:1'}
-    }
-
-ignored_names = {
-    'Help me, CODYYYYYY!!'
-}
-
-direct_removes = {
-    '侵蝕コード：666　-今日ちょっと指（略-',    
-    }
+from special_titles import *
 
 sdvx_logger = SDVXLogger("Throdax")
 time_offset_seconds = 0
@@ -314,7 +252,7 @@ def main(song_log_folder, results_folder, rebuild):
         
         processed_files += 1
         if processed_files % 100 == 0:
-            print(f'{processed_files} files processed...')
+            print(f'{processed_files} files processed out of {len(results)} ...')
     
     dt_end = datetime.now()
     duration = dt_end - dt_start
@@ -368,7 +306,7 @@ def dump(song_log_folder, song_list_folder):
     song_list = load_song_list(song_list_folder)
     song_log.sort(key=lambda s: s.date)
     
-    song_list_element = ET.Element("song_list")
+    song_list_element = ET.Element("songList")
     xml_tree = ET.ElementTree(song_list_element)
     plays={}
     songs={}
