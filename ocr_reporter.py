@@ -630,9 +630,9 @@ class Reporter:
                     hash_info = self.window['hash_info'].get()
                     
                     tmp = Image.open('resources/no_jacket.png')
-                    hash_no_jacket = imagehash.average_hash(tmp,hash_size)
+                    hash_no_jacket = imagehash.average_hash(tmp,10)
                     
-                    if hash_jacket == hash_no_jacket :
+                    if hash_jacket == str(hash_no_jacket) :
                         self.window['state'].update(self.i18n('message.song.jacketJHashIsNotFound',music))
                     else :    
                         self.register_song(val, len, str, print, music, hash_jacket, hash_info)

@@ -2,7 +2,9 @@
 # musiclist.pklに手動追加するやつなど
 import pickle
 from gen_summary import *
-from datetime import datetime, timedelta 
+from datetime import datetime, timedelta
+import imagehash
+from PIL import Image 
 
 def load():
     ret = None
@@ -13,8 +15,32 @@ def load():
 def save(dat:dict):
     with open('resources/musiclist.pkl', 'wb') as f:
         pickle.dump(dat, f)
+        
+def update_saved_jackets() :
+    
+    root_folder = 'D:/Tools/SoundVoltex/sdvx_helper/jackets'
+    
+    results = os.listdir(root_folder)
+    results.sort(key=lambda s: os.path.getctime(os.path.join(root_folder, s)))
+    
+    for jacket in results:
+        
+        if(len(jacket) == 29) :
+            continue;
+          
+        img = Image.open(root_folder+'/'+jacket)             
+        new_size_hash = imagehash.average_hash(img,10)
+        
+        if os.path.exists(root_folder+'/'+str(new_size_hash)+".png") :
+            print(f'File already exists with name {new_size_hash}. Deleting old file with hash {jacket}...')
+            os.remove(root_folder+'/'+jacket)
+        else :
+            print(f'No file exists with hash {new_size_hash}. Renaming {jacket}...')
+            os.rename(root_folder+'/'+jacket,root_folder+'/'+str(new_size_hash)+'.png')
+        
 
-if __name__ == '__main__':
+
+def update_music_list_hash_size(hash_size:int=10) :      
     """
         a['jacket']['diff']['title'] = hash
         a['info']['diff']['title'] = hash
@@ -46,8 +72,8 @@ if __name__ == '__main__':
                 if len(str(existing_hash)) == 16 :
                     
                     print(f'[{title}-{diff}] Old hash: {existing_hash}')
-                    new_hash = imagehash.average_hash(parts['jacket_org'],10)
-                    new_info = imagehash.average_hash(parts['info'],10)
+                    new_hash = imagehash.average_hash(parts['jacket_org'],hash_size)
+                    new_info = imagehash.average_hash(parts['info'],hash_size)
                     a['jacket'][diff][title] = str(new_hash)
                     a['info'][diff][title] = str(new_hash)
                     print(f'[{title}-{diff}] New hash: {new_hash}')
@@ -57,4 +83,9 @@ if __name__ == '__main__':
 
     
     print(f'Updated {updated_hashes} hashes.')
-    save(a)
+    save(a)        
+
+if __name__ == '__main__':
+    update_saved_jackets()
+
+    
