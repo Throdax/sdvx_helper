@@ -629,7 +629,7 @@ class Reporter:
                     hash_jacket = self.window['hash_jacket'].get()
                     hash_info = self.window['hash_info'].get()
                     
-                    tmp = Image.open('resources/no_jacket.png')
+                    tmp = Image.open('resources/images/no_jacket.png')
                     hash_no_jacket = imagehash.average_hash(tmp,10)
                     
                     if hash_jacket == str(hash_no_jacket) :
