@@ -79,12 +79,12 @@ class GenSummary:
         self.score_hash_large = []
         self.bestscore_hash   = []
         for i in range(10):
-            self.score_hash_small.append(imagehash.average_hash(Image.open(f'resources/result_score_s{i}.png')))
-            self.select_score_hash_small.append(imagehash.average_hash(Image.open(f'resources/select_score_s{i}.png')))
-            self.score_hash_large.append(imagehash.average_hash(Image.open(f'resources/result_score_l{i}.png')))
-            self.bestscore_hash.append(imagehash.average_hash(Image.open(f'resources/result_bestscore_{i}.png')))
+            self.score_hash_small.append(imagehash.average_hash(Image.open(f'resources/images/result_score_s{i}.png')))
+            self.select_score_hash_small.append(imagehash.average_hash(Image.open(f'resources/images/select_score_s{i}.png')))
+            self.score_hash_large.append(imagehash.average_hash(Image.open(f'resources/images/result_score_l{i}.png')))
+            self.bestscore_hash.append(imagehash.average_hash(Image.open(f'resources/images/result_bestscore_{i}.png')))
         for k in ['puc', 'uc']:
-            self.select_lamp_hash[k] = imagehash.average_hash(Image.open(f'resources/select_lamp_{k}.png'))
+            self.select_lamp_hash[k] = imagehash.average_hash(Image.open(f'resources/images/select_lamp_{k}.png'))
 
         try:
             with open('resources/musiclist.pkl', 'rb') as f:
@@ -134,7 +134,7 @@ class GenSummary:
 
     # スコアの抽出
     # PIL.Imageを受け取ってintのスコアを返す
-    # resources/result_score_{l,s}{0-9}.pngはグレースケールなので注意    
+    # resources/images/result_score_{l,s}{0-9}.pngはグレースケールなので注意    
     def get_score(self, img):
         img_gray = img.convert('L')
         tmp = []
@@ -292,17 +292,17 @@ class GenSummary:
     
     def is_result(self,img):
         cr = img.crop(self.get_detect_points('onresult_val0'))
-        img_j = Image.open('resources/onresult.png')
+        img_j = Image.open('resources/images/onresult.png')
         val0 = self.comp_images(cr, img_j, 5)
 
         cr = img.crop(self.get_detect_points('onresult_val1'))
-        img_j = Image.open('resources/onresult2.png')
+        img_j = Image.open('resources/images/onresult2.png')
         val1 = self.comp_images(cr, img_j, 5)
 
         ret = val0 & val1
         if self.params['onresult_enable_head']:
             cr = img.crop(self.get_detect_points('onresult_head'))
-            img_j = Image.open('resources/result_head.png')
+            img_j = Image.open('resources/images/result_head.png')
             val2 = self.comp_images(cr, img_j, 5)
             ret &= val2
         return ret
@@ -317,11 +317,11 @@ class GenSummary:
 
         # クリアランプの抽出
         lamp = ''
-        if self.comp_images(img.crop(self.get_detect_points('lamp')), Image.open('resources/lamp_puc.png')):
+        if self.comp_images(img.crop(self.get_detect_points('lamp')), Image.open('resources/images/lamp_puc.png')):
             lamp = 'puc'
-        elif self.comp_images(img.crop(self.get_detect_points('lamp')), Image.open('resources/lamp_uc.png')):
+        elif self.comp_images(img.crop(self.get_detect_points('lamp')), Image.open('resources/images/lamp_uc.png')):
             lamp = 'uc'
-        elif self.comp_images(img.crop(self.get_detect_points('lamp')), Image.open('resources/lamp_clear.png')):
+        elif self.comp_images(img.crop(self.get_detect_points('lamp')), Image.open('resources/images/lamp_clear.png')):
             rsum = np.array(img.crop(self.get_detect_points('gauge')))[:,:,0].sum()
             gsum = np.array(img.crop(self.get_detect_points('gauge')))[:,:,1].sum()
             bsum = np.array(img.crop(self.get_detect_points('gauge')))[:,:,2].sum()
@@ -333,7 +333,7 @@ class GenSummary:
                     lamp = 'class_clear'
                 else:
                     lamp = 'hard'
-        elif self.comp_images(img.crop(self.get_detect_points('lamp')), Image.open('resources/lamp_failed.png')):
+        elif self.comp_images(img.crop(self.get_detect_points('lamp')), Image.open('resources/images/lamp_failed.png')):
             lamp = 'failed'
 
         if lamp == '':
@@ -349,7 +349,7 @@ class GenSummary:
         parts['jacket_org'] = parts['jacket']
         parts['jacket']     = parts['jacket'].resize((36,36))
 
-        parts['lamp'] = Image.open(f'resources/log_lamp_{lamp}.png')
+        parts['lamp'] = Image.open(f'resources/images/log_lamp_{lamp}.png')
         parts['lamp_small'] = parts['lamp']
         parts['score_small'] = parts['score']
         parts['rank_small'] = parts['rank']
@@ -360,7 +360,7 @@ class GenSummary:
         return parts
 
     def put_result(self, img, bg, bg_small, idx):
-        img_d = Image.open('resources/rank_d.png')
+        img_d = Image.open('resources/images/rank_d.png')
         # ランクDの場合は飛ばす
         if abs(imagehash.average_hash(img.crop(self.get_detect_points('log_crop_rank'))) - imagehash.average_hash(img_d)) < 10:
             if self.ignore_rankD:
@@ -498,9 +498,9 @@ class GenSummary:
         detected = False
         try:
             diff = self.result_parts['difficulty_org'].crop((0,0,70,30))
-            hash_nov = imagehash.average_hash(Image.open('resources/difficulty_nov.png'))
-            hash_adv = imagehash.average_hash(Image.open('resources/difficulty_adv.png'))
-            hash_exh = imagehash.average_hash(Image.open('resources/difficulty_exh.png'))
+            hash_nov = imagehash.average_hash(Image.open('resources/images/difficulty_nov.png'))
+            hash_adv = imagehash.average_hash(Image.open('resources/images/difficulty_adv.png'))
+            hash_exh = imagehash.average_hash(Image.open('resources/images/difficulty_exh.png'))
             hash_cur = imagehash.average_hash(diff)
 
             hash_jacket = imagehash.average_hash(self.result_parts['jacket_org'],hash_size)
@@ -550,7 +550,7 @@ class GenSummary:
                 #        ret = self.musiclist_hash['info'][difficulty][str(h)]
                 #        #break
             else:
-                tmp = Image.open('resources/no_jacket.png')
+                tmp = Image.open('resources/images/no_jacket.png')
                 hash_no_jacket = imagehash.average_hash(tmp,hash_size)
                 if abs(hash_jacket - hash_no_jacket) < 5:
                     print('ジャケット削除済みの曲なので判定結果をクリアします。')
@@ -587,8 +587,8 @@ class GenSummary:
         logger.debug(f'called! ignore_rankD={self.ignore_rankD}, savedir={self.savedir}')
 
         try:
-            #bg = Image.open('resources/summary_full_bg.png')
-            #bg_small = Image.open('resources/summary_small_bg.png')
+            #bg = Image.open('resources/images/summary_full_bg.png')
+            #bg_small = Image.open('resources/images/summary_small_bg.png')
             # 背景の単色画像を生成する場合はこれ
             h = self.params['log_margin']*2 + self.params['log_maxnum']*self.params['log_rowsize']
             bg = Image.new('RGB', (self.params['log_width'],h), (0,0,0))

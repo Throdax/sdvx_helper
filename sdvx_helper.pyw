@@ -378,10 +378,13 @@ class SDVXHelper:
         """
         vf_cur = self.img_rot.crop(self.get_detect_points('vf'))
         threshold = 1400000 if self.settings['save_on_capture'] else 700000
-        if np.array(vf_cur).sum() > threshold or self.settings['always_update_vf']:
+        if (np.array(vf_cur).sum() > threshold or self.settings['always_update_vf']) and not result_vf_saved:
             vf_cur.save('out/vf_cur.png')
             class_cur = self.img_rot.crop(self.get_detect_points('class'))
             class_cur.save('out/class_cur.png')
+            
+            # In reality we only need to take 1 screenshot per result screen
+            self.result_vf_saved = True
             if not self.gen_first_vf: # 本日1プレー目に保存しておく
                 vf_cur.save('out/vf_pre.png')
                 class_cur.save('out/class_pre.png')
@@ -800,7 +803,7 @@ class SDVXHelper:
         """
         img = self.img_rot.crop(self.get_detect_points('onselect'))
         tmp = imagehash.average_hash(img)
-        img = Image.open('resources/onselect.png')
+        img = Image.open('resources/images/onselect.png')
         hash_target = imagehash.average_hash(img)
         ret = abs(hash_target - tmp) < 5
         #logger.debug(f'onselect diff:{abs(hash_target-tmp)}')
@@ -814,13 +817,13 @@ class SDVXHelper:
         """
         cr = self.img_rot.crop(self.get_detect_points('onresult_val0'))
         tmp = imagehash.average_hash(cr)
-        img_j = Image.open('resources/onresult.png')
+        img_j = Image.open('resources/images/onresult.png')
         hash_target = imagehash.average_hash(img_j)
         val0 = abs(hash_target - tmp) <5 
 
         cr = self.img_rot.crop(self.get_detect_points('onresult_val1'))
         tmp = imagehash.average_hash(cr)
-        img_j = Image.open('resources/onresult2.png')
+        img_j = Image.open('resources/images/onresult2.png')
         hash_target = imagehash.average_hash(img_j)
         val1 = abs(hash_target - tmp) < 5
 
@@ -828,7 +831,7 @@ class SDVXHelper:
         if self.params['onresult_enable_head']:
             cr = self.img_rot.crop(self.get_detect_points('onresult_head'))
             tmp = imagehash.average_hash(cr)
-            img_j = Image.open('resources/result_head.png')
+            img_j = Image.open('resources/images/result_head.png')
             hash_target2 = imagehash.average_hash(img_j)
             val2 = abs(hash_target2 - tmp) < 5
             ret &= val2
@@ -843,12 +846,12 @@ class SDVXHelper:
         """
         img = self.img_rot.crop(self.get_detect_points('onplay_val1'))
         tmp = imagehash.average_hash(img)
-        img = Image.open('resources/onplay1.png')
+        img = Image.open('resources/images/onplay1.png')
         hash_target = imagehash.average_hash(img)
         ret1 = abs(hash_target - tmp) < 10
         img = self.img_rot.crop(self.get_detect_points('onplay_val2'))
         tmp = imagehash.average_hash(img)
-        img = Image.open('resources/onplay2.png')
+        img = Image.open('resources/images/onplay2.png')
         hash_target = imagehash.average_hash(img)
         ret2 = abs(hash_target - tmp) < 10
         return ret1&ret2
@@ -861,7 +864,7 @@ class SDVXHelper:
         """
         img = self.img_rot.crop(self.get_detect_points('ondetect'))
         tmp = imagehash.average_hash(img)
-        img = Image.open('resources/ondetect.png')
+        img = Image.open('resources/images/ondetect.png')
         hash_target = imagehash.average_hash(img)
         ret = abs(hash_target - tmp) < 10
         return ret
@@ -874,7 +877,7 @@ class SDVXHelper:
         """
         img = self.img_rot.crop(self.get_detect_points('onlogo'))
         tmp = imagehash.average_hash(img)
-        img = Image.open('resources/logo.png')
+        img = Image.open('resources/images/logo.png')
         hash_target = imagehash.average_hash(img)
         ret = abs(hash_target - tmp) < 10
         return ret
@@ -902,7 +905,7 @@ class SDVXHelper:
         """
         img = self.img_rot.crop(self.get_detect_points('blastermax'))
         tmp = imagehash.average_hash(img)
-        img = Image.open('resources/blastermax.png')
+        img = Image.open('resources/images/blastermax.png')
         hash_target = imagehash.average_hash(img)
         ret = abs(hash_target - tmp) < 10
         self.is_blastermax = ret
@@ -1057,6 +1060,11 @@ class SDVXHelper:
                 self.detect_mode = detect_mode.result
             elif self.is_onselect():
                 self.detect_mode = detect_mode.select
+                
+                
+            if self.detect_mode != detect_mode.result:
+                # Reset result_vf_saved so that a new screenshot can be taken when reaching the result
+                self.result_vf_saved = False
 
             # モードごとの専用処理
             if self.detect_mode == detect_mode.play:
@@ -1124,6 +1132,8 @@ class SDVXHelper:
                         done_thissong = True
                 #if self.is_onplay() and done_thissong: # 曲決定画面を検出してから入る(曲終了時に何度も入らないように)
                 if self.is_onplay():
+                    # Reset result_vf_saved so that a new screenshot can be taken when reaching the result
+                    self.result_vf_saved = False
                     now = datetime.datetime.now()
                     time_delta = (now - self.last_play1_time).total_seconds()
                     #logger.debug(f'diff = {diff}s')
