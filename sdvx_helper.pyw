@@ -99,6 +99,8 @@ class SDVXHelper:
             self.obs.change_text(self.settings['obs_txt_vf_with_diff'], vf_str)
 
         self.gen_summary = False
+        #self.result_vf_saved = False
+        self.last_vf_hash = None
         
         logger.debug('created.')
         logger.debug(f'settings:{self.settings}')
@@ -376,15 +378,38 @@ class SDVXHelper:
     def save_playerinfo(self):
         """プレイヤー情報(VF,段位)を切り出して画像として保存する。
         """
+        
+        # Sleep for 0.5 seconds just to make sure we don't spam the capture but still get a decent screenshot resuult on averate
+        time.sleep(0.5)
+        
+        
         vf_cur = self.img_rot.crop(self.get_detect_points('vf'))
         threshold = 1400000 if self.settings['save_on_capture'] else 700000
-        if (np.array(vf_cur).sum() > threshold or self.settings['always_update_vf']) and not result_vf_saved:
-            vf_cur.save('out/vf_cur.png')
-            class_cur = self.img_rot.crop(self.get_detect_points('class'))
-            class_cur.save('out/class_cur.png')
+        if np.array(vf_cur).sum() > threshold or self.settings['always_update_vf']:
+            
+            save_vf = False
+            
+            # If the hash of the last capture VF is the same as this one, don't save it
+            if self.last_vf_hash is None :
+                 self.last_vf_hash = imagehash.average_hash(vf_cur)
+                 save_vf = True
+                 self.logToWindow(f"No previous VF hash. Last VF hash is now {self.last_vf_hash}")
+            else  :   
+                 vf_cur_hash = imagehash.average_hash(vf_cur)
+                 if abs(self.last_vf_hash - vf_cur_hash) > 5 :
+                    self.logToWindow(f"VF hash differ from last. Last: {self.last_vf_hash} | New: {vf_cur_hash}.")
+                    self.last_vf_hash = vf_cur_hash
+                    save_vf = True
+
+            if save_vf :    
+                vf_cur.save('out/vf_cur.png')
+                class_cur = self.img_rot.crop(self.get_detect_points('class'))
+                class_cur.save('out/class_cur.png')
+            
+            #self.logToWindow(f"VF and class captured for result screen.")
             
             # In reality we only need to take 1 screenshot per result screen
-            self.result_vf_saved = True
+            #self.result_vf_saved = True
             if not self.gen_first_vf: # 本日1プレー目に保存しておく
                 vf_cur.save('out/vf_pre.png')
                 class_cur.save('out/class_pre.png')
@@ -982,7 +1007,13 @@ class SDVXHelper:
         for l in ('puc', 'uc', 'hard', 'clear'):
             self.window[f'webhook_enable_{l}'].update(True)
         self.window[f'webhook_enable_failed'].update(False)
-
+        
+    def format_score(self, score, bold:bool=True):
+        if bold :
+            return '**'+str(score)[0:len(str(score))-4]+"**,"+str(score)[len(str(score))-4:]
+        else :
+            return str(score)[0:len(str(score))-4]+","+str(score)[len(str(score))-4:]
+        
     def send_custom_webhook(self, playdata:OnePlayData):
         """カスタムWebhookへの送出を行う
 
@@ -1014,7 +1045,7 @@ class SDVXHelper:
             if self.settings['webhook_enable_pics'][i]:
                 webhook.add_file(file=img_bytes.getvalue(), filename=f'{playdata.date}.png')
             msg = f'**{playdata.title}** ({playdata.difficulty}, Lv{lv}),   '
-            msg += f'{playdata.cur_score:,},   '
+            msg += f'{self.format_score(playdata.cur_score)} ({"+" if playdata.cur_score > playdata.pre_score else ""}{self.format_score(playdata.cur_score - playdata.pre_score,False)}),   '
             msg += f'{playdata.lamp},   '
             webhook.content=msg
             try:
@@ -1062,9 +1093,9 @@ class SDVXHelper:
                 self.detect_mode = detect_mode.select
                 
                 
-            if self.detect_mode != detect_mode.result:
+            #if self.detect_mode != detect_mode.result:
                 # Reset result_vf_saved so that a new screenshot can be taken when reaching the result
-                self.result_vf_saved = False
+                #self.result_vf_saved = False
 
             # モードごとの専用処理
             if self.detect_mode == detect_mode.play:
@@ -1133,7 +1164,7 @@ class SDVXHelper:
                 #if self.is_onplay() and done_thissong: # 曲決定画面を検出してから入る(曲終了時に何度も入らないように)
                 if self.is_onplay():
                     # Reset result_vf_saved so that a new screenshot can be taken when reaching the result
-                    self.result_vf_saved = False
+                    #self.result_vf_saved = False
                     now = datetime.datetime.now()
                     time_delta = (now - self.last_play1_time).total_seconds()
                     #logger.debug(f'diff = {diff}s')
