@@ -345,7 +345,7 @@ def dump(song_log_folder, song_list_folder):
             songs[song_hash_title] = song_node
         
         
-    print(f'Writing XML to {song_log_folder}/played_songs.xml')
+    print(f'Writing XML to {song_log_folder}played_songs.xml')
     ET.indent(xml_tree, space="\t", level=0)
     xml_tree.write(song_log_folder+"played_songs.xml",encoding="UTF-8",xml_declaration=True)
         

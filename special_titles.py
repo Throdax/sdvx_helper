@@ -76,7 +76,7 @@ special_titles = {
         ' Erm, could it be a Spatiotemporal ShockWAVE Syndrome...':'* Erm, could it be a Spatiotemporal ShockWAVE Syndrome...?',
         'Feels Seasickness...':'*Feels Seasickness...*',
         'For.tune':'For.*tune',
-        'U.N.オーエンは彼女なのかharu_naba Remix':'U.N.オーエンは彼女なのか？haru_naba Remix',
+        'U.N.オーエンは彼女なのかharu naba Remix':'U.N.オーエンは彼女なのか？haru_naba Remix',
         'With It This Heaven':'With It This Heaven?',
         'メイビ～初恋！ビスケット☆大作戦':'メイビ～初恋！？ビスケット☆大作戦',
         '恋愛♡悪戯！まじかる☆ぱふゅ～む！！':'恋愛♡悪戯！？まじかる☆ぱふゅ～む！！',
@@ -88,6 +88,11 @@ special_titles = {
         'えあぁ、そう。':'え？あぁ、そう。',
         'Cuz we 3 this Game':'Cuz we <3 this Game',
         'ΛNXIENTLEGΛXIEZ':'ΛNXIENT:LEGΛXIEZ',
+        'BLAZING LAZER':'BLAZING_LAZER',
+        'GIGI BABA(brz style)':'GIGI BABA(brz_style)',
+        'Lovesick Lovetune(brz style)' :'Lovesick Lovetune(brz_style)',
+        'WONDER WOBBLER':'WONDER WOBBLER',
+        'WobbleTangleFestival (影虎。 & ikaruga nex\'s HDM RMX)':'WobbleTangleFestival (影虎。 & ikaruga_nex\'s HDM RMX)'
 }
 
 direct_overides = {
