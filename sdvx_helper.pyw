@@ -207,6 +207,7 @@ class SDVXHelper:
         self.last_autosave_time = now
         fmtnow = format(now, "%Y%m%d_%H%M%S")
         dst = f"{self.settings['autosave_dir']}/sdvx_{fmtnow}.png"
+        dst_filename = f"sdvx_{fmtnow}.png"
         tmp = self.get_capture_after_rotate()
         self.gen_summary.cut_result_parts(tmp)
         cur,pre = self.gen_summary.get_score(tmp)
@@ -219,6 +220,7 @@ class SDVXHelper:
             for ch in (' ', '　'):
                 title = title.replace(ch, '_')
             dst = f"{self.settings['autosave_dir']}/sdvx_{title[:120]}_{self.gen_summary.difficulty.upper()}_{self.gen_summary.lamp}_{str(cur)[:-4]}_{fmtnow}.png"
+            dst_filename = f"sdvx_{title[:120]}_{self.gen_summary.difficulty.upper()}_{self.gen_summary.lamp}_{str(cur)[:-4]}_{fmtnow}.png"
         tmp.save(dst)
         lamp = ''
         difficulty = ''
@@ -256,7 +258,7 @@ class SDVXHelper:
         self.th_webhook.start()
             
         self.gen_summary.generate() # ここでサマリも更新
-        self.logToWindow(f"{self.i18n('message.screenshot.saved')} -> {dst}")
+        self.logToWindow(f"{self.i18n('message.screenshot.saved')} -> {dst_filename}")
 
         # ライバル欄更新
         if type(title) == str:
@@ -374,16 +376,43 @@ class SDVXHelper:
         except Exception:
             logger.debug(traceback.format_exc())
             self.logToWindow(self.i18n('message.rivals.data.failed')) # ネットワーク接続やURL設定を見直す必要がある
+            
+    def capture_volforce(self, vf_capture=None, class_capture=None):
+        
+        if self.detect_mode != detect_mode.result :
+            self.logToWindow(self.i18n('message.screenshot.save.volforce.fail'))
+            return
+        
+        if vf_capture is None :
+            vf_cur = self.img_rot.crop(self.get_detect_points('vf'))
+        else :
+            vf_cur = vf_capture
+            
+        if class_capture is None :
+            class_cur = self.img_rot.crop(self.get_detect_points('class'))
+        else :
+            class_cur = class_capture
+            
+        vf_cur.save('out/vf_cur.png')
+        class_cur.save('out/class_cur.png')
+        
+        #self.logToWindow(self.i18n('message.screenshot.save.volforce'))
+        
 
     def save_playerinfo(self):
         """プレイヤー情報(VF,段位)を切り出して画像として保存する。
         """
         
-        # Sleep for 0.5 seconds just to make sure we don't spam the capture but still get a decent screenshot resuult on averate
+        #if hash_function is None :
+        hash_function = imagehash.phash
+        
+        # Sleep for 0.5 seconds just to make sure we don't spam the capture but still get a decent screenshot result on average
         time.sleep(0.5)
         
         
         vf_cur = self.img_rot.crop(self.get_detect_points('vf'))
+        class_cur = self.img_rot.crop(self.get_detect_points('class'))
+        
         threshold = 1400000 if self.settings['save_on_capture'] else 700000
         if np.array(vf_cur).sum() > threshold or self.settings['always_update_vf']:
             
@@ -391,25 +420,19 @@ class SDVXHelper:
             
             # If the hash of the last capture VF is the same as this one, don't save it
             if self.last_vf_hash is None :
-                 self.last_vf_hash = imagehash.average_hash(vf_cur)
+                 self.last_vf_hash = hash_function(vf_cur,10)
                  save_vf = True
-                 self.logToWindow(f"No previous VF hash. Last VF hash is now {self.last_vf_hash}")
+                 #self.logToWindow(f"No previous VF hash. Last VF hash is now {self.last_vf_hash}")
             else  :   
-                 vf_cur_hash = imagehash.average_hash(vf_cur)
-                 if abs(self.last_vf_hash - vf_cur_hash) > 5 :
-                    self.logToWindow(f"VF hash differ from last. Last: {self.last_vf_hash} | New: {vf_cur_hash}.")
+                 vf_cur_hash = hash_function(vf_cur,10)
+                 if abs(self.last_vf_hash - vf_cur_hash) > 2 :
+                    #self.logToWindow(f"VF hash differ from last. Last: {self.last_vf_hash} | New: {vf_cur_hash}.")
                     self.last_vf_hash = vf_cur_hash
                     save_vf = True
 
-            if save_vf :    
-                vf_cur.save('out/vf_cur.png')
-                class_cur = self.img_rot.crop(self.get_detect_points('class'))
-                class_cur.save('out/class_cur.png')
-            
-            #self.logToWindow(f"VF and class captured for result screen.")
-            
-            # In reality we only need to take 1 screenshot per result screen
-            #self.result_vf_saved = True
+            if save_vf :
+                self.capture_volforce(vf_cur,class_cur)    
+                
             if not self.gen_first_vf: # 本日1プレー目に保存しておく
                 vf_cur.save('out/vf_pre.png')
                 class_cur.save('out/class_pre.png')
@@ -724,7 +747,7 @@ class SDVXHelper:
                 par_text(f'{self.i18n("text.main.plays")}:'), par_text(str(self.plays), key='txt_plays')
                 ,par_text(f'{self.i18n("text.main.mode")}:'), par_text(self.detect_mode.name, key='txt_mode')
                 ,par_text(self.i18n('message.main.obsError'), key='txt_obswarning', text_color="#ff0000")],
-            [par_btn(self.i18n('button.main.save'), tooltip=self.i18n('button.main.save.tooltip'), key='btn_savefig')],
+            [par_btn(self.i18n('button.main.save'), tooltip=self.i18n('button.main.save.tooltip'), key='btn_savefig'),par_btn(self.i18n('button.main.save.volforce'), tooltip=self.i18n('button.main.save.volforce.tooltip'), key='btn_save_vf')],
             [par_text('', size=(40,1), key='txt_info')],
         ]
         if self.settings['dbg_enable_output']:
@@ -1149,7 +1172,7 @@ class SDVXHelper:
             if self.detect_mode == detect_mode.init:
                 if not done_thissong:
                     if self.is_ondetect():
-                        self.logToWindow(f"{self.i18n('message.on.detect')}")
+                        #self.logToWindow(f"{self.i18n('message.on.detect')}")
                         time.sleep(self.params['detect_wait'])
                         self.get_capture_after_rotate()
                         self.gen_summary.update_musicinfo(self.img_rot)
@@ -1225,6 +1248,7 @@ class SDVXHelper:
         self.gen_summary.generate()
         self.starttime = now
         self.gui_main()
+        self.logToWindow(f"{self.i18n('message.results.outputdir', self.settings['autosave_dir'])}")
         if self.settings['get_rival_score']:
             try:
                 self.sdvx_logger.get_rival_score(self.settings['player_name'], self.settings['rival_names'], self.settings['rival_googledrive'])
@@ -1314,6 +1338,10 @@ class SDVXHelper:
                 self.start_rta_mode()
             elif ev == 'btn_savefig':
                 self.save_screenshot_general()
+            
+            elif ev == 'btn_save_vf':
+                self.capture_volforce()
+
 
             elif ev == 'combo_scene': # シーン選択時にソース一覧を更新
                 if self.obs != False:
