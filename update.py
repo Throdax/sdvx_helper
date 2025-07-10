@@ -11,6 +11,7 @@ import threading
 import logging, logging.handlers
 import traceback
 from pathlib import Path
+import sdvx_utils
 
 os.makedirs('log', exist_ok=True)
 logger = logging.getLogger(__name__)
@@ -27,11 +28,8 @@ hdl.setFormatter(hdl_formatter)
 logger.addHandler(hdl)
 
 sg.theme('SystemDefault1')
-try:
-    with open('version.txt', 'r') as f:
-        SWVER = f.readline().strip()
-except Exception:
-    SWVER = "v0.0.0"
+
+SWVER = sdvx_utils.get_version("updater")
 
 class Updater:
     def get_latest_version(self):
@@ -128,7 +126,7 @@ if __name__ == '__main__':
     url = f'https://github.com/dj-kata/sdvx_helper/releases/download/{ver}/sdvx_helper.zip'
     if type(ver) != str:
         sg.popup_ok('公開先にアクセスできません',icon=app.ico)
-    elif re.findall('\d+', SWVER) == re.findall('\d+', ver):
+    elif re.findall(r'\d+', SWVER) == re.findall('\d+', ver):
         print('最新版がインストールされています。')
         sg.popup_ok('最新版がインストールされています。',icon=app.ico)
     else:

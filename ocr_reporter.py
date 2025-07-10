@@ -23,7 +23,7 @@ from tkinter import filedialog
 import re
 from poor_man_resource_bundle import *
 import concurrent.futures
-#from datetime import * 
+import sdvx_utils
 
 
 SETTING_FILE = 'settings.json'
@@ -44,6 +44,8 @@ hdl.setLevel(logging.DEBUG)
 hdl_formatter = logging.Formatter('%(asctime)s %(filename)s:%(lineno)5d %(funcName)s() [%(levelname)s] %(message)s')
 hdl.setFormatter(hdl_formatter)
 logger.addHandler(hdl)
+
+SWVER = sdvx_utils.get_version("ocr")
 
 class Reporter:
     
@@ -362,13 +364,13 @@ class Reporter:
                 sg.Text('hash_jacket:', font=(None,16)), sg.Input('', key='hash_jacket', size=(25,1), font=(None,16)), sg.Text('hash_info:',font=(None,16)), sg.Input('', key='hash_info', size=(25,1),font=(None,16))
                 ,sg.Text(self.i18n('text.difficulty')+':', font=(None,16)), sg.Combo(['', 'nov', 'adv', 'exh', 'APPEND'], key='combo_difficulty', font=(None,16))
             ],
-            [sg.Button(self.i18n('button.resgister'), key='register'), sg.Button(self.i18n('button.rescan'), key='coloring')],
+            [sg.Button(self.i18n('button.resgister'), key='register'), sg.Button(self.i18n('button.rescan'), key='coloring'), sg.Button(self.i18n('button.rescan.missing'), key='coloring_missing')],
             [sg.Column(layout_tables, key='column_table'), sg.Column(layout_db, key='column_db')],
             [sg.Text('', text_color="#ff0000", key='state', font=(None,16))],
             [sg.Image(None, size=(100,100), key='jacket'), sg.Column(layout_info)]
         ]
         if not refresh : 
-            self.window = sg.Window(f"{self.i18n('window.ocr.title')}", layout, resizable=True, grab_anywhere=True,return_keyboard_events=True,finalize=True,enable_close_attempted_event=True,icon=self.ico,location=(self.settings['lx'], self.settings['ly']), size=(900,780))
+            self.window = sg.Window(f"{self.i18n('window.ocr.title',SWVER)}", layout, resizable=True, grab_anywhere=True,return_keyboard_events=True,finalize=True,enable_close_attempted_event=True,icon=self.ico,location=(self.settings['lx'], self.settings['ly']), size=(900,780))
         else :
             self.window.Title = self.i18n('window.ocr.title')
              
@@ -483,7 +485,33 @@ class Reporter:
 #        with parent.color_lock :
 #            parent.ocr_processed += 1
         return [parent.filelist_bgcolor[i][1],parent.filelist_bgcolor[i][2],parent.ocr_found,parent.ocr_not_found]
+     
+    def do_coloring_missing(self):
+        self.gen_summary.load_hashes()
+        result_files = list(self.gen_summary.get_result_files())
+        
+        ocr_processed = 0
+        
+        dt_start = datetime.datetime.now()
+
+        # matches: sdvx_20250628_141650.png
+        pattern = re.compile(r"^sdvx_\d+_\d+.png")
+        
+        # Non threaded mode, the original mode
+        for i,f in enumerate(result_files) :
             
+            file_name = re.split(r"[\/\\]",f)
+            if pattern.match(file_name[len(file_name)-1]) :
+                self.color_file(self, i, f)
+                                       
+            self.update_coloring_status(i+1,len(result_files))       
+                 
+        self.apply_coloring()
+         
+        dt_end = datetime.datetime.now()
+        duration = dt_end - dt_start
+         
+        self.window['state'].update(self.i18n('message.coloring.complete',self.ocr_not_found,self.ocr_found,round(duration.total_seconds(),2)), text_color='#000000')        
     
     # ファイル一覧に対し、OCR結果に応じた色を付ける
     def do_coloring(self):
@@ -623,6 +651,13 @@ class Reporter:
                 self.th_coloring = threading.Thread(target=self.do_coloring, daemon=True)
                 self.th_coloring.start()
                 self.window['state'].update(self.i18n('message.coloring'), text_color='#000000')
+            elif ev == 'coloring_missing':
+                self.ocr_found = 0
+                self.ocr_not_found = 0
+                self.th_coloring = threading.Thread(target=self.do_coloring_missing, daemon=True)
+                self.th_coloring.start()
+                self.window['state'].update(self.i18n('message.coloring'), text_color='#000000')
+                
             elif ev == 'register':
                 music = self.window['txt_title'].get()
                 if music != '':

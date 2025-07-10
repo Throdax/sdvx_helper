@@ -10,6 +10,7 @@ from sdvxh_classes import *
 from functools import partial
 import urllib
 from poor_man_resource_bundle import *
+import sdvx_utils
 
 os.makedirs('log', exist_ok=True)
 os.makedirs('out', exist_ok=True)
@@ -36,6 +37,8 @@ SETTING_FILE = 'settings.json'
 ALLLOG_FILE = 'alllog.pkl'
 sg.theme('SystemDefault')
 lamp_table = ['FAILED', 'COMP', 'EXC', 'UC', 'PUC']
+
+SWVER = sdvx_utils.get_version("manager")
 
 # TODO
 ## Lv一覧の作成
@@ -203,7 +206,7 @@ class ScoreViewer:
             ]
         ]
         ico = self.ico_path('icon.ico')
-        self.window = sg.Window(self.i18n('window.score.title'), layout, resizable=True, return_keyboard_events=True, finalize=True, enable_close_attempted_event=True, icon=ico, size=(800,600))
+        self.window = sg.Window(self.i18n('window.score.title',SWVER), layout, resizable=True, return_keyboard_events=True, finalize=True, enable_close_attempted_event=True, icon=ico, size=(800,600))
         self.window['table'].expand(expand_x=True, expand_y=True)
         self.update_table()
 
