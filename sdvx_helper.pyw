@@ -22,6 +22,7 @@ import urllib
 import webbrowser
 from decimal import Decimal
 from poor_man_resource_bundle import *
+import sdvx_utils
 # フラットウィンドウ、右下モード(左に上部側がくる)
 # フルスクリーン、2560x1440に指定してもキャプは1920x1080で撮れてるっぽい
 
@@ -48,11 +49,8 @@ par_text = partial(sg.Text, font=FONT)
 par_btn = partial(sg.Button, pad=(3,0), font=FONT, enable_events=True, border_width=0)
 SETTING_FILE = 'settings.json'
 sg.theme('SystemDefault')
-try:
-    with open('version.txt', 'r') as f:
-        SWVER = f.readline().strip()
-except Exception:
-    SWVER = "v?.?.?"
+
+SWVER = sdvx_utils.get_version("helper")
     
 class SDVXHelper:
     def __init__(self):
@@ -740,9 +738,7 @@ class SDVXHelper:
         ]
         layout = [
             [sg.Menubar(menuitems, key='menu')],
-            [
-                sg.Text('Language/言語', font=(None,12)),sg.Combo(self.bundle.get_available_bundles(), key='locale', font=(None,12), default_value=self.default_locale,enable_events=True)
-            ],
+             
             [
                 par_text(f'{self.i18n("text.main.plays")}:'), par_text(str(self.plays), key='txt_plays')
                 ,par_text(f'{self.i18n("text.main.mode")}:'), par_text(self.detect_mode.name, key='txt_mode')
@@ -754,7 +750,7 @@ class SDVXHelper:
             layout.append([sg.Multiline(size=(100,8), key='output', font=(None, 9))])
         self.gui_mode = gui_mode.main
         
-        self.window = sg.Window(self.i18n('window.main.title'), layout, grab_anywhere=True,return_keyboard_events=True,resizable=False,finalize=True,enable_close_attempted_event=True,icon=self.ico,location=(self.settings['lx'], self.settings['ly']))
+        self.window = sg.Window(self.i18n('window.main.title',SWVER), layout, grab_anywhere=True,return_keyboard_events=True,resizable=False,finalize=True,enable_close_attempted_event=True,icon=self.ico,location=(self.settings['lx'], self.settings['ly']))
         
         if self.connect_obs():
             self.window['txt_obswarning'].update('')
@@ -1341,6 +1337,7 @@ class SDVXHelper:
             
             elif ev == 'btn_save_vf':
                 self.capture_volforce()
+                self.logToWindow(self.i18n('message.screenshot.save.volforce'))
 
 
             elif ev == 'combo_scene': # シーン選択時にソース一覧を更新
