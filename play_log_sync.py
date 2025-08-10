@@ -390,7 +390,7 @@ class PlayLogSync():
             [sg.Multiline(size=(150, 50), key='output', font=(None, 9))]
             ]
         
-        self.window = sg.Window(f"Play Log Sync", layout, resizable=True, grab_anywhere=True, return_keyboard_events=True, finalize=True, enable_close_attempted_event=True, size=(1024, 768), icon=self.ico)
+        self.window = sg.Window(f"Play Log Sync - {SWVER}", layout, resizable=True, grab_anywhere=True, return_keyboard_events=True, finalize=True, enable_close_attempted_event=True, size=(1024, 768), icon=self.ico)
 
     def main_gui(self):
         while True:

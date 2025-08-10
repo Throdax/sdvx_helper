@@ -3,7 +3,7 @@ def get_version(app:str) -> str:
         line = f.readline()
         
         while line != "" :
-            if line.split("=")[0].strip() == "helper" :
+            if line.split("=")[0].strip() == app :
                 SWVER = line.split("=")[1].strip()
             line = f.readline()
         

@@ -20,22 +20,29 @@ if "%2" == "sdvx" set SDVX=Build
 if "%2" == "helper" set SDVX=Build
 if "%3" == "sdvx" set SDVX=Build
 if "%3" == "helper" set SDVX=Build
+if "%4" == "sdvx" set SDVX=Build
+if "%4" == "helper" set SDVX=Build
+
 
 if "%1" == "ocr" set OCR=Build
 if "%2" == "ocr" set OCR=Build
 if "%3" == "ocr" set OCR=Build
+if "%4" == "ocr" set OCR=Build
 
 if "%1" == "manager" set MANAGER=Build
 if "%2" == "manager" set MANAGER=Build
 if "%3" == "manager" set MANAGER=Build
+if "%4" == "manager" set MANAGER=Build
 
 if "%1" == "updater" set UPDATER=Build
 if "%2" == "updater" set UPDATER=Build
 if "%3" == "updater" set UPDATER=Build
+if "%4" == "updater" set UPDATER=Build
 
 if "%1" == "sync" set SYNC=Build
 if "%2" == "sync" set SYNC=Build
 if "%3" == "sync" set SYNC=Build
+if "%4" == "sync" set SYNC=Build
 
 if "%1" == "*" (
 	set SDVX=Build
