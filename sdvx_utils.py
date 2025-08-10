@@ -1,4 +1,7 @@
 def get_version(app:str) -> str:        
+    
+    SWVER = None
+    
     with open('version.properties', 'r') as f:
         line = f.readline()
         

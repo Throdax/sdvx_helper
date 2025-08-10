@@ -12,6 +12,7 @@ import logging, logging.handlers
 import traceback
 from pathlib import Path
 import sdvx_utils
+from poor_man_resource_bundle import *
 
 os.makedirs('log', exist_ok=True)
 logger = logging.getLogger(__name__)
@@ -32,6 +33,12 @@ sg.theme('SystemDefault1')
 SWVER = sdvx_utils.get_version("updater")
 
 class Updater:
+    
+    def __init__(self):
+        self.default_locale = 'EN'
+        self.bundle = PoorManResourceBundle(self.default_locale)
+        self.i18n = self.bundle.get_text
+    
     def get_latest_version(self):
         self.ico=self.ico_path('icon.ico')
         ret = None
@@ -59,7 +66,7 @@ class Updater:
 
         # zipファイルの解凍
         logger.debug('now extracting...')
-        self.window['txt_info'].update('zipファイル解凍中')
+        self.window['txt_info'].update(f'{self.i18n("message.updater.unziping")}')
         shutil.unpack_archive(filename, 'tmp')
 
         zp = zipfile.ZipFile(filename, 'r')
@@ -85,7 +92,7 @@ class Updater:
         shutil.rmtree('tmp/sdvx_helper')
         out = ''
         if len(failed_list) > 0:
-            out = '更新に失敗したファイル(tmp/tmp.zipから手動展開してください): '
+            out = f'{self.i18n("message.updater.unziping.failed")}: '
             out += '\n'.join(failed_list)
 
         self.window.write_event_value('-FINISH-', out)
@@ -112,25 +119,26 @@ class Updater:
         while True:
             ev,val = self.window.read()
             if ev in (sg.WIN_CLOSED, 'Escape:27', '-WINDOW CLOSE ATTEMPTED-'):
-                value = sg.popup_yes_no(f'アップデートをキャンセルしますか？', icon=self.ico)
+                value = sg.popup_yes_no(f'{self.i18n("popup.updater.cancel")}', icon=self.ico,title=f'{app.i18n("window.update.title",SWVER)}')
                 if value == 'Yes':
                     break
             elif ev == '-FINISH-':
-                msg = 'アップデート完了！\n' + val[ev]
+                msg = f' {self.i18n("popup.updater.complete")} ' + val[ev]
                 sg.popup_ok(msg, icon=self.ico)
                 break
 
 if __name__ == '__main__':
     app = Updater()
     ver = app.get_latest_version()
+    helper_version = sdvx_utils.get_version("helper")
     url = f'https://github.com/Throdax/sdvx_helper/releases/download/{ver}/sdvx_helper_all.zip'
     if type(ver) != str:
-        sg.popup_ok('公開先にアクセスできません',icon=app.ico)
-    elif re.findall(r'\d+', SWVER) == re.findall(r'\d+', ver):
-        print('最新版がインストールされています。')
-        sg.popup_ok('最新版がインストールされています。',icon=app.ico)
+        sg.popup_error(f'{app.i18n("popup.updater.noRepo")}',icon=app.ico,title=f'{app.i18n("window.update.title",SWVER)}')
+    elif re.findall(r'\d+', helper_version) == re.findall(r'\d+', ver):
+        print(f'{app.i18n("popup.updater.alreadyLatest")}')
+        sg.popup_ok(f'{app.i18n("popup.updater.alreadyLatest")}',icon=app.ico,title=f'{app.i18n("window.update.title",SWVER)}')
     else:
-        value = sg.popup_ok_cancel(f'利用可能なアップデートがあります。\n\n{SWVER} -> {ver}\n\n更新しますか？',icon=app.ico)
+        value = sg.popup_ok_cancel(f'{app.i18n("popup.updater.newVersion",helper_version,ver)}',icon=app.ico,title=f'{app.i18n("window.update.title",SWVER)}')
         if value == 'OK':
             app.main(url)
 
