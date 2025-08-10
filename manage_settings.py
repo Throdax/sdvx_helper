@@ -66,6 +66,7 @@ default_val = {
     'save_jacketimg':True, # OCR時にジャケット画像を保存する(保存先はjackets/内。VFビュー用。)
     'update_rival_on_result':False, # リザルト画面のたびにライバル関連データを更新するかどうか
     'always_update_vf': False,
+    'play_log_sync': {'play_log_path':'','results_folder':'','song_list':'','dump_output_folder':''},
 
     # debug
     'send_webhook':True, # OCR失敗時にwebhookで自動報告するかどうか
