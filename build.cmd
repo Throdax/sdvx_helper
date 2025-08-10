@@ -98,6 +98,6 @@ xcopy /E /I /Y out %target_sdvx%\out
 del /F /Q %target_sdvx%\out\rival*.pkl
 
 REM Zip everything
-if exist %target_sdvx%_all.zip del /F /Q %target_sdvx%_all.zip
-powershell -Command "Compress-Archive -Path %target_sdvx%\* -DestinationPath %target_sdvx%_all.zip"
+if exist %target_sdvx%_en_all.zip del /F /Q %target_sdvx%_en_all.zip
+powershell -Command "Compress-Archive -Path %target_sdvx%\* -DestinationPath %target_sdvx%_en_all.zip"
 
