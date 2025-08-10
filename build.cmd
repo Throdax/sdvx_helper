@@ -80,20 +80,24 @@ if "%MANAGER%" == "Build" %pyin% %target_manager%.py --clean --noconsole --onefi
 if "%UPDATER%" == "Build" %pyin% %target_updater%.py --clean --noconsole --onefile --icon=icon.ico --add-data "icon.ico;./" --hidden-import=tkinter --hidden-import=tkinter.filedialog -y
 if "%SYNC%" == "Build" %pyin% %target_sync%.py --clean --noconsole --onefile --icon=icon.ico --add-data "icon.ico;./" --hidden-import=tkinter --hidden-import=tkinter.filedialog -y
 
-xcopy /Y dist\sdvx_helper.exe %target_sdvx%\
+powershell Remove-Item -Path %target_sdvx% -Recurse -Force
 
-del /F /Q %target_sdvx%\out\rival*.pkl
+REM binaries
+xcopy /Y dist\*.exe %target_sdvx%\
+xcopy /Y .\version.properties %target_sdvx%\
 
+REM resources folder
 xcopy /E /I /Y resources %target_sdvx%\resources
+del /F /Q %target_sdvx%\resources\*.bk
+del /F /Q %target_sdvx%\resources\*.size8
 
+REM out folder
 del /F /Q out\*.xml
 del /F /Q out\*.pkl
-
 xcopy /E /I /Y out %target_sdvx%\out
+del /F /Q %target_sdvx%\out\rival*.pkl
 
-copy version.txt %target_sdvx%\
-
-if exist %target_sdvx%.zip del /F /Q %target_sdvx%.zip
-
-powershell -Command "Compress-Archive -Path %target_sdvx%\* -DestinationPath %target_sdvx%.zip"
+REM Zip everything
+if exist %target_sdvx%_all.zip del /F /Q %target_sdvx%_all.zip
+powershell -Command "Compress-Archive -Path %target_sdvx%\* -DestinationPath %target_sdvx%_all.zip"
 
