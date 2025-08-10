@@ -92,7 +92,9 @@ special_titles = {
         'GIGI BABA(brz style)':'GIGI BABA(brz_style)',
         'Lovesick Lovetune(brz style)' :'Lovesick Lovetune(brz_style)',
         'WONDER WOBBLER':'WONDER WOBBLER',
-        'WobbleTangleFestival (影虎。 & ikaruga nex\'s HDM RMX)':'WobbleTangleFestival (影虎。 & ikaruga_nex\'s HDM RMX)'
+        'WobbleTangleFestival (影虎。 & ikaruga nex\'s HDM RMX)':'WobbleTangleFestival (影虎。 & ikaruga_nex\'s HDM RMX)',
+        'U.N.オーエンは彼女なのか？haru naba Remix':'U.N.オーエンは彼女なのか？haru_naba Remix',
+        'WONDER WOBBLER':'WONDER_WOBBLER'
 }
 
 direct_overides = {

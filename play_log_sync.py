@@ -3,6 +3,7 @@ import os
 import argparse
 import shutil
 import sys
+import json
 from os import path
 from PIL import Image
 from datetime import datetime, timedelta 
@@ -15,10 +16,12 @@ import PySimpleGUI as sg
 from poor_man_resource_bundle import *
 import sdvx_utils
 import threading
+from manage_settings import *
 
 sdvx_logger = SDVXLogger("Throdax")
 time_offset_seconds = 0
 
+SETTING_FILE = 'settings.json'
 sg.theme('SystemDefault')
 
 SWVER = sdvx_utils.get_version("sync")
@@ -31,6 +34,8 @@ class PlayLogSync():
         self.bundle = PoorManResourceBundle(self.default_locale)
         self.i18n = self.bundle.get_text
         self.ico=self.ico_path('icon.ico')
+        self.load_settings()
+        self.save_settings() # 値が追加された場合のために、一度保存
         self.do_layout()
         self.main_gui()
         
@@ -42,7 +47,7 @@ class PlayLogSync():
         return os.path.join(base_path, relative_path)
         
     def logToWindow(self, msg):
-        if self.window  :
+        if hasattr(self,'window') :
             self.window['output'].print(msg)
         else :
             print(msg)
@@ -374,12 +379,12 @@ class PlayLogSync():
         layout = [
             [sg.Text('Language/言語', font=(None,12)),sg.Combo(self.bundle.get_available_bundles(), key='locale', font=(None,12), default_value=self.default_locale,enable_events=True)],
             [sg.HSeparator()],
-            [sg.Text('Play Log:', font=(None, 16)), sg.Input('D:\\Tools\\SoundVoltex\\sdvx_helper\\', size=(44, 1), key='play_log', font=(None, 16), tooltip='The directory containing the alllog (alllog.pkl) file')],
-            [sg.Text('Results Folder:', font=(None, 16)), sg.Input('D:\\Tools\\SoundVoltex\\results', size=(40, 1), key='results_folder', font=(None, 16), tooltip='The directory containing the result screenshots')],
+            [sg.Text('Play Log:', font=(None, 16)), sg.Input(self.settings['play_log_sync']['play_log_path'], size=(44, 1), key='play_log', font=(None, 16), tooltip='The directory containing the alllog (alllog.pkl) file')],
+            [sg.Text('Results Folder:', font=(None, 16)), sg.Input(self.settings['play_log_sync']['results_folder'], size=(40, 1), key='results_folder', font=(None, 16), tooltip='The directory containing the result screenshots')],
             [sg.Button('Sync', font=(None, 16), key="sync_btn", enable_events=True), sg.Check("Rebuild", font=(None, 16), enable_events=True, key='rebuild_play_log')],
             [sg.HSeparator()],
-            [sg.Text('Song List:', font=(None, 16)), sg.Input('D:\\Tools\\SoundVoltex\\sdvx_helper\\resources', size=(44, 1), key='song_list', font=(None, 16), tooltip='The directory containing the song list (musiclist.pkl) file, only used with the "dump" option')],
-            [sg.Text('Output Folder:', font=(None, 16)), sg.Input('D:\\Tools\\SoundVoltex\\sdvx_helper\\', size=(44, 1), key='xml_output_list', font=(None, 16), tooltip='The directory where the XML will be saved')],
+            [sg.Text('Song List:', font=(None, 16)), sg.Input(self.settings['play_log_sync']['song_list'], size=(44, 1), key='song_list', font=(None, 16), tooltip='The directory containing the song list (musiclist.pkl) file, only used with the "dump" option')],
+            [sg.Text('Output Folder:', font=(None, 16)), sg.Input(self.settings['play_log_sync']['dump_output_folder'], size=(44, 1), key='xml_output_list', font=(None, 16), tooltip='The directory where the XML will be saved')],
             [sg.Button('Dump', font=(None, 16), key="dump_btn", enable_events=True, tooltip='Dumps the alllog.pkl into an xml file')],
             [sg.HSeparator()],
             [sg.Multiline(size=(150, 50), key='output', font=(None, 9))]
@@ -391,6 +396,7 @@ class PlayLogSync():
         while True:
             ev, val = self.window.read()
             if ev in (sg.WIN_CLOSED, 'Escape:27', '-WINDOW CLOSE ATTEMPTED-', 'btn_close_info', 'btn_close_setting'):
+                self.save_settings()
                 break
             elif ev == 'sync_btn':
                 self.sync_thread = threading.Thread(target=self.sync, args=(val['play_log'], val['results_folder'], val['rebuild_play_log']),daemon=True)
@@ -404,22 +410,46 @@ class PlayLogSync():
                 self.i18n = self.bundle.get_text
                 self.window.close()
                 self.do_layout()
+            elif ev == 'play_log':
+                self.settings['play_log_sync']['play_log_path'] = val['play_log']
+            elif ev == 'results_folder':
+                self.settings['play_log_sync']['results_folder'] = val['results_folder']
+            elif ev == 'song_list':
+                self.settings['play_log_sync']['song_list'] = val['song_list']
+            elif ev == 'xml_output_list':
+                self.settings['play_log_sync']['dump_output_folder'] = val['xml_output_list']    
+            
+                
+    def load_settings(self):
+        """ユーザ設定(self.settings)をロードしてself.settingsにセットする。一応返り値にもする。
+
+        Returns:
+            dict: ユーザ設定
+        """
+        ret = {}
+        try:
+            with open(SETTING_FILE) as f:
+                ret = json.load(f)
+                self.logToWindow(self.i18n('message.settings.loaded'))
+        except Exception as e:
+            logger.debug(traceback.format_exc())
+            self.logToWindow(self.i18n('message.settings.not.found'))
+
+        ### 後から追加した値がない場合にもここでケア
+        for k in default_val.keys():
+            if not k in ret.keys():
+                self.logToWindow(f"{k} {self.i18n('message.settings.key.not.found')} ({default_val[k]} {self.i18n('message.settings.key.not.found.used')})")
+                ret[k] = default_val[k]
+        self.settings = ret
+        return ret
+
+    def save_settings(self):
+        """ユーザ設定(self.settings)を保存する。
+        """
+        with open(SETTING_FILE, 'w') as f:
+            json.dump(self.settings, f, indent=2)
         
         
 if __name__ == '__main__':
-    
-#    parser = argparse.ArgumentParser(description='Reads the sdvx results folders and re-inserts missing songs into the alllog.pkl')
-#    parser.add_argument('--songLog', required=True, help='The directory containing the alllog (alllog.pkl) file')
-#    parser.add_argument('--results', required=True, help='The directory containing the result screenshots')
-#    parser.add_argument('--dump', required=False, help='Dumps the alllog.pkl into an xml file', action='store_true')
-#    parser.add_argument('--songList', required=False, help='The directory containing the song list (musiclist.pkl) file, only used with the --dump option')
-#    parser.add_argument('--rebuildSongLog', required=False, help='Rebuilds the whole song log from the result screenshots', action='store_true')
-    
     play_log_sync = PlayLogSync() 
-    
-#    args = parser.parse_args()
-#    main(args.songLog, args.results,args.rebuildSongLog)
-    
-#    if args.dump :
-#        dump(args.songLog, args.songList)
 
