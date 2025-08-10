@@ -53,7 +53,7 @@ class Updater:
 
     def update_from_url(self, url):
         filename = 'tmp/tmp.zip'
-        self.window['txt_info'].update('ファイルDL中')
+        self.window['txt_info'].update(f'{self.i18n("message.updater.downloading")}')
 
         def _progress(block_count: int, block_size: int, total_size: int):
             percent = int((block_size*block_count*100)/total_size)
@@ -131,7 +131,7 @@ if __name__ == '__main__':
     app = Updater()
     ver = app.get_latest_version()
     helper_version = sdvx_utils.get_version("helper")
-    url = f'https://github.com/Throdax/sdvx_helper/releases/download/{ver}/sdvx_helper_all.zip'
+    url = f'https://github.com/Throdax/sdvx_helper/releases/download/{ver}/sdvx_helper_en_all.zip'
     if type(ver) != str:
         sg.popup_error(f'{app.i18n("popup.updater.noRepo")}',icon=app.ico,title=f'{app.i18n("window.update.title",SWVER)}')
     elif re.findall(r'\d+', helper_version) == re.findall(r'\d+', ver):
