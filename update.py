@@ -35,11 +35,11 @@ class Updater:
     def get_latest_version(self):
         self.ico=self.ico_path('icon.ico')
         ret = None
-        url = 'https://github.com/dj-kata/sdvx_helper/tags'
+        url = 'https://github.com/Throdax/sdvx_helper/tags'
         r = requests.get(url)
         soup = BeautifulSoup(r.text,features="html.parser")
         for tag in soup.find_all('a'):
-            if 'releases/tag/v.' in tag['href']:
+            if 'releases/tag/' in tag['href']:
                 ret = tag['href'].split('/')[-1]
                 break # 1番上が最新なので即break
         return ret
@@ -123,10 +123,10 @@ class Updater:
 if __name__ == '__main__':
     app = Updater()
     ver = app.get_latest_version()
-    url = f'https://github.com/dj-kata/sdvx_helper/releases/download/{ver}/sdvx_helper.zip'
+    url = f'https://github.com/Throdax/sdvx_helper/releases/download/{ver}/sdvx_helper_all.zip'
     if type(ver) != str:
         sg.popup_ok('公開先にアクセスできません',icon=app.ico)
-    elif re.findall(r'\d+', SWVER) == re.findall('\d+', ver):
+    elif re.findall(r'\d+', SWVER) == re.findall(r'\d+', ver):
         print('最新版がインストールされています。')
         sg.popup_ok('最新版がインストールされています。',icon=app.ico)
     else:
