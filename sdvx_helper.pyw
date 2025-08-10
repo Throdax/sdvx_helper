@@ -1273,6 +1273,8 @@ class SDVXHelper:
             if ev in (sg.WIN_CLOSED, 'Escape:27', '-WINDOW CLOSE ATTEMPTED-', 'btn_close_info', 'btn_close_setting'):
                 if self.gui_mode == gui_mode.main: # メインウィンドウを閉じた場合
                     self.save_settings()
+                    # maya2serverへのアップロード
+                    self.sdvx_logger.upload_best(volforce=self.vf_cur)
                     self.control_obs_sources('quit')
                     summary_filename = f"{self.settings['autosave_dir']}/{self.starttime.strftime('%Y%m%d')}_summary.png"
                     self.logToWindow(f"{self.i18n('message.main.savingResults')}\n==> {summary_filename}")
