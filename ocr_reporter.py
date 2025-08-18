@@ -55,6 +55,7 @@ class Reporter:
     ocr_processed = 0
     
     def __init__(self, chk_update:bool=True):
+        # TODO: Save default locale to the setting.json and loaded it here
         self.default_locale = 'EN'
         self.bundle = PoorManResourceBundle(self.default_locale)
         self.i18n = self.bundle.get_text
