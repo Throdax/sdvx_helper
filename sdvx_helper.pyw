@@ -54,6 +54,7 @@ SWVER = sdvx_utils.get_version("helper")
     
 class SDVXHelper:
     def __init__(self):
+        # TODO: Save default locale to the setting.json and loaded it here
         self.default_locale = 'EN'
         self.bundle = PoorManResourceBundle(self.default_locale)
         self.i18n = self.bundle.get_text
@@ -138,21 +139,6 @@ class SDVXHelper:
         except Exception:
             print(traceback.format_exc())
 
-    def get_latest_version(self):
-        """GitHubから最新版のバージョンを取得する。
-
-        Returns:
-            str: バージョン番号
-        """
-        ret = None
-        url = 'https://github.com/dj-kata/sdvx_helper/tags'
-        r = requests.get(url)
-        soup = BeautifulSoup(r.text,features="html.parser")
-        for tag in soup.find_all('a'):
-            if 'releases/tag/v.' in tag['href']:
-                ret = tag['href'].split('/')[-1]
-                break # 1番上が最新なので即break
-        return ret
     
     def load_settings(self):
         """ユーザ設定(self.settings)をロードしてself.settingsにセットする。一応返り値にもする。
@@ -1392,7 +1378,7 @@ class SDVXHelper:
                     self.window['txt_my_googledrive'].update(tmp)
 
             elif ev == self.i18n('menu.file.updates'):
-                ver = self.get_latest_version()
+                ver = sdvx_utils.get_latest_version()
                 if ver != SWVER:
                     self.logToWindow(f'{self.i18n("message.main.currentVersion")}: {SWVER}, {self.i18n("message.main.latestVersion")}: {ver}')
                     ans = sg.popup_yes_no(f'{self.i18n("popup.updateFound")} \n\n{SWVER} -> {ver}\n\n{self.i18n("popup.closeApp")}', icon=self.ico)
