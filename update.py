@@ -38,19 +38,8 @@ class Updater:
         self.default_locale = 'EN'
         self.bundle = PoorManResourceBundle(self.default_locale)
         self.i18n = self.bundle.get_text
-    
-    def get_latest_version(self):
         self.ico=self.ico_path('icon.ico')
-        ret = None
-        url = 'https://github.com/Throdax/sdvx_helper/tags'
-        r = requests.get(url)
-        soup = BeautifulSoup(r.text,features="html.parser")
-        for tag in soup.find_all('a'):
-            if 'releases/tag/' in tag['href']:
-                ret = tag['href'].split('/')[-1]
-                break # 1番上が最新なので即break
-        return ret
-
+    
     def update_from_url(self, url):
         filename = 'tmp/tmp.zip'
         self.window['txt_info'].update(f'{self.i18n("message.updater.downloading")}')
@@ -129,7 +118,7 @@ class Updater:
 
 if __name__ == '__main__':
     app = Updater()
-    ver = app.get_latest_version()
+    ver = sdvx_utils.get_latest_version()
     helper_version = sdvx_utils.get_version("helper")
     url = f'https://github.com/Throdax/sdvx_helper/releases/download/{ver}/sdvx_helper_en_all.zip'
     if type(ver) != str:

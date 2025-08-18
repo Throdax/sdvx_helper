@@ -30,6 +30,7 @@ SWVER = sdvx_utils.get_version("sync")
 class PlayLogSync():
     
     def __init__(self):
+        # TODO: Save default locale to the setting.json and loaded it here
         self.default_locale = 'EN'
         self.bundle = PoorManResourceBundle(self.default_locale)
         self.i18n = self.bundle.get_text
