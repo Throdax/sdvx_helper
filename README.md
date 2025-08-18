@@ -1,4 +1,12 @@
-I've (dj-kata) created a simple English version of the manual.
+# Intro 
+I've changed the images from the english manual to the english ones provided by my fork. The rest for the most part remains untouched from the original dj-kata english manual and only the "Includes" section has been updated.
+
+**Please do not bother dj-kata with issues you have encountered with this fork** but instead feel free to open an [issue](https://github.com/Throdax/sdvx_helper/issues) or a [pull-request](https://github.com/Throdax/sdvx_helper/pulls) if you have translation language files other than Japanese and English.
+
+I will continue to update this README with the new features I've added in this fork.
+
+# Manual 
+dj-kata created a simple English version of the manual.
 I might consider implementing an English version of the UI in the future. 
 
 説明書の日本語版は[こちら](https://github.com/Throdax/sdvx_helper#README_JP.md)。
@@ -7,13 +15,13 @@ I might consider implementing an English version of the UI in the future.
 The sdvx_helper is an application for SOUND VOLTEX EXCEED GEAR コナステ.  
 It aims for streaming with Open Broadcaster Software (OBS).  
 Even when the chart area is enlarged on your streaming layout,  current music information can be displayed clearly with this application.
-![image](https://github.com/dj-kata/sdvx_helper/assets/61326119/5d33134e-942b-4fb6-a580-d81ad191e57a)
+![image](https://github.com/user-attachments/assets/287f6de5-767f-4c04-b328-6e429bdccbb3)
 
 With this application, you can save result images automatically, and can 
 generate a playlog image using them.
 Each time a result image is captured, the playlog image is updated.
 You can also save a screenshot on pressing F6 key.
-![image](https://github.com/dj-kata/sdvx_helper/assets/61326119/95173020-f846-4a4f-b320-9e8018cb5059)
+![image](https://github.com/user-attachments/assets/66483463-3b6f-43a0-8a83-6e95ef55eebd)
 
 Additionally, you can configure automatic control settings for OBS.
 You can show or hide sources and switch scenes
@@ -75,22 +83,22 @@ in the name (e.g., ~Windows-Installer.exe)
 from [here](https://github.com/obsproject/obs-websocket/releases) and install it.
 In OBS, go to 'Tools' in the menu bar,
 then select 'WebSocket Server Settings' and configure it as follows."
-![image](https://github.com/dj-kata/sdvx_helper/assets/61326119/7b4fd58e-9e0c-4ffc-a875-3ec427312012)
+![image](https://github.com/user-attachments/assets/b8e32ee0-80bc-44ba-ac52-01ad15e4eea3)
 
 ## 2. Run sdvx_helper.exe and open '設定(settings)' from the menu bar.
 ## 3. Enter the port number and password you configured in step 1.
 If you see a message saying 'Cannot connect to OBS', suspect the following.  
-![image](https://github.com/dj-kata/sdvx_helper/assets/61326119/6b63586e-8d9f-4429-876f-2fe12fefe459)
+![image](https://github.com/user-attachments/assets/329644e4-7e92-49ae-8119-3de98d01bae7)
 
 ## 4. Select the orientation of the screen specified in the e-AMUSEMENT Cloud version of Sound Voltex in the settings.
 The settings in Sound Voltex and this tool correspond as follows:
-![image](https://github.com/user-attachments/assets/40e717b7-5756-4264-b694-a175f3900714)
+![image](https://github.com/user-attachments/assets/83b98355-e46e-421e-83b2-962a16373ba7)
 
 ## 5. Close the settings window.
 ## 6. Open 'OBS制御設定(OBS control settings)' from the menu bar.
 ## 7. Choose the scene name for OBS streaming, select the source name to capture the game screen, and then press 'set' next to the game screen.
 These settings are essential to capture the game screen.
-![image](https://github.com/dj-kata/sdvx_helper/assets/61326119/7fdd5401-c2cb-4b7a-af04-3bb98f511357)
+![image](https://github.com/user-attachments/assets/79ee2b6a-6b80-4520-a89c-be32c378e1e5)
 
 By the way, in the OBS control settings, you can control the visibility of sources for each scene (song selection, playing, results).
 
@@ -102,7 +110,7 @@ For example, you can easily do the following:
 Double-click on 'nowplaying.html' source and set the width to 820
 and height to 900 for a nice layout with good margins.
 Also, you can set it to show only during gameplay using OBS control settings.
-![image](https://github.com/dj-kata/sdvx_helper/assets/61326119/f7a78147-7bc7-45a5-acdd-39ed55920d01)
+![image](https://github.com/user-attachments/assets/fb76bcf9-4dcc-4d87-aeec-98309d81a673)
 
 Note that the source name must be 'nowplaying.html' or 'nowplaying'
 for automatic reloading to occur.
@@ -140,7 +148,7 @@ deleting the respective result image file will fix it in the next generation pro
 By checking 'Remind with sound when BLASTER GAUGE is at maximum' in the settings,
 an alert sound (resources\blastermax.wav) will play when the gauge is
 at maximum on the song selection screen.
-![image](https://github.com/dj-kata/sdvx_helper/assets/61326119/d2695579-7aef-4476-bb4b-27c53e45df5b)
+![image](https://github.com/user-attachments/assets/4cc28b8d-2aed-4a27-98ee-fc958263f55f)
 
 Also, if you create a text source (GDI+) named 'sdvx_helper_blastermax' in OBS,
 it will display the text 'BLASTER GAUGE is at maximum!'
@@ -181,5 +189,4 @@ I would appreciate if you could mention it in the description.
 
 Troubleshooting information will be compiled on [this page](https://github.com/dj-kata/sdvx_helper/wiki/%E3%83%88%E3%83%A9%E3%83%96%E3%83%AB%E3%82%B7%E3%83%A5%E3%83%BC%E3%83%86%E3%82%A3%E3%83%B3%E3%82%B0).
 
-For bug reports or requests, please contact [the Issues section of this repository](https://github.com/dj-kata/sdvx_helper/issues)or Twitter(@[cold_planet_](https://twitter.com/cold_planet_)).
-I might be ego-searching with ytlive_helper.
+For bug reports or requests, please contact [the Issues section of this repository](https://github.com/Throdax/sdvx_helper/issues)
