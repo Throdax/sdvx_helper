@@ -5,9 +5,10 @@ I've changed the images from the english manual to the english ones provided by 
 
 I will continue to update this README with the new features I've added in this fork.
 
+You can find the uploads of my play sessions and sdvx_helper in action on my [Youtube channel](https://www.youtube.com/playlist?list=PL8wHeBFaeU8i4D0MueTlCZKHkWgqBq89-) (fair warning, I'm not that good)
+
 # Manual 
 dj-kata created a simple English version of the manual.
-I might consider implementing an English version of the UI in the future. 
 
 説明書の日本語版は[こちら](https://github.com/Throdax/sdvx_helper#README_JP.md)。
 
