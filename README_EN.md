@@ -1,7 +1,7 @@
-I've created a simple English version of the manual.
+I've (dj-kata) created a simple English version of the manual.
 I might consider implementing an English version of the UI in the future. 
 
-説明書の日本語版は[こちら](https://github.com/dj-kata/sdvx_helper#readme)。
+説明書の日本語版は[こちら](https://github.com/Throdax/sdvx_helper#README_JP.md)。
 
 # sdvx_helper
 The sdvx_helper is an application for SOUND VOLTEX EXCEED GEAR コナステ.  
@@ -32,32 +32,36 @@ which helps to minimize the load on the PC.
 This application has been tested in the following environment.
 ```
 OS: Windows10 64bit(22H2)
-CPU: Intel Core i7-12700F
-GPU: NVIDIA RTX3050
+CPU: Intel Core i7-14700F
+GPU: NVIDIA RTX3060 Ti
 Antivirus software: Windows Defender
-OBS: 29.1.2
+OBS: 31.0.3
 ```
 
 Make sure you have OBS version 28 or newer for the latest WebSocket API. 
 Even AMD CPUs should work fine (it's pretty stable via WebSocket). 
 Just a heads up, your antivirus might block communication with OBS through TCP port 4444.
 
-# Includings
+# Includes
 
 |file name|description|
 |-|-|
 |sdvx_helper.exe|Execution file for sdvx_helper|
 |update.exe|Execution file for auto-updating this application|
-|version.txt|The version information|
+|manage_score.exe|A standalone tool to manage your play log|
+|ocr_reporter.exe|A standalone tool to help identify unrecognized songs that have been played|
+|play_log_sync.exe|A standalone tool to help sync result screenshots back to the play log (useful after playing for unrecognized songs)|
+|version.properties|The version information|
 |README.txt|Concise instruction manual|
 |out/|The destination directory for outputting music information, playlog, etc...|
 |out/nowplaying.html|An HTML file for displaying song information. You can use it by dragging and dropping it into OBS.|
 |out/summary_full.png|A play log images of the day(detailed)|
 |out/summary_small.png|A play log images of the day(summary)|
-|resources/|Set of files for recognition|
+|resources/images|Set of files for recognition|
+|resources/i18n|Language files used to set the applications in the desired languages (feel free to contribute new translations via pull requests)|
 
 # How to install
-Download the ```sdvx_helper.zip``` at the top of [the release page](https://github.com/dj-kata/sdvx_helper/releases)
+Download the ```sdvx_helper.zip``` at the top of [the release page](https://github.com/Throdax/sdvx_helper/releases)
 and extract it to a folder of your choice (excluding the desktop). Click on ```sdvx_helper.exe``` to run it.
 
 An automatic update function is equipped in this tool,
