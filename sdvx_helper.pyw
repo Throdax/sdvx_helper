@@ -1382,7 +1382,7 @@ class SDVXHelper:
 
             elif ev == self.i18n('menu.file.updates'):
                 ver = sdvx_utils.get_latest_version()
-                if ver != SWVER:
+                if sdvx_utils.compare_version(ver,SWVER) == -1 :
                     self.logToWindow(f'{self.i18n("message.main.currentVersion")}: {SWVER}, {self.i18n("message.main.latestVersion")}: {ver}')
                     ans = sg.popup_yes_no(f'{self.i18n("popup.updateFound")} \n\n{SWVER} -> {ver}\n\n{self.i18n("popup.closeApp")}', icon=self.ico)
                     if ans == "Yes":

@@ -1,4 +1,6 @@
-import urllib, requests
+import urllib 
+import requests
+import re
 from bs4 import BeautifulSoup
 
 def get_version(app:str) -> str:        
@@ -33,6 +35,24 @@ def get_latest_version() -> str:
             ret = tag['href'].split('/')[-1]
             break # 1番上が最新なので即break
     return ret
+
+def compare_version(ver1:str, ver2:str) -> int:
+    ver1_splits = re.split(r'\.',ver1)
+    ver2_splits = re.split(r'\.',ver2)
+    
+            
+    if int(ver1_splits[0]) == int(ver2_splits[0]) :
+        if int(ver1_splits[1]) == int(ver2_splits[1]) :
+            if int(ver1_splits[2]) == int(ver2_splits[2]) :
+                return 0
+            else :
+                comparing_index = 2
+        else :
+            comparing_index = 1
+    else :
+        comparing_index = 0
+    
+    return -1 if int(ver1_splits[comparing_index]) > int(ver2_splits[comparing_index]) else 1
     
     
         
