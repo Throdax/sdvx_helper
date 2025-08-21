@@ -100,6 +100,8 @@ class Updater:
             [sg.ProgressBar(100, key='prog', size=(30, 15))],
         ]
         self.window = sg.Window('infdc update manager', layout, grab_anywhere=True,return_keyboard_events=True,resizable=False,finalize=True,enable_close_attempted_event=True,icon=self.ico)
+        
+
 
     def main(self, url):
         self.gui()
@@ -123,10 +125,10 @@ if __name__ == '__main__':
     url = f'https://github.com/Throdax/sdvx_helper/releases/download/{ver}/sdvx_helper_en_all.zip'
     if type(ver) != str:
         sg.popup_error(f'{app.i18n("popup.updater.noRepo")}',icon=app.ico,title=f'{app.i18n("window.update.title",SWVER)}')
-    elif re.findall(r'\d+', helper_version) == re.findall(r'\d+', ver):
+    elif re.findall(r'\d+', helper_version) == re.findall(r'\d+', ver) or sdvx_utils.compare_version(ver,helper_version) > 0:
         print(f'{app.i18n("popup.updater.alreadyLatest")}')
         sg.popup_ok(f'{app.i18n("popup.updater.alreadyLatest")}',icon=app.ico,title=f'{app.i18n("window.update.title",SWVER)}')
-    else:
+    elif sdvx_utils.compare_version(ver,helper_version) == -1:
         value = sg.popup_ok_cancel(f'{app.i18n("popup.updater.newVersion",helper_version,ver)}',icon=app.ico,title=f'{app.i18n("window.update.title",SWVER)}')
         if value == 'OK':
             app.main(url)
