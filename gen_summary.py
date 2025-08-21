@@ -7,6 +7,7 @@ import logging, logging.handlers, traceback
 import numpy as np
 from discord_webhook import DiscordWebhook
 from params_secret import *
+import sdvx_utils
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -21,11 +22,7 @@ hdl_formatter = logging.Formatter('%(asctime)s %(filename)s:%(lineno)5d %(funcNa
 hdl.setFormatter(hdl_formatter)
 logger.addHandler(hdl)
 
-try:
-    with open('version.txt', 'r') as f:
-        SWVER = f.readline().strip()
-except Exception:
-    SWVER = "v?.?.?"
+SWVER = sdvx_utils.get_version("helper")
 
 class GenSummary:
     

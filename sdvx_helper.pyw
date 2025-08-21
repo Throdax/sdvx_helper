@@ -101,6 +101,9 @@ class SDVXHelper:
         #self.result_vf_saved = False
         self.last_vf_hash = None
         
+        # TODO: If discord webhook is set and option "send_song_list_discord" is set to True. Send the title of all played songs in order to the discord hook 
+        self.session_plays = {}
+        
         logger.debug('created.')
         logger.debug(f'settings:{self.settings}')
         
