@@ -1,31 +1,34 @@
-import pyautogui as pgui
-import PySimpleGUI as sg
-import numpy as np
-import os, sys, re
-import time
-import threading
-from obssocket import OBSSocket
-import logging, logging.handlers
-import traceback
+from decimal import Decimal
 from functools import partial
-from tkinter import filedialog
 import json, datetime, winsound
-from PIL import Image, ImageFilter
-from gen_summary import *
-import imagehash, keyboard
+import logging, logging.handlers
+import os, sys, re
 import subprocess
-from bs4 import BeautifulSoup
-import requests
-from manage_settings import *
-from sdvxh_classes import *
+import threading
+import time
+from tkinter import filedialog
+import traceback
 import urllib
 import webbrowser
-from decimal import Decimal
+
+from PIL import Image, ImageFilter
+from bs4 import BeautifulSoup
+import imagehash, keyboard
+import requests
+
+import PySimpleGUI as sg
+from gen_summary import *
+from manage_settings import *
+import numpy as np
+from obssocket import OBSSocket
 from poor_man_resource_bundle import *
+import pyautogui as pgui
 import sdvx_utils
+from sdvxh_classes import *
+
+
 # フラットウィンドウ、右下モード(左に上部側がくる)
 # フルスクリーン、2560x1440に指定してもキャプは1920x1080で撮れてるっぽい
-
 os.makedirs('jackets', exist_ok=True)
 os.makedirs('log', exist_ok=True)
 os.makedirs('out', exist_ok=True)
@@ -101,8 +104,7 @@ class SDVXHelper:
         #self.result_vf_saved = False
         self.last_vf_hash = None
         
-        # TODO: If discord webhook is set and option "send_song_list_discord" is set to True. Send the title of all played songs in order to the discord hook 
-        self.session_plays = {}
+        self.session_plays = []
         
         logger.debug('created.')
         logger.debug(f'settings:{self.settings}')
@@ -252,6 +254,7 @@ class SDVXHelper:
             self.sdvx_logger.update_rival_view(title, self.gen_summary.difficulty.upper())
         
         self.update_mybest()
+        self.add_result_to_playlist(tmp_playdata)
 
     def update_mybest(self):
         """自己べ情報をcsv出力する
@@ -424,6 +427,31 @@ class SDVXHelper:
                 vf_cur.save('out/vf_pre.png')
                 class_cur.save('out/class_pre.png')
                 self.gen_first_vf = True
+    
+    
+    def add_result_to_playlist(self, result:OnePlayData):
+        self.session_plays.append(result)
+        
+    def send_playlist(self):
+        
+        if len(self.session_plays) > 0 :
+            for i in range(len(self.settings['webhook_names'])):
+    
+                if self.settings['webhook_playlist'][i]:
+                    msg = f'Session playlist for {self.settings["webhook_player_name"]} ({len(self.session_plays)} songs):\n'
+                    
+                    for j, play in enumerate(self.session_plays) :
+                        msg += f'{int(j+1):0>2} - {play.title}\n'
+                    
+                    webhook = DiscordWebhook(url=self.settings['webhook_urls'][i], username=f"{self.settings['webhook_player_name']}")
+                    webhook.content=msg
+                    
+                    try:
+                        res = webhook.execute()
+                    except Exception:
+                        self.logToWindow(f'{self.i18n("message.error.webhook.send")}')
+                        logger.debug(traceback.format_exc())
+        
 
     def start_rta_mode(self):
         """RTA開始処理。変数の初期化などを行う。
@@ -574,7 +602,7 @@ class SDVXHelper:
             [sg.Listbox(self.settings['webhook_names'], size=(50, 5), key='list_webhook', enable_events=True), sg.Button(self.i18n('button.webhook.add'), key='webhook_add', tooltip=self.i18n('button.webhook.add.tooltip')), sg.Button(self.i18n('button.webhook.delete'), key='webhook_del')],
             [sg.Text(self.i18n('text.webhook.settings.name')), sg.Input('', key='webhook_names', size=(63,1))],
             [sg.Text(self.i18n('text.webhook.url')), sg.Input('', key='webhook_urls', size=(50,1))],
-            [sg.Checkbox(self.i18n('checkbox.webhook.send.images'), key='webhook_enable_pics', default=True)],
+            [sg.Checkbox(self.i18n('checkbox.webhook.send.images'), key='webhook_enable_pics', default=True),sg.Check(self.i18n('text.weebhook.send.playlist'), key='webhook_playlist')],
             [sg.Frame(self.i18n('text.webhook.target.level'), layout=layout_lvs, title_color='#000044')],
             [sg.Frame(self.i18n('text.webhook.target.lamp'), layout=layout_lamps, title_color='#000044')],
         ]
@@ -732,7 +760,7 @@ class SDVXHelper:
                 par_text(f'{self.i18n("text.main.plays")}:'), par_text(str(self.plays), key='txt_plays')
                 ,par_text(f'{self.i18n("text.main.mode")}:'), par_text(self.detect_mode.name, key='txt_mode')
                 ,par_text(self.i18n('message.main.obsError'), key='txt_obswarning', text_color="#ff0000")],
-            [par_btn(self.i18n('button.main.save'), tooltip=self.i18n('button.main.save.tooltip'), key='btn_savefig'),par_btn(self.i18n('button.main.save.volforce'), tooltip=self.i18n('button.main.save.volforce.tooltip'), key='btn_save_vf')],
+            [par_btn(self.i18n('button.main.save'), tooltip=self.i18n('button.main.save.tooltip'), key='btn_savefig'),par_btn(self.i18n('button.main.save.volforce'), tooltip=self.i18n('button.main.save.volforce.tooltip'), key='btn_save_vf'),par_btn(self.i18n('button.main.save.summary'), tooltip=self.i18n('button.main.save.summary.tooltip'), key='btn_save_summary')],
             [par_text('', size=(40,1), key='txt_info')],
         ]
         if self.settings['dbg_enable_output']:
@@ -951,7 +979,7 @@ class SDVXHelper:
             val (dict): pysimpleguiのwindow.read()で貰えるval
         """
         if self.window['webhook_names'] == '':
-            sg.popup_ok(i18m('popup.settingName'))
+            sg.popup_ok(self.i18n('popup.settingName'))
         else:
             if self.window['webhook_urls'] == '':
                 sg.popup_ok(self.i18n('popup.webwhookURL'))
@@ -961,12 +989,14 @@ class SDVXHelper:
                     self.settings['webhook_names'][idx] = val['webhook_names']
                     self.settings['webhook_urls'][idx] = val['webhook_urls']
                     self.settings['webhook_enable_pics'][idx] = val['webhook_enable_pics']
+                    self.settings['webhook_playlist'][idx] = val['webhook_playlist']
                     self.settings['webhook_enable_lvs'][idx] = [val[f'webhook_enable_lv{lv}'] for lv in range(1,21)]
                     self.settings['webhook_enable_lamps'][idx] = [val[f'webhook_enable_{l}'] for l in ('puc', 'uc', 'hard', 'clear', 'failed')]
                 else:
                     self.settings['webhook_names'].append(val['webhook_names'])
                     self.settings['webhook_urls'].append(val['webhook_urls'])
                     self.settings['webhook_enable_pics'].append(val['webhook_enable_pics'])
+                    self.settings['webhook_playlist'].append(val['webhook_playlist'])
                     self.settings['webhook_enable_lvs'].append([val[f'webhook_enable_lv{lv}'] for lv in range(1,21)])
                     self.settings['webhook_enable_lamps'].append([val[f'webhook_enable_{l}'] for l in ('puc', 'uc', 'hard', 'clear', 'failed')])
                 self.set_webhook_ui_default()
@@ -982,6 +1012,7 @@ class SDVXHelper:
             self.settings['webhook_names'].pop(idx)
             self.settings['webhook_urls'].pop(idx)
             self.settings['webhook_enable_pics'].pop(idx)
+            self.settings['webhook_playlist'].pop(idx)
             self.settings['webhook_enable_lvs'].pop(idx)
             self.settings['webhook_enable_lamps'].pop(idx)
             self.set_webhook_ui_default()
@@ -998,6 +1029,13 @@ class SDVXHelper:
             self.window['webhook_names'].update(key)
             self.window['webhook_urls'].update(self.settings['webhook_urls'][idx])
             self.window['webhook_enable_pics'].update(self.settings['webhook_enable_pics'][idx])
+            
+            # For old already saved webhooks that did not have the option before
+            if idx not in self.settings['webhook_playlist']:
+                self.settings['webhook_playlist'].append(False)
+            
+            self.window['webhook_playlist'].update(self.settings['webhook_playlist'][idx])
+            
             for i in range(1,21):
                 self.window[f'webhook_enable_lv{i}'].update(self.settings['webhook_enable_lvs'][idx][i-1])
             for i,l in enumerate(('puc', 'uc', 'hard', 'clear', 'failed')):
@@ -1008,6 +1046,7 @@ class SDVXHelper:
         self.window['webhook_names'].update('')
         self.window['webhook_urls'].update('')
         self.window['webhook_enable_pics'].update(True)
+        self.window['webhook_playlist'].update(False)
         for i in range(1,14):
             self.window[f'webhook_enable_lv{i}'].update(False)
         for i in range(14,21):
@@ -1015,6 +1054,7 @@ class SDVXHelper:
         for l in ('puc', 'uc', 'hard', 'clear'):
             self.window[f'webhook_enable_{l}'].update(True)
         self.window[f'webhook_enable_failed'].update(False)
+        
         
     def format_score(self, score, bold:bool=True):
         if bold :
@@ -1272,7 +1312,8 @@ class SDVXHelper:
                     self.sdvx_logger.gen_playcount_csv(self.settings['my_googledrive']+'/playcount.csv')
                     self.update_mybest()
                     self.save_rivallog()
-                    self.logToWindow(f"プレーログを保存しました。")
+                    self.send_playlist()
+                    self.logToWindow(f'{self.i18n("message.main.playLogSaved")}')
                     vf_filename = f"{self.settings['autosave_dir']}/{self.starttime.strftime('%Y%m%d')}_total_vf.png"
                     #print(f"VF対象一覧を保存中 (OBSに設定していれば保存されます) ...\n==> {vf_filename}")
                     try:
@@ -1329,8 +1370,11 @@ class SDVXHelper:
             elif ev == 'btn_save_vf':
                 self.capture_volforce()
                 self.logToWindow(self.i18n('message.screenshot.save.volforce'))
-
-
+                
+            elif ev == 'btn_save_summary':
+                self.gen_summary.generate()
+                self.logToWindow(self.i18n('message.screenshot.save.summary'))
+                
             elif ev == 'combo_scene': # シーン選択時にソース一覧を更新
                 if self.obs != False:
                     sources = self.obs.get_sources(val['combo_scene'])
