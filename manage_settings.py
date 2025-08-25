@@ -39,6 +39,7 @@ default_val = {
     'webhook_names':[], # 1entry: 説明文(str)
     'webhook_urls':[], # 1entry: url(str)
     'webhook_enable_pics':[], # 1entry:bool (画像を送信するかどうか)
+    'webhook_playlist':[], # 1entry:bool (画像を送信するかどうか)
     'webhook_enable_lvs':[], # 1entry:[False,False,...True]のような長さ20の配列(lv1-20)
     'webhook_enable_lamps':[], # 1entry:[True,True,False,False,False] puc,uc,hard,clear,failed
 
@@ -60,7 +61,7 @@ default_val = {
     'params_json':'resources/params.json',
     'logpic_offset_time':2, # ログ画像について、起動の何時間前以降を対象とするか
     'logpic_bg_alpha':255, # ログ画像について、背景の透明度(0-255, 0:完全に透過)
-    'autoload_musiclist':False, # 曲リストを起動時にDLするかどうか。デバッグのためにオフにできるようにしている。
+    'autoload_musiclist':True, # 曲リストを起動時にDLするかどうか。デバッグのためにオフにできるようにしている。
     'player_name':'', # 統計情報ビューに表示するプレイヤー名
     'save_on_capture':False, # 画面取得方式。True:旧方式、False:新方式(jpeg)
     'save_jacketimg':True, # OCR時にジャケット画像を保存する(保存先はjackets/内。VFビュー用。)
