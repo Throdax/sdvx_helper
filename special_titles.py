@@ -94,7 +94,9 @@ special_titles = {
         'WONDER WOBBLER':'WONDER WOBBLER',
         'WobbleTangleFestival (影虎。 & ikaruga nex\'s HDM RMX)':'WobbleTangleFestival (影虎。 & ikaruga_nex\'s HDM RMX)',
         'U.N.オーエンは彼女なのか？haru naba Remix':'U.N.オーエンは彼女なのか？haru_naba Remix',
-        'WONDER WOBBLER':'WONDER_WOBBLER'
+        'WONDER WOBBLER':'WONDER_WOBBLER',
+        'Erm, could it be a Spatiotemporal ShockWAVE Syndrome...':'* Erm, could it be a Spatiotemporal ShockWAVE Syndrome...?',
+        'cloche(といぼっくすうぃんぐ みっくす)':'cloche(といぼっくすうぃんぐ　みっくす)',
 }
 
 direct_overides = {
