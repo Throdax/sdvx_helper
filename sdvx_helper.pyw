@@ -1042,6 +1042,10 @@ class SDVXHelper:
             
             for i in range(1,21):
                 self.window[f'webhook_enable_lv{i}'].update(self.settings['webhook_enable_lvs'][idx][i-1])
+            
+            if len(self.settings['webhook_enable_lamps'][idx]) < 6 :
+                self.settings['webhook_enable_lamps'][idx].insert(2, True)
+                
             for i,l in enumerate(('puc', 'uc', 'exh', 'hard', 'clear', 'failed')):
                 self.window[f'webhook_enable_{l}'].update(self.settings['webhook_enable_lamps'][idx][i])
 
