@@ -36,7 +36,7 @@ par_btn = partial(sg.Button, pad=(3,0), font=FONT, enable_events=True, border_wi
 SETTING_FILE = 'settings.json'
 ALLLOG_FILE = 'alllog.pkl'
 sg.theme('SystemDefault')
-lamp_table = ['FAILED', 'COMP', 'EXC', 'UC', 'PUC']
+lamp_table = ['FAILED', 'COMP', 'EXC', 'MAXXIVE', 'UC', 'PUC']
 
 SWVER = sdvx_utils.get_version("manager")
 
@@ -200,7 +200,7 @@ class ScoreViewer:
                     #,cols_justification='cclrccc' # 4.61.0.21以降
                     ,justification='left'
                     ,select_mode = sg.TABLE_SELECT_MODE_BROWSE
-                    ,col_widths=[4,4,40,10,10,5,5,14]
+                    ,col_widths=[4,4,40,10,10,10,5,14]
                     ,background_color='#ffffff'
                     ,enable_events=True
                 )
