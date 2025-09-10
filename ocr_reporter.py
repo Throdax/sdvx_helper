@@ -21,6 +21,10 @@ import urllib
 import logging, logging.handlers
 from tkinter import filedialog
 import re
+from poor_man_resource_bundle import *
+import concurrent.futures
+import sdvx_utils
+
 
 SETTING_FILE = 'settings.json'
 sg.theme('SystemDefault')
@@ -41,13 +45,27 @@ hdl_formatter = logging.Formatter('%(asctime)s %(filename)s:%(lineno)5d %(funcNa
 hdl.setFormatter(hdl_formatter)
 logger.addHandler(hdl)
 
+SWVER = sdvx_utils.get_version("ocr")
+
 class Reporter:
+    
+    color_lock = threading.Lock()
+    ocr_found = 0
+    ocr_not_found = 0
+    ocr_processed = 0
+    
     def __init__(self, chk_update:bool=True):
-        start = datetime.datetime.now()
+        # TODO: Save default locale to the setting.json and loaded it here
+        self.default_locale = 'EN'
+        self.bundle = PoorManResourceBundle(self.default_locale)
+        self.i18n = self.bundle.get_text
+        
+        self.start = datetime.datetime.now()
         self.load_settings()
         if chk_update:
             self.update_musiclist()
-        self.gen_summary = GenSummary(start)
+        #self.gen_summary = GenSummary(start,autosave_dir='D:/Tools/SoundVoltex/results')
+        self.gen_summary = GenSummary(self.start)
         self.load_musiclist()
         self.read_bemaniwiki()
         self.ico=self.ico_path('icon.ico')
@@ -97,8 +115,8 @@ class Reporter:
         try:
             with open('resources/musiclist.pkl', 'rb') as f:
                 self.musiclist = pickle.load(f)
-            print(f"認識用DB: {len(self.musiclist['jacket']['exh'])}")
-            print(f'曲情報(bemaniwikiベース): {len(self.musiclist["titles"].keys())}')
+            print(f"{self.i18n('log.song.db')}: {len(self.musiclist['jacket']['exh'])}")
+            print(f'{self.i18n("log.song.wiki")}: {len(self.musiclist["titles"].keys())}')
         except:
             logger.debug('musiclist読み込み時エラー。新規作成します。')
             self.musiclist = {}
@@ -144,6 +162,8 @@ class Reporter:
     def read_bemaniwiki(self):
         req = requests.get('https://bemaniwiki.com/index.php?%A5%B3%A5%CA%A5%B9%A5%C6/SOUND+VOLTEX+EXCEED+GEAR/%B3%DA%B6%CA%A5%EA%A5%B9%A5%C8')
 
+        stop_string = '[STOP]'
+
         soup = BeautifulSoup(req.text, 'html.parser')
         titles = self.musiclist['titles']
         for tr in soup.find_all('tr'):
@@ -153,26 +173,26 @@ class Reporter:
                 if tds[2].text != 'BPM':
                     tmp = [tds[0].text, tds[1].text, tds[2].text]
                     
-                    novText = tds[3].text
-                    if novText.startswith('[STOP]') :
-                        novText = novText[len('[STOP]')].strip()
-                    tmp.append(int(novText))
+                    nov_text = tds[3].text
+                    if nov_text.startswith(stop_string) :
+                        nov_text = nov_text[len(stop_string)].strip()
+                    tmp.append(int(nov_text))
                     
-                    advText = tds[4].text
-                    if advText.startswith('[STOP]') :
-                        advText = advText[len('[STOP]')].strip()
-                    tmp.append(int(advText))
+                    adv_text = tds[4].text
+                    if adv_text.startswith(stop_string) :
+                        adv_text = adv_text[len(stop_string)].strip()
+                    tmp.append(int(adv_text))
                                         
-                    exhText = tds[5].text
-                    if exhText.startswith('[STOP]') :
-                        exhText = exhText[len('[STOP]')].strip()
-                    tmp.append(int(exhText))
+                    exh_text = tds[5].text
+                    if exh_text.startswith(stop_string) :
+                        exh_text = exh_text[len(stop_string)].strip()
+                    tmp.append(int(exh_text))
                                         
                     if tds[6].text not in ('', '-'):
-                        appendText = tds[6].text
-                        if appendText.startswith('[STOP]') :
-                            appendText = appendText[len('[STOP]')].strip()
-                        tmp.append(int(appendText))
+                        append_text = tds[6].text
+                        if append_text.startswith(stop_string) :
+                            append_text = append_text[len(stop_string)].strip()
+                        tmp.append(int(append_text))
                     else:
                         tmp.append(None)
                     titles[tds[0].text] = tmp
@@ -195,7 +215,7 @@ class Reporter:
                 numtd = len(tds)
                 title_flg = 0
                 rowspan_flg = 0
-                if re.search('\d{4}/\d{2}/\d{2}', tds[0].text):
+                if re.search('\\d{4}/\\d{2}/\\d{2}', tds[0].text):
                     title_flg = 1 # タイトル行がどっちかのみ、これ以降ずらさない
                     rowspan_flg = 1 # 難易度の先頭ポインタ
                 if numtd in (7+rowspan_flg,8+rowspan_flg):
@@ -203,7 +223,7 @@ class Reporter:
                         title  = tds[0+title_flg].text
                         artist = tds[1+title_flg].text
                         bpm    = tds[2+title_flg].text
-                        if re.search('\A\d{4}/\d{2}/\d{2}\Z', tds[0].text):
+                        if re.search('\\A\\d{4}/\\d{2}/\\d{2}\\Z', tds[0].text):
                             title = tds[1].text
                         #print(tds)
                         if 'rowspan' in tds[1+title_flg].attrs.keys(): # rowspanありの行はずらさない
@@ -221,17 +241,17 @@ class Reporter:
                             bpm = pre_bpm
                         if tds[3+rowspan_flg].text != '-': # ごりらがいるんだ等、1つ上と曲違いのやつ
                             tmp = [title, artist, bpm]
-                            tmp.append(int(re.findall('\d+', tds[3+rowspan_flg].text)[-1]))
-                            tmp.append(int(re.findall('\d+', tds[4+rowspan_flg].text)[-1]))
-                            tmp.append(int(re.findall('\d+', tds[5+rowspan_flg].text)[-1]))
+                            tmp.append(int(re.findall('\\d+', tds[3+rowspan_flg].text)[-1]))
+                            tmp.append(int(re.findall('\\d+', tds[4+rowspan_flg].text)[-1]))
+                            tmp.append(int(re.findall('\\d+', tds[5+rowspan_flg].text)[-1]))
                             if tds[6+rowspan_flg].text not in ('', '-'):
-                                tmp.append(int(re.findall('\d+', tds[6+rowspan_flg].text)[-1]))
+                                tmp.append(int(re.findall('\\d+', tds[6+rowspan_flg].text)[-1]))
                             else:
                                 tmp.append(None)
                             if title not in titles:
                                 titles[title] = tmp
                         else:
-                            tmp[-1] = int(re.findall('\d+', tds[6+rowspan_flg].text)[-1])
+                            tmp[-1] = int(re.findall('\\d+', tds[6+rowspan_flg].text)[-1])
                             titles[title] = tmp
                         #if ('Spear of Justice' in tds[0].text) or ('ASGORE' in tds[1].text):
                         #    print([tds[i].text for i in range(len(tds))])
@@ -247,10 +267,10 @@ class Reporter:
     def send_webhook(self, title, difficulty, hash_jacket, hash_info):
         try:
             webhook = DiscordWebhook(url=url_webhook_reg, username="unknown title info")
-            msg = f"**{title}**\n"
-            msg += f" - **{hash_jacket}**"
+            msg = f"{self.i18n('webhook.ocr.title')}: **{title}**\n"
+            msg += f" - {self.i18n('webhook.ocr.hash.jacket')}: **{hash_jacket}**"
             if hash_info != "":
-                msg += f" - **{hash_info}**"
+                msg += f" - {self.i18n('webhook.ocr.hash.info')}: **{hash_info}**"
             if self.gen_summary.result_parts != False:
                 img_bytes = io.BytesIO()
                 self.gen_summary.result_parts['info'].crop((0,0,260,65)).save(img_bytes, format='PNG')
@@ -258,7 +278,7 @@ class Reporter:
                 img_bytes = io.BytesIO()
                 self.gen_summary.result_parts['difficulty'].save(img_bytes, format='PNG')
                 webhook.add_file(file=img_bytes.getvalue(), filename=f'difficulty.png')
-            msg += f"(difficulty: **{difficulty.upper()}**)"
+            msg += f"({self.i18n('webhook.ocr.difficulty')}: **{difficulty.upper()}**)"
             webhook.content=msg
             res = webhook.execute()
         except Exception:
@@ -268,14 +288,14 @@ class Reporter:
         webhook = DiscordWebhook(url=url_webhook_reg, username="unknown title info")
         with open('resources/musiclist.pkl', 'rb') as f:
             webhook.add_file(file=f.read(), filename='musiclist.pkl')
-        webhook.content = f"追加した譜面数: {self.num_added_fumen}, total: {len(self.musiclist['jacket']['APPEND'])+len(self.musiclist['jacket']['nov'])+len(self.musiclist['jacket']['adv'])+len(self.musiclist['jacket']['exh'])}"
-        webhook.content += f", 曲数:{len(self.musiclist['jacket']['APPEND'])}"
+        webhook.content = f"{self.i18n('webhook.number.added.scores')}: {self.num_added_fumen}, total: {len(self.musiclist['jacket']['APPEND'])+len(self.musiclist['jacket']['nov'])+len(self.musiclist['jacket']['adv'])+len(self.musiclist['jacket']['exh'])}"
+        webhook.content += f", {self.i18n('webhook.number.added.songs')}: {len(self.musiclist['jacket']['APPEND'])}"
         res = webhook.execute()
     
     ##############################################
     ##########          GUIの設定
     ##############################################
-    def gui(self):
+    def gui(self, refresh:bool=False):
         header = ['title', 'artist', 'bpm', 'nov', 'adv', 'exh', '(APPEND)']
         layout_info = [
             [sg.Image(None, size=(137,29), key='difficulty')],
@@ -312,9 +332,9 @@ class Reporter:
         layout_db = [
             [
                 sg.Text('difficulty:'), sg.Combo(['', 'nov', 'adv', 'exh', 'APPEND'], default_value='exh', key='combo_diff_db', font=(None,16), enable_events=True)
-                ,sg.Button('外部pklのマージ', key='merge')
-                ,sg.Text('0', key='num_hash'), sg.Text('曲')
-                ,sg.Button('pklを送信', key='send_pkl')
+                ,sg.Button(self.i18n('button.merge.pkl'), key='merge')
+                ,sg.Text('0', key='num_hash'), sg.Text(self.i18n('text.songs'))
+                ,sg.Button(self.i18n('button.send.pkl'), key='send_pkl')
             ],
             [
                 sg.Table(
@@ -333,21 +353,28 @@ class Reporter:
         ]
         layout = [
             [
-                sg.Text('search:', font=(None,16)), sg.Input('', size=(40,1), key='filter', font=(None,16), enable_events=True), sg.Button('clear', font=(None,16)), sg.Text('(登録済: ', font=(None,16)), sg.Text('0', key='num_added_fumen', font=(None,16)), sg.Text('譜面)', font=(None,16))
+                sg.Text('Language/言語', font=(None,16)),sg.Combo(self.bundle.get_available_bundles(), key='locale', font=(None,16), default_value=self.default_locale,enable_events=True)
+            ],
+            [ 
+                sg.Text('search:', font=(None,16)), sg.Input('', size=(40,1), key='filter', font=(None,16), enable_events=True), sg.Button('clear', font=(None,16)), sg.Text('('+self.i18n('text.registered')+': ', font=(None,16)), sg.Text('0', key='num_added_fumen', font=(None,16)), sg.Text(self.i18n('text.music_score')+')', font=(None,16))
             ],
             [
                 sg.Text('title:', font=(None,16)), sg.Input('', key='txt_title', font=(None,16), size=(50,1))
             ],
             [
-                sg.Text('hash_jacket:', font=(None,16)), sg.Input('', key='hash_jacket', size=(20,1), font=(None,16)), sg.Text('hash_info:'), sg.Input('', key='hash_info', size=(20,1))
-                ,sg.Text('難易度:', font=(None,16)), sg.Combo(['', 'nov', 'adv', 'exh', 'APPEND'], key='combo_difficulty', font=(None,16))
+                sg.Text('hash_jacket:', font=(None,16)), sg.Input('', key='hash_jacket', size=(25,1), font=(None,16)), sg.Text('hash_info:',font=(None,16)), sg.Input('', key='hash_info', size=(25,1),font=(None,16))
+                ,sg.Text(self.i18n('text.difficulty')+':', font=(None,16)), sg.Combo(['', 'nov', 'adv', 'exh', 'APPEND'], key='combo_difficulty', font=(None,16))
             ],
-            [sg.Button('曲登録', key='register'), sg.Button('ファイル一覧に色付け(重いです)', key='coloring')],
+            [sg.Button(self.i18n('button.resgister'), key='register'), sg.Button(self.i18n('button.rescan'), key='coloring'), sg.Button(self.i18n('button.rescan.missing'), key='coloring_missing')],
             [sg.Column(layout_tables, key='column_table'), sg.Column(layout_db, key='column_db')],
             [sg.Text('', text_color="#ff0000", key='state', font=(None,16))],
             [sg.Image(None, size=(100,100), key='jacket'), sg.Column(layout_info)]
         ]
-        self.window = sg.Window(f"SDVX helper - OCR未検出曲報告ツール", layout, resizable=True, grab_anywhere=True,return_keyboard_events=True,finalize=True,enable_close_attempted_event=True,icon=self.ico,location=(self.settings['lx'], self.settings['ly']), size=(900,780))
+        if not refresh : 
+            self.window = sg.Window(f"{self.i18n('window.ocr.title',SWVER)}", layout, resizable=True, grab_anywhere=True,return_keyboard_events=True,finalize=True,enable_close_attempted_event=True,icon=self.ico,location=(self.settings['lx'], self.settings['ly']), size=(900,780))
+        else :
+            self.window.Title = self.i18n('window.ocr.title')
+             
         self.window['musics'].expand(expand_x=True, expand_y=True)
         self.window['files'].expand(expand_x=True, expand_y=True)
         self.window['column_table'].expand(expand_x=True, expand_y=True)
@@ -392,7 +419,7 @@ class Reporter:
         ret = []
         bgcs = []
         for i,f in enumerate(self.gen_summary.get_result_files()):
-            ret.append(f)
+            ret.append(f.replace('\\','/'))
             if i%2 == 0:
                 bgcs.append([len(bgcs), '#000000', '#ffffff'])
             else:
@@ -404,40 +431,163 @@ class Reporter:
         self.filelist_bgcolor = bgcs
         return ret, bgcs
     
+    def apply_coloring(self):
+        
+        update_list = []
+        for i,f in enumerate(self.gen_summary.get_result_files()):
+            update_list.append(f.replace('\\','/'))
+        
+        self.window['files'].update(list(update_list),row_colors=self.filelist_bgcolor)
+    
+    def update_coloring_status(self,current,total):
+        self.window['state'].update(self.i18n('message.coloring')+' ('+str(current)+'/'+str(total)+') ', text_color='#000000')
+        
+    def color_file(self,parent,i:int, f:str):
+        
+        gen_summary_local = GenSummary(parent.start)        
+        
+        try:
+            img = Image.open(f)
+        except Exception:
+            print(f'{self.i18n("log.file.not.ocr_found")} ({f})')
+            return
+        if gen_summary_local.is_result(img):
+            gen_summary_local.cut_result_parts(img)
+            res = gen_summary_local.ocr()
+            if res != False:
+                with parent.color_lock :
+                    parent.filelist_bgcolor[i][1] = '#dddddd'
+                    parent.filelist_bgcolor[i][2] = '#333333'
+                title = res
+                cur,pre = gen_summary_local.get_score(img)
+                ts = os.path.getmtime(f)
+                now = datetime.datetime.fromtimestamp(ts)
+                fmtnow = format(now, "%Y%m%d_%H%M%S")
+                for ch in ('\\', '/', ':', '*', '?', '"', '<', '>', '|'):
+                    title = title.replace(ch, '')
+                for ch in (' ', '　'):
+                    title = title.replace(ch, '_')
+                dst = f"{parent.settings['autosave_dir']}/sdvx_{title[:120]}_{gen_summary_local.difficulty.upper()}_{gen_summary_local.lamp}_{str(cur)[:-4]}_{fmtnow}.png"
+                try:
+                    os.rename(f, dst)
+                except Exception:
+                    print(f'{parent.i18n("log.filename.exists")} ({dst})')
+                
+                with parent.color_lock : parent.ocr_found += 1
+            else :
+                with parent.color_lock :
+                    parent.ocr_not_found += 1  
+        else:
+            with parent.color_lock :
+                parent.filelist_bgcolor[i][1] = '#dddddd'
+                parent.filelist_bgcolor[i][2] = '#333333'
+            
+        
+#        with parent.color_lock :
+#            parent.ocr_processed += 1
+        return [parent.filelist_bgcolor[i][1],parent.filelist_bgcolor[i][2],parent.ocr_found,parent.ocr_not_found]
+     
+    def do_coloring_missing(self):
+        self.gen_summary.load_hashes()
+        result_files = list(self.gen_summary.get_result_files())
+        
+        ocr_processed = 0
+        
+        dt_start = datetime.datetime.now()
+
+        # matches: sdvx_20250628_141650.png
+        pattern = re.compile(r"^sdvx_\d+_\d+.png")
+        
+        # Non threaded mode, the original mode
+        for i,f in enumerate(result_files) :
+            
+            file_name = re.split(r"[\/\\]",f)
+            if pattern.match(file_name[len(file_name)-1]) :
+                self.color_file(self, i, f)
+                                       
+            self.update_coloring_status(i+1,len(result_files))       
+                 
+        self.apply_coloring()
+         
+        dt_end = datetime.datetime.now()
+        duration = dt_end - dt_start
+         
+        self.window['state'].update(self.i18n('message.coloring.complete',self.ocr_not_found,self.ocr_found,round(duration.total_seconds(),2)), text_color='#000000')        
+    
     # ファイル一覧に対し、OCR結果に応じた色を付ける
     def do_coloring(self):
         self.gen_summary.load_hashes()
-        for i,f in enumerate(list(self.gen_summary.get_result_files())):
-            try:
-                img = Image.open(f)
-            except Exception:
-                print(f'ファイルが見つかりません。スキップします。({f})')
-                continue
-            if self.gen_summary.is_result(img):
-                self.gen_summary.cut_result_parts(img)
-                res = self.gen_summary.ocr()
-                if res != False:
-                    self.filelist_bgcolor[i][1] = '#dddddd'
-                    self.filelist_bgcolor[i][2] = '#333333'
-                    title = res
-                    cur,pre = self.gen_summary.get_score(img)
-                    ts = os.path.getmtime(f)
-                    now = datetime.datetime.fromtimestamp(ts)
-                    fmtnow = format(now, "%Y%m%d_%H%M%S")
-                    for ch in ('\\', '/', ':', '*', '?', '"', '<', '>', '|'):
-                        title = title.replace(ch, '')
-                    for ch in (' ', '　'):
-                        title = title.replace(ch, '_')
-                    dst = f"{self.settings['autosave_dir']}/sdvx_{title[:120]}_{self.gen_summary.difficulty.upper()}_{self.gen_summary.lamp}_{str(cur)[:-4]}_{fmtnow}.png"
-                    try:
-                        os.rename(f, dst)
-                    except Exception:
-                        print(f'既に存在するファイル名なのでskip。({dst})')
+        result_files = list(self.gen_summary.get_result_files())
+        
+        ocr_processed = 0
+        
+        dt_start = datetime.datetime.now()
+        
+        # Not as fast as I would though. Python threads...
+#        with concurrent.futures.ThreadPoolExecutor(max_workers=20) as executor:
+#            future_color = {executor.submit(self.color_file, self, i, f): (i,f) for i,f in enumerate(result_files)}
+#            for future in concurrent.futures.as_completed(future_color) :
+#                ocr_processed += 1
+#                inputs = future_color[future]
+#                outputs = future.result()
+#                self.filelist_bgcolor[inputs[0]][1] = outputs[0]
+#                self.filelist_bgcolor[inputs[0]][2] = outputs[1]
+#                self.ocr_found += outputs[2]
+#                self.ocr_not_found += outputs[3] 
+#                self.update_coloring_status(ocr_processed,len(result_files))
+
+        # Non threaded mode, the original mode
+        for i,f in enumerate(result_files) :
+            self.color_file(self, i, f)
+            self.update_coloring_status(i+1,len(result_files))
+                       
+        self.apply_coloring()
+         
+        dt_end = datetime.datetime.now()
+        duration = dt_end - dt_start
+         
+        self.window['state'].update(self.i18n('message.coloring.complete',self.ocr_not_found,self.ocr_found,round(duration.total_seconds(),2)), text_color='#000000')
+        
+
+    def register_song(self, val, len, str, print, music, hash_jacket, hash_info):
+        difficulty = val['combo_difficulty']
+        print(difficulty, hash_jacket, hash_info)
+        pat = re.compile(r'[0-9a-f]{16}')
+        if (difficulty != '') and bool(pat.search(hash_jacket)):
+            # TODO ジャケットなしの曲はinfoを登録する
+            self.send_webhook(music, difficulty, hash_jacket, hash_info)
+            if music not in self.musiclist['jacket'][difficulty].keys():
+                self.window['state'].update(f'{self.i18n("message.song.registered")} ({music} / {hash_jacket})', text_color='#000000')
+                print(self.i18n('log.song.registered'))
+                for i, diff in enumerate(diff_table):
+                    self.num_added_fumen += 1
+                    self.musiclist['jacket'][diff][music] = str(hash_jacket)
+                    if hash_info != '':
+                        self.musiclist['info'][diff][music] = str(hash_info)
+                
+                if len(val['files']) > 0:
+                    self.filelist_bgcolor[val['files'][0]][-2] = '#dddddd'
+                    self.filelist_bgcolor[val['files'][0]][-1] = '#333399'
+                    self.window['files'].update(row_colors=self.filelist_bgcolor)
             else:
-                self.filelist_bgcolor[i][1] = '#dddddd'
-                self.filelist_bgcolor[i][2] = '#333333'
-        self.window['files'].update(list(self.gen_summary.get_result_files()),row_colors=self.filelist_bgcolor)
-        self.window['state'].update('色付けを完了しました。', text_color='#000000')
+                self.num_added_fumen += 1
+                self.window['state'].update(f'{self.i18n("message.song.already.registered")} {difficulty} {self.i18n("message.hash.fixed")} ({music} / {hash_jacket})', text_color='#000000')
+                print(f'{self.i18n("log.song.already.registered")} ({difficulty}) {self.i18n("log.hash.fixed")}')
+                self.musiclist['jacket'][difficulty][music] = str(hash_jacket)
+                if hash_info != '':
+                    self.musiclist['info'][difficulty][music] = str(hash_info)
+                if len(val['files']) > 0:
+                    self.filelist_bgcolor[val['files'][0]][-2] = '#dddddd'
+                    self.filelist_bgcolor[val['files'][0]][-1] = '#333399'
+                    self.window['files'].update(row_colors=self.filelist_bgcolor)
+            self.window['num_added_fumen'].update(self.num_added_fumen)
+            self.save()
+            self.window['hash_jacket'].update('')
+            self.window['hash_info'].update('')
+            self.window['txt_title'].update('')
+        else:
+            print('難易度 or ハッシュ値エラー')
+            self.window['state'].update(self.i18n('message.error.cannot.obtain'), text_color='#000000')
 
     def main(self):
         while True:
@@ -461,8 +611,8 @@ class Reporter:
                             self.window['info'].update('out/tmp_info.png')
                             self.window['difficulty'].update('out/tmp_difficulty.png')
                             self.window['state'].update('')
-                            self.window['hash_jacket'].update(str(imagehash.average_hash(parts['jacket_org'])))
-                            self.window['hash_info'].update(str(imagehash.average_hash(parts['info'])))
+                            self.window['hash_jacket'].update(str(imagehash.average_hash(parts['jacket_org'],10)))
+                            self.window['hash_info'].update(str(imagehash.average_hash(parts['info'],10)))
                             res_ocr = self.gen_summary.ocr()
                             if self.gen_summary.difficulty != False:
                                 self.window['combo_difficulty'].update(self.gen_summary.difficulty)
@@ -470,7 +620,7 @@ class Reporter:
                                 self.window['combo_difficulty'].update('')
                             print(res_ocr)
                             if res_ocr == False:
-                                self.window['state'].update('曲名DBに登録されていません。曲を選択してから曲登録を押してもらえると喜びます。', text_color='#ff0000')
+                                self.window['state'].update(self.i18n('message.song.not.registered'), text_color='#ff0000')
                             else:
                                 self.window['state'].update('')
                             #diff = parts['difficulty_org'].crop((0,0,70,30))
@@ -482,9 +632,9 @@ class Reporter:
                             self.window['jacket'].update(None)
                             self.window['info'].update(None)
                             self.window['difficulty'].update(None)
-                            self.window['state'].update('(リザルト画像ではないファイル)', text_color='#ff0000')
+                            self.window['state'].update(self.i18n('message.non.result.images'), text_color='#ff0000')
                     except Exception:
-                        self.window['state'].update('error! ファイル見つかりません', text_color='#ff0000')
+                        self.window['state'].update(self.i18n('message.error.file.not.ocr_found'), text_color='#ff0000')
                         print(traceback.format_exc())
             elif ev == 'musics':
                 if len(val['musics']) > 0:
@@ -497,53 +647,33 @@ class Reporter:
                 self.window['musics'].update(self.get_musiclist())
                 self.get_dblist()
             elif ev == 'coloring':
+                self.ocr_found = 0
+                self.ocr_not_found = 0
                 self.th_coloring = threading.Thread(target=self.do_coloring, daemon=True)
                 self.th_coloring.start()
-                self.window['state'].update('ファイル一覧をOCR結果に応じて色付け中。しばらくお待ちください。', text_color='#000000')
+                self.window['state'].update(self.i18n('message.coloring'), text_color='#000000')
+            elif ev == 'coloring_missing':
+                self.ocr_found = 0
+                self.ocr_not_found = 0
+                self.th_coloring = threading.Thread(target=self.do_coloring_missing, daemon=True)
+                self.th_coloring.start()
+                self.window['state'].update(self.i18n('message.coloring'), text_color='#000000')
+                
             elif ev == 'register':
                 music = self.window['txt_title'].get()
                 if music != '':
                     hash_jacket = self.window['hash_jacket'].get()
                     hash_info = self.window['hash_info'].get()
-                    difficulty = val['combo_difficulty']
-                    print(difficulty, hash_jacket, hash_info)
-                    pat = re.compile(r'[0-9a-f]{16}')
-                    if (difficulty != '') and bool(pat.search(hash_jacket)):
-                        # TODO ジャケットなしの曲はinfoを登録する
-                        self.send_webhook(music, difficulty, hash_jacket, hash_info)
-                        if music not in self.musiclist['jacket'][difficulty].keys():
-                            self.window['state'].update(f'曲が未登録。全譜面の情報を登録します。({music} / {hash_jacket})', text_color='#000000')
-                            print('登録されていません。全譜面の情報を登録します。')
-                            for i,diff in enumerate(diff_table):
-                                self.num_added_fumen += 1
-                                self.musiclist['jacket'][diff][music] = str(hash_jacket)
-                                if hash_info != '':
-                                    self.musiclist['info'][diff][music] = str(hash_info)
-                            if len(val['files']) > 0:
-                                self.filelist_bgcolor[val['files'][0]][-2] = '#dddddd'
-                                self.filelist_bgcolor[val['files'][0]][-1] = '#333399'
-                                self.window['files'].update(row_colors=self.filelist_bgcolor)
-                        else:
-                            self.num_added_fumen += 1
-                            self.window['state'].update(f'曲自体は登録済み。{difficulty}のhashを修正しました。({music} / {hash_jacket})', text_color='#000000')
-                            print(f'曲自体の登録はされています。この譜面({difficulty})のみhashを修正します。')
-                            self.musiclist['jacket'][difficulty][music] = str(hash_jacket)
-                            if hash_info != '':
-                                self.musiclist['info'][difficulty][music] = str(hash_info)
-                            if len(val['files']) > 0:
-                                self.filelist_bgcolor[val['files'][0]][-2] = '#dddddd'
-                                self.filelist_bgcolor[val['files'][0]][-1] = '#333399'
-                                self.window['files'].update(row_colors=self.filelist_bgcolor)
-                        self.window['num_added_fumen'].update(self.num_added_fumen)
-                        self.save()
-                        self.window['hash_jacket'].update('')
-                        self.window['hash_info'].update('')
-                        self.window['txt_title'].update('')
-                    else:
-                        print('難易度 or ハッシュ値エラー')
-                        self.window['state'].update('難易度またはハッシュ値が取得できません', text_color='#000000')
+                    
+                    tmp = Image.open('resources/images/no_jacket.png')
+                    hash_no_jacket = imagehash.average_hash(tmp,10)
+                    
+                    if hash_jacket == str(hash_no_jacket) :
+                        self.window['state'].update(self.i18n('message.song.jacketHashIsNoJacket',music))
+                    else :    
+                        self.register_song(val, len, str, print, music, hash_jacket, hash_info)
                 else:
-                    self.window['state'].update('曲名が入力されていません', text_color='#000000')
+                    self.window['state'].update(self.i18n('message.error.no.title'), text_color='#000000')
             elif ev == 'combo_diff_db': # hash値リスト側の難易度設定を変えた時に入る
                 self.get_dblist()
             elif ev == 'merge': # pklのマージボタン
@@ -551,6 +681,15 @@ class Reporter:
             elif ev == 'send_pkl':
                 self.save()
                 self.send_pkl()
+            elif ev == 'locale':
+                self.bundle = PoorManResourceBundle(val['locale'].lower())
+                self.default_locale = val['locale']
+                self.i18n = self.bundle.get_text
+                self.window.close()
+                self.gui(False)
+                self.apply_coloring()
+                
+                
 
 if __name__ == '__main__':
     a = Reporter(chk_update = False)

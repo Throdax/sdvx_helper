@@ -1069,6 +1069,11 @@ class ManageMaya2:
     def is_alive(self):
         """サーバ側が生きているかどうかを確認
         """
+        
+        if self.url == "":
+            print('No maya2 URL defined.')
+            return False
+        
         payload = {}
         try:
             r = requests.get(self.url+'/', params=payload)
@@ -1086,6 +1091,10 @@ class ManageMaya2:
     def get_musiclist(self):
         """曲マスタを受信する。何も受信できなかった場合はNoneを返す。
         """
+
+        if not self.is_alive() :
+            return False
+
         try:
             payload = {}
             header = {'X-Auth-Token':'token'} # TODO 本番用の作り込み
@@ -1098,6 +1107,7 @@ class ManageMaya2:
             print(traceback.format_exc())
             return False
         return True
+        
 
     def search_fumeninfo(self, title, fumen='APPEND'):
         """楽曲dbから1譜面の情報を検索する
@@ -1124,6 +1134,9 @@ class ManageMaya2:
     def upload_best(self, sdvx_logger:SDVXLogger, player_name:str='NONAME', volforce:str='0.000'):
         fumen_list = ['nov', 'adv', 'exh', 'APPEND']
         if sdvx_logger is None:
+            return False
+        
+        if not self.is_alive() :
             return False
         
         cnt_ok = 0

@@ -11,6 +11,8 @@ import threading
 import logging, logging.handlers
 import traceback
 from pathlib import Path
+import sdvx_utils
+from poor_man_resource_bundle import *
 
 os.makedirs('log', exist_ok=True)
 logger = logging.getLogger(__name__)
@@ -27,28 +29,20 @@ hdl.setFormatter(hdl_formatter)
 logger.addHandler(hdl)
 
 sg.theme('SystemDefault1')
-try:
-    with open('version.txt', 'r') as f:
-        SWVER = f.readline().strip()
-except Exception:
-    SWVER = "v0.0.0"
+
+SWVER = sdvx_utils.get_version("updater")
 
 class Updater:
-    def get_latest_version(self):
+    
+    def __init__(self):
+        self.default_locale = 'EN'
+        self.bundle = PoorManResourceBundle(self.default_locale)
+        self.i18n = self.bundle.get_text
         self.ico=self.ico_path('icon.ico')
-        ret = None
-        url = 'https://github.com/dj-kata/sdvx_helper/tags'
-        r = requests.get(url)
-        soup = BeautifulSoup(r.text,features="html.parser")
-        for tag in soup.find_all('a'):
-            if 'releases/tag/v.' in tag['href']:
-                ret = tag['href'].split('/')[-1]
-                break # 1番上が最新なので即break
-        return ret
-
+    
     def update_from_url(self, url):
         filename = 'tmp/tmp.zip'
-        self.window['txt_info'].update('ファイルDL中')
+        self.window['txt_info'].update(f'{self.i18n("message.updater.downloading")}')
 
         def _progress(block_count: int, block_size: int, total_size: int):
             percent = int((block_size*block_count*100)/total_size)
@@ -61,7 +55,7 @@ class Updater:
 
         # zipファイルの解凍
         logger.debug('now extracting...')
-        self.window['txt_info'].update('zipファイル解凍中')
+        self.window['txt_info'].update(f'{self.i18n("message.updater.unziping")}')
         shutil.unpack_archive(filename, 'tmp')
 
         zp = zipfile.ZipFile(filename, 'r')
@@ -87,7 +81,7 @@ class Updater:
         shutil.rmtree('tmp/sdvx_helper')
         out = ''
         if len(failed_list) > 0:
-            out = '更新に失敗したファイル(tmp/tmp.zipから手動展開してください): '
+            out = f'{self.i18n("message.updater.unziping.failed")}: '
             out += '\n'.join(failed_list)
 
         self.window.write_event_value('-FINISH-', out)
@@ -106,6 +100,8 @@ class Updater:
             [sg.ProgressBar(100, key='prog', size=(30, 15))],
         ]
         self.window = sg.Window('infdc update manager', layout, grab_anywhere=True,return_keyboard_events=True,resizable=False,finalize=True,enable_close_attempted_event=True,icon=self.ico)
+        
+
 
     def main(self, url):
         self.gui()
@@ -114,25 +110,26 @@ class Updater:
         while True:
             ev,val = self.window.read()
             if ev in (sg.WIN_CLOSED, 'Escape:27', '-WINDOW CLOSE ATTEMPTED-'):
-                value = sg.popup_yes_no(f'アップデートをキャンセルしますか？', icon=self.ico)
+                value = sg.popup_yes_no(f'{self.i18n("popup.updater.cancel")}', icon=self.ico,title=f'{app.i18n("window.update.title",SWVER)}')
                 if value == 'Yes':
                     break
             elif ev == '-FINISH-':
-                msg = 'アップデート完了！\n' + val[ev]
+                msg = f' {self.i18n("popup.updater.complete")} ' + val[ev]
                 sg.popup_ok(msg, icon=self.ico)
                 break
 
 if __name__ == '__main__':
     app = Updater()
-    ver = app.get_latest_version()
-    url = f'https://github.com/dj-kata/sdvx_helper/releases/download/{ver}/sdvx_helper.zip'
+    ver = sdvx_utils.get_latest_version()
+    helper_version = sdvx_utils.get_version("helper")
+    url = f'https://github.com/Throdax/sdvx_helper/releases/download/{ver}/sdvx_helper_en_all.zip'
     if type(ver) != str:
-        sg.popup_ok('公開先にアクセスできません',icon=app.ico)
-    elif re.findall('\d+', SWVER) == re.findall('\d+', ver):
-        print('最新版がインストールされています。')
-        sg.popup_ok('最新版がインストールされています。',icon=app.ico)
-    else:
-        value = sg.popup_ok_cancel(f'利用可能なアップデートがあります。\n\n{SWVER} -> {ver}\n\n更新しますか？',icon=app.ico)
+        sg.popup_error(f'{app.i18n("popup.updater.noRepo")}',icon=app.ico,title=f'{app.i18n("window.update.title",SWVER)}')
+    elif re.findall(r'\d+', helper_version) == re.findall(r'\d+', ver) or sdvx_utils.compare_version(ver,helper_version) > 0:
+        print(f'{app.i18n("popup.updater.alreadyLatest")}')
+        sg.popup_ok(f'{app.i18n("popup.updater.alreadyLatest")}',icon=app.ico,title=f'{app.i18n("window.update.title",SWVER)}')
+    elif sdvx_utils.compare_version(ver,helper_version) == -1:
+        value = sg.popup_ok_cancel(f'{app.i18n("popup.updater.newVersion",helper_version,ver)}',icon=app.ico,title=f'{app.i18n("window.update.title",SWVER)}')
         if value == 'OK':
             app.main(url)
 

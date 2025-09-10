@@ -39,6 +39,7 @@ default_val = {
     'webhook_names':[], # 1entry: 説明文(str)
     'webhook_urls':[], # 1entry: url(str)
     'webhook_enable_pics':[], # 1entry:bool (画像を送信するかどうか)
+    'webhook_playlist':[], # 1entry:bool (画像を送信するかどうか)
     'webhook_enable_lvs':[], # 1entry:[False,False,...True]のような長さ20の配列(lv1-20)
     'webhook_enable_lamps':[], # 1entry:[True,True,True,False,False,False] puc,uc,exh,hard,clear,failed
 
@@ -62,9 +63,11 @@ default_val = {
     'logpic_bg_alpha':255, # ログ画像について、背景の透明度(0-255, 0:完全に透過)
     'autoload_musiclist':True, # 曲リストを起動時にDLするかどうか。デバッグのためにオフにできるようにしている。
     'player_name':'', # 統計情報ビューに表示するプレイヤー名
-    'save_on_capture':True, # 画面取得方式。True:旧方式、False:新方式(jpeg)
+    'save_on_capture':False, # 画面取得方式。True:旧方式、False:新方式(jpeg)
     'save_jacketimg':True, # OCR時にジャケット画像を保存する(保存先はjackets/内。VFビュー用。)
     'update_rival_on_result':False, # リザルト画面のたびにライバル関連データを更新するかどうか
+    'always_update_vf': False,
+    'play_log_sync': {'play_log_path':'','results_folder':'','song_list':'','dump_output_folder':''},
 
     # debug
     'send_webhook':True, # OCR失敗時にwebhookで自動報告するかどうか

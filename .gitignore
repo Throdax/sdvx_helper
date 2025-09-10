@@ -1,3 +1,4 @@
+.settings/
 sdvx_*er/*
 dist/*
 build*
@@ -13,3 +14,10 @@ jackets/*
 *.png
 log/*
 params_secret.py
+out/*
+alllog.pkl
+settings.json
+
+# PyClipse project files
+.project
+.pydevproject
