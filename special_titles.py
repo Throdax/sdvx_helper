@@ -77,6 +77,7 @@ special_titles = {
         'Feels Seasickness...':'*Feels Seasickness...*',
         'For.tune':'For.*tune',
         'U.N.オーエンは彼女なのかharu naba Remix':'U.N.オーエンは彼女なのか？haru_naba Remix',
+        'U.N.オーエンは彼女なのか？haru naba Remix':'U.N.オーエンは彼女なのか？haru_naba Remix',
         'With It This Heaven':'With It This Heaven?',
         'メイビ～初恋！ビスケット☆大作戦':'メイビ～初恋！？ビスケット☆大作戦',
         '恋愛♡悪戯！まじかる☆ぱふゅ～む！！':'恋愛♡悪戯！？まじかる☆ぱふゅ～む！！',
@@ -93,10 +94,10 @@ special_titles = {
         'Lovesick Lovetune(brz style)' :'Lovesick Lovetune(brz_style)',
         'WONDER WOBBLER':'WONDER WOBBLER',
         'WobbleTangleFestival (影虎。 & ikaruga nex\'s HDM RMX)':'WobbleTangleFestival (影虎。 & ikaruga_nex\'s HDM RMX)',
-        'U.N.オーエンは彼女なのか？haru naba Remix':'U.N.オーエンは彼女なのか？haru_naba Remix',
         'WONDER WOBBLER':'WONDER_WOBBLER',
         'Erm, could it be a Spatiotemporal ShockWAVE Syndrome...':'* Erm, could it be a Spatiotemporal ShockWAVE Syndrome...?',
         'cloche(といぼっくすうぃんぐ みっくす)':'cloche(といぼっくすうぃんぐ　みっくす)',
+        'Critical Crystal(brz remix)':'Critical Crystal(brz_remix)',
 }
 
 direct_overides = {
