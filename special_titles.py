@@ -98,6 +98,7 @@ special_titles = {
         'Erm, could it be a Spatiotemporal ShockWAVE Syndrome...':'* Erm, could it be a Spatiotemporal ShockWAVE Syndrome...?',
         'cloche(といぼっくすうぃんぐ みっくす)':'cloche(といぼっくすうぃんぐ　みっくす)',
         'Critical Crystal(brz remix)':'Critical Crystal(brz_remix)',
+        'Φndyou':'Φnd:you'
 }
 
 direct_overides = {
