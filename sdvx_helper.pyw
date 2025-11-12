@@ -87,7 +87,7 @@ class SDVXHelper:
         keyboard.add_hotkey('F6', self.save_screenshot_general)
         keyboard.add_hotkey('F7', self.import_score_on_select_with_dialog)
         keyboard.add_hotkey('F8', self.update_rival)
-        keyboard.add_hotkey('F3', self.start_rta_mode)
+        keyboard.add_hotkey('F9', self.start_rta_mode)
 
         self.load_settings()
         self.save_settings() # 値が追加された場合のために、一度保存
