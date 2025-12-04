@@ -186,7 +186,9 @@ class ScoreViewer:
                   self.i18n('table.header.lastPlayed')]
         layout = [
             [
-                sg.Text('Language/言語', font=(None,16)),sg.Combo(self.bundle.get_available_bundles(), key='locale', font=(None,16), default_value=self.default_locale,enable_events=True)
+                sg.Text('Language/言語', font=(None,16)),
+                sg.Combo(self.bundle.get_available_bundles(), key='locale', font=(None,16), default_value=self.default_locale,enable_events=True),
+                sg.Button(self.i18n('button.exit'), font=(None,16), key="btn_exit")
             ],
             [sg.Frame(title=self.i18n('text.score.frame.filter'), layout=layout_filter), sg.Frame(title=self.i18n('text.score.frame.sort'), layout=layout_sort), sg.Frame(title=self.i18n('text.score.frame.rival'), layout=layout_rival), sg.Frame(title=self.i18n('text.score.frame.edit'), layout=layout_edit)],
             [
@@ -209,6 +211,7 @@ class ScoreViewer:
         ico = self.ico_path('icon.ico')
         self.window = sg.Window(self.i18n('window.score.title',SWVER), layout, resizable=True, return_keyboard_events=True, finalize=True, enable_close_attempted_event=True, icon=ico, size=(800,600))
         self.window['table'].expand(expand_x=True, expand_y=True)
+        self.window.maximize()
         self.update_table()
 
     def update_table(self):
@@ -432,7 +435,9 @@ class ScoreViewer:
                 self.default_locale = val['locale']
                 self.i18n = self.bundle.get_text
                 self.window.close()
-                self.gui()                
+                self.gui()
+            elif ev == 'btn_exit':
+                self.window.close();
     
 if __name__ == '__main__':
     #b = SDVXLogger()
