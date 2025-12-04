@@ -84,6 +84,8 @@ class SDVXHelper:
         self.playtime = datetime.timedelta(seconds=0) # 楽曲プレイ時間の合計
         self.imgpath = os.getcwd()+'/out/capture.png'
 
+        keyboard.add_hotkey('F4', self.capture_volforce)
+        keyboard.add_hotkey('F5', self.capture_summary)
         keyboard.add_hotkey('F6', self.save_screenshot_general)
         keyboard.add_hotkey('F7', self.import_score_on_select_with_dialog)
         keyboard.add_hotkey('F8', self.update_rival)
@@ -112,7 +114,7 @@ class SDVXHelper:
         
         
     def logToWindow(self, msg):
-        if self.window  :
+        if self.window and not self.window.is_closed()  :
             self.window['output'].print(msg)
         else :
             print(msg)
@@ -390,7 +392,9 @@ class SDVXHelper:
         class_cur.save('out/class_cur.png')
         
         #self.logToWindow(self.i18n('message.screenshot.save.volforce'))
-        
+    
+    def capture_summary(self):
+        self.gen_summary.generate()    
 
     def save_playerinfo(self):
         """プレイヤー情報(VF,段位)を切り出して画像として保存する。
@@ -504,7 +508,7 @@ class SDVXHelper:
             if self.settings['clip_lxly']:
                 self.settings['lx'] = max(0, self.window.current_location()[0])
                 self.settings['ly'] = max(0, self.window.current_location()[1])
-            else:
+            elif not self.window.is_closed():
                 self.settings['lx'] = self.window.current_location()[0]
                 self.settings['ly'] = self.window.current_location()[1]
         elif self.gui_mode == gui_mode.webhook:
@@ -757,18 +761,50 @@ class SDVXHelper:
             [self.i18n('menu.rta'),[self.i18n('menu.rta.start')]],
             [self.i18n('menu.analysis'),[self.i18n('menu.analysis.tweet'), self.i18n('menu.analysis.csv'), self.i18n('menu.analysis.csvBest')]]
         ]
+        layout_shortcuts_0 = [
+                [par_text(f'F1 - {self.i18n("text.main.shortcut.f1")}',font=(None, 9))],
+                [par_text(f'F2 - {self.i18n("text.main.shortcut.f2")}',font=(None, 9))],
+                [par_text(f'F3 - {self.i18n("text.main.shortcut.f3")}',font=(None, 9))], 
+            ]
+        
+        layout_shortcuts_1 = [
+                [par_text(f'F4 - {self.i18n("text.main.shortcut.f4")}',font=(None, 9))],
+                [par_text(f'F5 - {self.i18n("text.main.shortcut.f5")}',font=(None, 9))],
+                [par_text(f'F6 - {self.i18n("text.main.shortcut.f6")}',font=(None, 9))], 
+            ]
+        layout_shortcuts_2 = [
+                [par_text(f'F7 - {self.i18n("text.main.shortcut.f7")}',font=(None, 9))],
+                [par_text(f'F8 - {self.i18n("text.main.shortcut.f8")}',font=(None, 9))], 
+                [par_text(f'F9 - {self.i18n("text.main.shortcut.f9")}',font=(None, 9))],
+            ]
+        layout_buttons = [
+                [
+                    par_btn(self.i18n('button.main.save'), tooltip=self.i18n('button.main.save.tooltip'), key='btn_savefig', size=(5,3)),
+                    par_btn(self.i18n('button.main.save.volforce'), tooltip=self.i18n('button.main.save.volforce.tooltip'), key='btn_save_vf', size=(5,3)),
+                    par_btn(self.i18n('button.main.save.summary'), tooltip=self.i18n('button.main.save.summary.tooltip'), key='btn_save_summary' , size=(8,3)),
+                ]
+            ] 
         layout = [
             [sg.Menubar(menuitems, key='menu')],
-             
             [
-                par_text(f'{self.i18n("text.main.plays")}:'), par_text(str(self.plays), key='txt_plays')
-                ,par_text(f'{self.i18n("text.main.mode")}:'), par_text(self.detect_mode.name, key='txt_mode')
-                ,par_text(self.i18n('message.main.obsError'), key='txt_obswarning', text_color="#ff0000")],
-            [par_btn(self.i18n('button.main.save'), tooltip=self.i18n('button.main.save.tooltip'), key='btn_savefig'),par_btn(self.i18n('button.main.save.volforce'), tooltip=self.i18n('button.main.save.volforce.tooltip'), key='btn_save_vf'),par_btn(self.i18n('button.main.save.summary'), tooltip=self.i18n('button.main.save.summary.tooltip'), key='btn_save_summary')],
+                sg.Text('Language/言語', font=(None,12)),sg.Combo(self.bundle.get_available_bundles(), key='locale', font=(None,12), default_value=self.default_locale,enable_events=True)
+            ],
+            [
+                par_text(f'{self.i18n("text.main.plays")}:'), par_text(str(self.plays), key='txt_plays'),
+                par_text(f'{self.i18n("text.main.mode")}:'), par_text(self.detect_mode.name, key='txt_mode'),
+                par_text(self.i18n('message.main.obsError'), key='txt_obswarning', text_color="#ff0000"),
+                sg.Button(self.i18n('button.exit'), font=(None,16), key="btn_exit")                
+            ],
+            [
+                sg.Frame(title='',layout=layout_buttons, border_width=0,font=(None, 9),vertical_alignment='top'),
+                sg.Frame(title='',layout=layout_shortcuts_0, border_width=0,font=(None, 9)),
+                sg.Frame(title='',layout=layout_shortcuts_1, border_width=0,font=(None, 9)),
+                sg.Frame(title='',layout=layout_shortcuts_2, border_width=0,font=(None, 9))
+            ],
             [par_text('', size=(40,1), key='txt_info')],
         ]
         if self.settings['dbg_enable_output']:
-            layout.append([sg.Multiline(size=(100,8), key='output', font=(None, 9))])
+            layout.append([sg.Multiline(size=(100,8), key='output', font=(None, 9),expand_x=True)])
         self.gui_mode = gui_mode.main
         
         self.window = sg.Window(self.i18n('window.main.title',SWVER), layout, grab_anywhere=True,return_keyboard_events=True,resizable=False,finalize=True,enable_close_attempted_event=True,icon=self.ico,location=(self.settings['lx'], self.settings['ly']))
@@ -1382,7 +1418,7 @@ class SDVXHelper:
                 self.logToWindow(self.i18n('message.screenshot.save.volforce'))
                 
             elif ev == 'btn_save_summary':
-                self.gen_summary.generate()
+                self.capture_summary()
                 self.logToWindow(self.i18n('message.screenshot.save.summary'))
                 
             elif ev == 'combo_scene': # シーン選択時にソース一覧を更新
@@ -1560,6 +1596,8 @@ class SDVXHelper:
                 self.i18n = self.bundle.get_text
                 self.window.close()
                 self.gui_main()
+            elif ev == 'btn_exit':
+                self.window.close();
 
 if __name__ == '__main__':
     a = SDVXHelper()

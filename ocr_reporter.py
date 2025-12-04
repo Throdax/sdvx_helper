@@ -20,10 +20,12 @@ import traceback
 import urllib
 import logging, logging.handlers
 from tkinter import filedialog
+import tkinter.font
 import re
 from poor_man_resource_bundle import *
 import concurrent.futures
 import sdvx_utils
+from concurrent.futures import ThreadPoolExecutor
 
 
 SETTING_FILE = 'settings.json'
@@ -65,22 +67,21 @@ class Reporter:
         if chk_update:
             self.update_musiclist()
         #self.gen_summary = GenSummary(start,autosave_dir='D:/Tools/SoundVoltex/results')
-        self.gen_summary = GenSummary(self.start)
-        self.load_musiclist()
-        self.read_bemaniwiki()
-        self.ico=self.ico_path('icon.ico')
+        self.gen_summary = GenSummary(self.start)        
+        self.ico=self.resource_path('icon.ico')
+        self.font_noto=self.resource_path('NotoSansJP-Regular.ttf')
         self.num_added_fumen = 0 # 登録した譜面数
         self.flg_registered = {} # key:ファイル名、値:登録済みならTrue.do_coloringの結果保存用。
         self.gui()
         self.main()
 
-    def ico_path(self, relative_path):
+    def resource_path(self, relative_path):
         try:
             base_path = sys._MEIPASS
         except Exception:
             base_path = os.path.abspath(".")
         return os.path.join(base_path, relative_path)
-
+    
     # 曲リストを最新化
     def update_musiclist(self):
         try:
@@ -115,6 +116,7 @@ class Reporter:
         try:
             with open('resources/musiclist.pkl', 'rb') as f:
                 self.musiclist = pickle.load(f)
+            
             print(f"{self.i18n('log.song.db')}: {len(self.musiclist['jacket']['exh'])}")
             print(f'{self.i18n("log.song.wiki")}: {len(self.musiclist["titles"].keys())}')
         except:
@@ -160,13 +162,26 @@ class Reporter:
             pickle.dump(self.musiclist, f)
 
     def read_bemaniwiki(self):
+        
+        self.window['loading_prog_bar'].update(current_count=0)
+        self.window['loading_label'].update(f"{self.i18n('text.loading.bemaniwiki',0,0)}")
+        
         req = requests.get('https://bemaniwiki.com/index.php?%A5%B3%A5%CA%A5%B9%A5%C6/SOUND+VOLTEX+EXCEED+GEAR/%B3%DA%B6%CA%A5%EA%A5%B9%A5%C8')
 
         stop_string = '[STOP]'
 
         soup = BeautifulSoup(req.text, 'html.parser')
         titles = self.musiclist['titles']
-        for tr in soup.find_all('tr'):
+        
+        all_tr = soup.find_all('tr')
+        
+        self.window['loading_prog_bar'].update(max=len(all_tr))
+                                                
+        for i,tr in enumerate(all_tr):
+                        
+            self.window['loading_prog_bar'].update(current_count=i+1)
+            self.window['loading_label'].update(f"{self.i18n('text.loading.bemaniwiki',i+1,len(all_tr))}")
+             
             tds = tr.find_all('td')
             numtd = len(tds)
             if numtd in (7,8):
@@ -202,7 +217,7 @@ class Reporter:
             'https://bemaniwiki.com/index.php?SOUND+VOLTEX+EXCEED+GEAR/%BF%B7%B6%CA%A5%EA%A5%B9%A5%C8'
         ]
         # AC版のwikiを読む
-        for url in urls:
+        for j, url in enumerate(urls):
             req = requests.get(url)
             soup = BeautifulSoup(req.text, 'html.parser')
             # rowspanのカウンタ。日付分は正規表現で見るので不要
@@ -210,7 +225,13 @@ class Reporter:
             cnt_rowspan_bpm    = 0
             pre_artist = ''
             pre_bpm    = ''
-            for tr in soup.find_all('tr'):
+            
+            all_tr = soup.find_all('tr')
+            
+            self.window['loading_prog_bar'].update(current_count=0,max=len(all_tr))
+            self.window['loading_label'].update(f"{self.i18n('text.loading.bemaniwiki.extra',j+1,0,len(all_tr))}")
+            
+            for i, tr in enumerate(all_tr):
                 tds = tr.find_all('td')
                 numtd = len(tds)
                 title_flg = 0
@@ -259,6 +280,9 @@ class Reporter:
                         #    print()
                 cnt_rowspan_artist = max(0, cnt_rowspan_artist - 1)
                 cnt_rowspan_bpm    = max(0, cnt_rowspan_bpm - 1)
+                
+                self.window['loading_prog_bar'].update(current_count=i+1)
+                self.window['loading_label'].update(f"{self.i18n('text.loading.bemaniwiki.extra',j+1,i+1,len(all_tr))}")
 
         self.titles = titles
         self.musiclist['titles'] = titles
@@ -291,41 +315,91 @@ class Reporter:
         webhook.content = f"{self.i18n('webhook.number.added.scores')}: {self.num_added_fumen}, total: {len(self.musiclist['jacket']['APPEND'])+len(self.musiclist['jacket']['nov'])+len(self.musiclist['jacket']['adv'])+len(self.musiclist['jacket']['exh'])}"
         webhook.content += f", {self.i18n('webhook.number.added.songs')}: {len(self.musiclist['jacket']['APPEND'])}"
         res = webhook.execute()
+        
+        
+    def load_bemaniwiki(self):
+        self.read_bemaniwiki()
+        self.window['loading_label'].update(f"Populating table...")
+        self.window['musics'].update(self.get_musiclist())
+        self.window['loading_label'].update(f"Ready")
+        self.window['musics'].update(visible=True)
+        
+    def load_result_files(self):
+        filelist, bgcs = self.get_filelist()
+        self.window['loading_label_files'].update(f"Populating table...")
+        self.window['files'].update(filelist, row_colors=bgcs)
+        self.window['loading_label_files'].update(f"Ready")
+        self.window['files'].update(visible=True)
+        
+    def load_music_data(self):
+        self.load_musiclist()
+        
+        t_wiki = threading.Thread(target=self.load_bemaniwiki)
+        t_wiki.start()
+        
+        t_result = threading.Thread(target=self.load_result_files)
+        t_result.start()
+        
+        self.get_dblist()
+        
+        t_wiki.join()
+        t_result.join()
+        
+        self.window['register'].update(disabled=False)
+        self.window['coloring'].update(disabled=False)
+        self.window['coloring_missing'].update(disabled=False)
+        self.window['filter'].update(disabled=False)
+        
+        
+        
+            
     
     ##############################################
     ##########          GUIの設定
     ##############################################
     def gui(self, refresh:bool=False):
-        header = ['title', 'artist', 'bpm', 'nov', 'adv', 'exh', '(APPEND)']
+        header = ['Title', 'Artist', 'BPM', 'NOV', 'ADV', 'EXH', 'APPEND']
         layout_info = [
             [sg.Image(None, size=(137,29), key='difficulty')],
             [sg.Image(None, size=(526,64), key='info')],
         ]
         layout_tables = [
+            [
+                sg.Text('',key="loading_label")
+            ],
+            [
+                sg.ProgressBar(max_value=100,key="loading_prog_bar",orientation="horizontal",expand_x=True,style='classic',size=(20,20))
+            ],
             [sg.Table(
                 []
                 ,headings=header
                 ,auto_size_columns=False
-                ,col_widths=[40,40,7,3,3,3,3]
+                ,col_widths=[43,40,7,4,4,4,7]
                 ,alternating_row_color='#eeeeee'
                 ,justification='left'
                 ,key='musics'
-                ,size=(120,10)
+                ,num_rows=7
                 ,enable_events=True
-                ,font=(None, 16)
+                ,font=("Noto Sans JP", 14)
                 )
+            ],
+            [
+                sg.Text('',key="loading_label_files")
+            ],
+            [
+                sg.ProgressBar(max_value=100,key="loading_prog_bar_files",orientation="horizontal",expand_x=True,style='classic',size=(20,20))
             ],
             [sg.Table(
                 []
-                ,headings=['saved files']
+                ,headings=['Saved Files']
                 ,auto_size_columns=False
-                ,col_widths=[90]
+                ,col_widths=[100]
                 ,alternating_row_color='#eeeeee'
                 ,justification='left'
                 ,key='files'
-                ,size=(90,10)
+                ,num_rows=8
                 ,enable_events=True
-                ,font=(None, 16)
+                ,font=("Noto Sans JP", 16)
                 )
             ],
         ]
@@ -339,51 +413,66 @@ class Reporter:
             [
                 sg.Table(
                     []
-                    ,headings=['title', 'hash']
+                    ,headings=['Title', 'Hash']
                     ,auto_size_columns=False
-                    ,col_widths=[40, 20]
+                    ,col_widths=[23, 17]
                     ,alternating_row_color='#eeeeee'
                     ,justification='left'
                     ,key='db'
-                    ,size=(90,10)
                     ,enable_events=True
-                    ,font=(None, 16)
+                    ,font=("Courier New", 16)
                 )
             ],
         ]
         layout = [
             [
-                sg.Text('Language/言語', font=(None,16)),sg.Combo(self.bundle.get_available_bundles(), key='locale', font=(None,16), default_value=self.default_locale,enable_events=True)
+                sg.Text('Language/言語', font=(None,16)),
+                sg.Combo(self.bundle.get_available_bundles(), key='locale', font=(None,16), default_value=self.default_locale,enable_events=True),
             ],
             [ 
-                sg.Text('search:', font=(None,16)), sg.Input('', size=(40,1), key='filter', font=(None,16), enable_events=True), sg.Button('clear', font=(None,16)), sg.Text('('+self.i18n('text.registered')+': ', font=(None,16)), sg.Text('0', key='num_added_fumen', font=(None,16)), sg.Text(self.i18n('text.music_score')+')', font=(None,16))
+                sg.Text(self.i18n('text.ocr.search'), font=(None,16)), 
+                sg.Input('', size=(40,1), key='filter', font=("Noto Sans JP",16), enable_events=True, disabled=True), 
+                sg.Button('clear', font=(None,16)), 
+                sg.Text('('+self.i18n('text.registered')+': ', font=(None,16)), 
+                sg.Text('0', key='num_added_fumen', font=(None,16)), 
+                sg.Text(self.i18n('text.music_score')+')', font=(None,16)),
+                sg.Button(self.i18n('button.exit'), font=(None,16), key="btn_exit"),
             ],
             [
-                sg.Text('title:', font=(None,16)), sg.Input('', key='txt_title', font=(None,16), size=(50,1))
+                sg.Text(self.i18n('text.ocr.title'), font=(None,16)), 
+                sg.Input('', key='txt_title', font=("Noto Sans JP",16), size=(50,1),disabled=True)
             ],
             [
-                sg.Text('hash_jacket:', font=(None,16)), sg.Input('', key='hash_jacket', size=(25,1), font=(None,16)), sg.Text('hash_info:',font=(None,16)), sg.Input('', key='hash_info', size=(25,1),font=(None,16))
-                ,sg.Text(self.i18n('text.difficulty')+':', font=(None,16)), sg.Combo(['', 'nov', 'adv', 'exh', 'APPEND'], key='combo_difficulty', font=(None,16))
+                sg.Text(self.i18n('text.ocr.hash.jacket'), font=(None,16)), 
+                sg.Input('', key='hash_jacket', size=(25,1), font=("Courier New",16),disabled=True), 
+                sg.Text(self.i18n('text.ocr.hash.info'),font=(None,16)), 
+                sg.Input('', key='hash_info', size=(25,1),font=("Courier New",16),disabled=True),
+                sg.Text(self.i18n('text.difficulty')+':', font=(None,16)), 
+                sg.Combo(['', 'nov', 'adv', 'exh', 'APPEND'], key='combo_difficulty', font=(None,16))
             ],
-            [sg.Button(self.i18n('button.resgister'), key='register'), sg.Button(self.i18n('button.rescan'), key='coloring'), sg.Button(self.i18n('button.rescan.missing'), key='coloring_missing')],
+            [sg.Button(self.i18n('button.resgister'), key='register',disabled=True), sg.Button(self.i18n('button.rescan'), key='coloring',disabled=True), sg.Button(self.i18n('button.rescan.missing'), key='coloring_missing',disabled=True)],
             [sg.Column(layout_tables, key='column_table'), sg.Column(layout_db, key='column_db')],
             [sg.Text('', text_color="#ff0000", key='state', font=(None,16))],
             [sg.Image(None, size=(100,100), key='jacket'), sg.Column(layout_info)]
         ]
         if not refresh : 
-            self.window = sg.Window(f"{self.i18n('window.ocr.title',SWVER)}", layout, resizable=True, grab_anywhere=True,return_keyboard_events=True,finalize=True,enable_close_attempted_event=True,icon=self.ico,location=(self.settings['lx'], self.settings['ly']), size=(900,780))
+            self.window = sg.Window(f"{self.i18n('window.ocr.title',SWVER)}", layout, resizable=True, grab_anywhere=True,return_keyboard_events=True,finalize=True,enable_close_attempted_event=True,icon=self.ico,location=(self.settings['lx'], self.settings['ly']),size=(900,780))
+            self.window.maximize()
         else :
             self.window.Title = self.i18n('window.ocr.title')
+            
+        t = threading.Thread(target=self.load_music_data)
+        t.start()
              
         self.window['musics'].expand(expand_x=True, expand_y=True)
+        self.window['musics'].update(visible=False)
         self.window['files'].expand(expand_x=True, expand_y=True)
+        self.window['files'].update(visible=False)
         self.window['column_table'].expand(expand_x=True, expand_y=True)
         self.window['db'].expand(expand_x=True, expand_y=True)
         self.window['column_db'].expand(expand_x=True, expand_y=True)
-        self.window['musics'].update(self.get_musiclist())
-        filelist, bgcs = self.get_filelist()
-        self.window['files'].update(filelist, row_colors=bgcs)
-        self.get_dblist()
+        
+        
 
     # bemaniwikiから取得した曲一覧を返す
     def get_musiclist(self):
@@ -416,9 +505,15 @@ class Reporter:
         self.window['db'].update(dat)
 
     def get_filelist(self):
+        
+        result_files = self.gen_summary.get_result_files()
+        
+        self.window['loading_prog_bar_files'].update(current_count=0,max=len(result_files))
+        self.window['loading_label_files'].update(f"{self.i18n('text.loading.resultfiles',0,len(result_files))}")
+        
         ret = []
         bgcs = []
-        for i,f in enumerate(self.gen_summary.get_result_files()):
+        for i,f in enumerate(result_files):
             ret.append(f.replace('\\','/'))
             if i%2 == 0:
                 bgcs.append([len(bgcs), '#000000', '#ffffff'])
@@ -428,6 +523,10 @@ class Reporter:
             #tmp = Image.open(f)
             #if self.gen_summary.is_result(tmp):
             #    ret.append(f)
+            
+            self.window['loading_prog_bar_files'].update(current_count=i+1)
+            self.window['loading_label_files'].update(f"{self.i18n('text.loading.resultfiles',i+1,len(result_files))}")
+            
         self.filelist_bgcolor = bgcs
         return ret, bgcs
     
@@ -688,6 +787,8 @@ class Reporter:
                 self.window.close()
                 self.gui(False)
                 self.apply_coloring()
+            elif ev == 'btn_exit':
+                self.window.close();
                 
                 
 

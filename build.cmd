@@ -75,7 +75,7 @@ echo SYNC: %SYNC%
 del /F /Q dist\*.exe
 
 if "%SDVX%" == "Build" %pyin% %target_sdvx%.pyw --clean --noconsole --onefile --icon=icon.ico --add-data "icon.ico;./" --hidden-import=tkinter --hidden-import=tkinter.filedialog -y
-if "%OCR%" == "Build" %pyin% %target_ocr%.py --clean --noconsole --onefile --icon=icon.ico --add-data "icon.ico;./" --hidden-import=tkinter --hidden-import=tkinter.filedialog -y
+if "%OCR%" == "Build" %pyin% %target_ocr%.py --clean --noconsole --onefile --icon=icon.ico --add-data "icon.ico;./" --add-data "NotoSansJP-Regular.ttf;./" --hidden-import=tkinter --hidden-import=tkinter.filedialog -y
 if "%MANAGER%" == "Build" %pyin% %target_manager%.py --clean --noconsole --onefile --icon=icon.ico --add-data "icon.ico;./" --hidden-import=tkinter --hidden-import=tkinter.filedialog -y
 if "%UPDATER%" == "Build" %pyin% %target_updater%.py --clean --noconsole --onefile --icon=icon.ico --add-data "icon.ico;./" --hidden-import=tkinter --hidden-import=tkinter.filedialog -y
 if "%SYNC%" == "Build" %pyin% %target_sync%.py --clean --noconsole --onefile --icon=icon.ico --add-data "icon.ico;./" --hidden-import=tkinter --hidden-import=tkinter.filedialog -y
