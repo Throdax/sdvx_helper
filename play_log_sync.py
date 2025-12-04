@@ -378,17 +378,18 @@ class PlayLogSync():
     
     def do_layout(self):
         layout = [
-            [sg.Text('Language/言語', font=(None,12)),sg.Combo(self.bundle.get_available_bundles(), key='locale', font=(None,12), default_value=self.default_locale,enable_events=True)],
-            [sg.HSeparator()],
-            [sg.Text('Play Log:', font=(None, 16)), sg.Input(self.settings['play_log_sync']['play_log_path'], size=(44, 1), key='play_log', font=(None, 16), tooltip='The directory containing the alllog (alllog.pkl) file')],
-            [sg.Text('Results Folder:', font=(None, 16)), sg.Input(self.settings['play_log_sync']['results_folder'], size=(40, 1), key='results_folder', font=(None, 16), tooltip='The directory containing the result screenshots')],
-            [sg.Button('Sync', font=(None, 16), key="sync_btn", enable_events=True), sg.Check("Rebuild", font=(None, 16), enable_events=True, key='rebuild_play_log')],
-            [sg.HSeparator()],
-            [sg.Text('Song List:', font=(None, 16)), sg.Input(self.settings['play_log_sync']['song_list'], size=(44, 1), key='song_list', font=(None, 16), tooltip='The directory containing the song list (musiclist.pkl) file, only used with the "dump" option')],
-            [sg.Text('Output Folder:', font=(None, 16)), sg.Input(self.settings['play_log_sync']['dump_output_folder'], size=(44, 1), key='xml_output_list', font=(None, 16), tooltip='The directory where the XML will be saved')],
-            [sg.Button('Dump', font=(None, 16), key="dump_btn", enable_events=True, tooltip='Dumps the alllog.pkl into an xml file')],
-            [sg.HSeparator()],
-            [sg.Multiline(size=(150, 50), key='output', font=(None, 9))]
+                [sg.Text('Language/言語', font=(None,12)),sg.Combo(self.bundle.get_available_bundles(), key='locale', font=(None,12), default_value=self.default_locale,enable_events=True)],
+                [sg.HSeparator()],
+                [sg.Text('Play Log:', font=(None, 16)), sg.Input(self.settings['play_log_sync']['play_log_path'], size=(44, 1), key='play_log', font=(None, 16), tooltip='The directory containing the alllog (alllog.pkl) file')],
+                [sg.Text('Results Folder:', font=(None, 16)), sg.Input(self.settings['play_log_sync']['results_folder'], size=(40, 1), key='results_folder', font=(None, 16), tooltip='The directory containing the result screenshots')],
+                [sg.Button('Sync', font=(None, 16), key="sync_btn", enable_events=True), sg.Check("Rebuild", font=(None, 16), enable_events=True, key='rebuild_play_log')],
+                [sg.HSeparator()],
+                [sg.Text('Song List:', font=(None, 16)), sg.Input(self.settings['play_log_sync']['song_list'], size=(44, 1), key='song_list', font=(None, 16), tooltip='The directory containing the song list (musiclist.pkl) file, only used with the "dump" option')],
+                [sg.Text('Output Folder:', font=(None, 16)), sg.Input(self.settings['play_log_sync']['dump_output_folder'], size=(44, 1), key='xml_output_list', font=(None, 16), tooltip='The directory where the XML will be saved')],
+                [sg.Button('Dump', font=(None, 16), key="dump_btn", enable_events=True, tooltip='Dumps the alllog.pkl into an xml file')],
+                [sg.HSeparator()],
+                [sg.Multiline(size=(150, 28), key='output', font=(None, 9))],
+                [sg.Button(self.i18n('button.exit'), font=(None,16), key="btn_exit")]
             ]
         
         self.window = sg.Window(f"Play Log Sync - {SWVER}", layout, resizable=True, grab_anywhere=True, return_keyboard_events=True, finalize=True, enable_close_attempted_event=True, size=(1024, 768), icon=self.ico)
@@ -419,6 +420,8 @@ class PlayLogSync():
                 self.settings['play_log_sync']['song_list'] = val['song_list']
             elif ev == 'xml_output_list':
                 self.settings['play_log_sync']['dump_output_folder'] = val['xml_output_list']    
+            elif ev == 'btn_exit':
+                self.window.close();
             
                 
     def load_settings(self):
