@@ -84,8 +84,8 @@ class SDVXHelper:
         self.playtime = datetime.timedelta(seconds=0) # 楽曲プレイ時間の合計
         self.imgpath = os.getcwd()+'/out/capture.png'
 
-        keyboard.add_hotkey('F4', self.capture_volforce)
-        keyboard.add_hotkey('F5', self.capture_summary)
+        keyboard.add_hotkey('F4', self.capture_volforce_btn)
+        keyboard.add_hotkey('F5', self.capture_summary_btn)
         keyboard.add_hotkey('F6', self.save_screenshot_general)
         keyboard.add_hotkey('F7', self.import_score_on_select_with_dialog)
         keyboard.add_hotkey('F8', self.update_rival)
@@ -372,6 +372,10 @@ class SDVXHelper:
             logger.debug(traceback.format_exc())
             self.logToWindow(self.i18n('message.rivals.data.failed')) # ネットワーク接続やURL設定を見直す必要がある
             
+    def capture_volforce_btn(self, vf_capture=None, class_capture=None):
+        capture_volforce(vf_capture,class_capture)
+        self.logToWindow(self.i18n('message.screenshot.save.volforce'))
+            
     def capture_volforce(self, vf_capture=None, class_capture=None):
         
         if self.detect_mode != detect_mode.result :
@@ -393,8 +397,9 @@ class SDVXHelper:
         
         #self.logToWindow(self.i18n('message.screenshot.save.volforce'))
     
-    def capture_summary(self):
-        self.gen_summary.generate()    
+    def capture_summary_btn(self):
+        self.gen_summary.generate()  
+        self.logToWindow(self.i18n('message.screenshot.save.summary'))  
 
     def save_playerinfo(self):
         """プレイヤー情報(VF,段位)を切り出して画像として保存する。
@@ -780,20 +785,21 @@ class SDVXHelper:
         layout_buttons = [
                 [
                     par_btn(self.i18n('button.main.save'), tooltip=self.i18n('button.main.save.tooltip'), key='btn_savefig', size=(5,3)),
-                    par_btn(self.i18n('button.main.save.volforce'), tooltip=self.i18n('button.main.save.volforce.tooltip'), key='btn_save_vf', size=(5,3)),
                     par_btn(self.i18n('button.main.save.summary'), tooltip=self.i18n('button.main.save.summary.tooltip'), key='btn_save_summary' , size=(8,3)),
+                    par_btn(self.i18n('button.main.save.volforce'), tooltip=self.i18n('button.main.save.volforce.tooltip'), key='btn_save_vf', size=(5,3)),
                 ]
             ] 
         layout = [
             [sg.Menubar(menuitems, key='menu')],
             [
-                sg.Text('Language/言語', font=(None,12)),sg.Combo(self.bundle.get_available_bundles(), key='locale', font=(None,12), default_value=self.default_locale,enable_events=True)
+                sg.Text('Language/言語', font=(None,12)),
+                sg.Combo(self.bundle.get_available_bundles(), key='locale', font=(None,12), default_value=self.default_locale,enable_events=True),
+                sg.Button(self.i18n('button.exit'), font=(None,12), key="btn_exit")                
             ],
             [
                 par_text(f'{self.i18n("text.main.plays")}:'), par_text(str(self.plays), key='txt_plays'),
                 par_text(f'{self.i18n("text.main.mode")}:'), par_text(self.detect_mode.name, key='txt_mode'),
                 par_text(self.i18n('message.main.obsError'), key='txt_obswarning', text_color="#ff0000"),
-                sg.Button(self.i18n('button.exit'), font=(None,16), key="btn_exit")                
             ],
             [
                 sg.Frame(title='',layout=layout_buttons, border_width=0,font=(None, 9),vertical_alignment='top'),
@@ -1414,12 +1420,10 @@ class SDVXHelper:
                 self.save_screenshot_general()
             
             elif ev == 'btn_save_vf':
-                self.capture_volforce()
-                self.logToWindow(self.i18n('message.screenshot.save.volforce'))
+                self.capture_volforce_btn()
                 
             elif ev == 'btn_save_summary':
-                self.capture_summary()
-                self.logToWindow(self.i18n('message.screenshot.save.summary'))
+                self.capture_summary_btn()
                 
             elif ev == 'combo_scene': # シーン選択時にソース一覧を更新
                 if self.obs != False:
