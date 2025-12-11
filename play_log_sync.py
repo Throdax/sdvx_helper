@@ -11,7 +11,7 @@ from sdvxh_classes import OnePlayData
 from sdvxh_classes import SDVXLogger
 from gen_summary import GenSummary
 import xml.etree.ElementTree as ET
-from special_titles import *
+import special_titles
 import PySimpleGUI as sg
 from poor_man_resource_bundle import *
 import sdvx_utils
@@ -53,9 +53,6 @@ class PlayLogSync():
         else :
             print(msg)
 
-    def restore_title(self, song_title): 
-        return special_titles.get(song_title.strip(), song_title.strip())
-    
     def is_special_title(self, song_title):
         return song_title.strip() in special_titles
     
@@ -290,44 +287,7 @@ class PlayLogSync():
         self.logToWindow(f'Update song log with {updated_songs} songs out of {processed_files} valid files in {round(duration.total_seconds(),2)}s')
         self.save(song_log, song_log_folder)
         
-    def find_song_rating(self, song_from_log, song_list):
-        
-        rating = 0
-        
-        restored_song_title = self.restore_title(song_from_log.title)
-        
-        # Find the numeric value of the song rating based on it's difficulty category
-        song = song_list['titles'].get(restored_song_title, None)
-        
-        if song is not None:
-            if song_from_log.difficulty == 'nov': 
-                rating = song[3]
-            elif song_from_log.difficulty == 'adv':
-                rating = song[4]
-            elif song_from_log.difficulty == 'exh':
-                rating = song[5]
-            else:
-                rating = song[6]
-                    
-        if rating == 0:
-            self.logToWindow(f'[{restored_song_title}-{song_from_log.difficulty.upper()}] Could not find song in song list for rating. Searching for direct overrides...')
-            override = direct_overides.get(restored_song_title)
-            
-            if override is not None:
-                for override_rating in override:
-                    if override_rating.split(":")[0].lower() == song_from_log.difficulty.lower():
-                       rating = override_rating.split(":")[1]
-                       self.logToWindow(f'[{restored_song_title}-{song_from_log.difficulty.upper()}] Direct override found with rating {rating}')
-                       break
-                   
-                if rating == 0:
-                    self.logToWindow(f'[{restored_song_title}-{song_from_log.difficulty.upper()}] No rating found for {song_from_log.difficulty.upper()}')
-                   
-            else:
-                self.logToWindow(f'[{restored_song_title}-{song_from_log.difficulty.upper()}] not found in direct override')
-            
-        return str(rating)
-        
+       
     def dump(self, song_log_folder:str, song_list_folder:str, outfolder:str):
         
         song_log = self.load_plays_list(song_log_folder)
@@ -344,7 +304,7 @@ class PlayLogSync():
             
             title = self.restore_title(song_from_log.title)
             
-            rating = self.find_song_rating(song_from_log, song_list)
+            rating = self.find_song_rating(song_from_log, song_list, self.logToWindow)
             song_hash_play = str(hash(title + "_" + song_from_log.difficulty + "_" + rating))
             song_hash_title = str(hash(title))
                     
