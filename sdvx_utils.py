@@ -1,6 +1,7 @@
 import urllib 
 import requests
 import re
+import special_titles
 from bs4 import BeautifulSoup
 
 def get_version(app:str) -> str:        
@@ -53,7 +54,50 @@ def compare_version(ver1:str, ver2:str) -> int:
         comparing_index = 0
     
     return -1 if int(ver1_splits[comparing_index]) > int(ver2_splits[comparing_index]) else 1
-    
+
+def find_song_rating(song_title, song_difficulty, song_list, logger):
+        
+        rating = 0
+        
+        restored_song_title = restore_title(song_title)
+        
+        # Find the numeric value of the song rating based on it's difficulty category
+        song = song_list['titles'].get(restored_song_title, None)
+        
+        if song is not None:
+            if song_difficulty == 'nov': 
+                rating = song[3]
+            elif song_difficulty == 'adv':
+                rating = song[4]
+            elif song_difficulty == 'exh':
+                rating = song[5]
+            else:
+                rating = song[6]
+                    
+        if rating == 0:
+            if logger is not None:
+                logger(f'[{restored_song_title}-{song_difficulty.upper()}] Could not find song in song list for rating. Searching for direct overrides...')
+            
+            override = direct_overides.get(restored_song_title)
+            
+            if override is not None:
+                for override_rating in override:
+                    if override_rating.split(":")[0].lower() == song_difficulty.lower():
+                       rating = override_rating.split(":")[1]
+                       if logger is not None:
+                           logger(f'[{restored_song_title}-{song_difficulty.upper()}] Direct override found with rating {rating}')
+                       break
+                   
+                if rating == 0 and logger is not None:
+                    logger(f'[{restored_song_title}-{song_difficulty.upper()}] No rating found for {song_difficulty.upper()}')
+                   
+            elif logger is not None:
+                logger(f'[{restored_song_title}-{song_from_log.difficulty.upper()}] not found in direct override')
+            
+        return str(rating)
+     
+def restore_title( song_title): 
+        return special_titles.get(song_title.strip(), song_title.strip())
     
         
     

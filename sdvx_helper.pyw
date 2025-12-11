@@ -26,7 +26,7 @@ import pyautogui as pgui
 import sdvx_utils
 from sdvxh_classes import *
 
-from discord_presence import SDVX_discord_presence
+from discord_presence import SDVXDiscordPresence, PlayStates
 
 
 # フラットウィンドウ、右下モード(左に上部側がくる)
@@ -115,13 +115,29 @@ class SDVXHelper:
         logger.debug(f'settings:{self.settings}')
         
     def setup_discord_presence(self):
-        self.presence = SDVX_discord_presence()
-        self.presence.update_custom(custom_text="Starting...")
-        self.logToWindow("Discord presence initilized")
+        self.presence = SDVXDiscordPresence()
+        #self.presence.update_custom(custom_text="Starting...")
+        self.logToWindow("Discord presence initialized")
+        self.update_discord_presence(title="Starting...", mode=PlayStates.OTHER)
+        self.window['discord_presence_icon'].update(visible=True)
+        
+    def update_discord_presence(self, cover=None, title=None, difficulty=None, level=None, score=None, lamp=None, mode=PlayStates.OTHER):
+        
+        if self.settings['enable_discord_presence']:
+            self.presence.update(
+                cover_url=cover,
+                title=title,
+                difficulty=difficulty,
+                level=level,
+                score=score,
+                lamp=lamp,
+                state=mode
+            )
+            self.logToWindow(f"{self.i18n('text.update.presence',mode.name)}")
         
         
     def logToWindow(self, msg):
-        if self.window and not self.window.is_closed()  :
+        if self.window and not self.window.is_closed():
             self.window['output'].print(msg)
         else :
             print(msg)
@@ -267,6 +283,7 @@ class SDVXHelper:
         
         self.update_mybest()
         self.add_result_to_playlist(tmp_playdata)
+        return tmp_playdata
 
     def update_mybest(self):
         """自己べ情報をcsv出力する
@@ -803,7 +820,7 @@ class SDVXHelper:
             [
                 sg.Text('Language/言語', font=(None,12)),
                 sg.Combo(self.bundle.get_available_bundles(), key='locale', font=(None,12), default_value=self.default_locale,enable_events=True),
-                sg.Button(self.i18n('button.exit'), font=(None,12), key="btn_exit")                
+                sg.Button(self.i18n('button.exit'), font=(None,12), key="btn_exit")
             ],
             [
                 par_text(f'{self.i18n("text.main.plays")}:'), par_text(str(self.plays), key='txt_plays'),
@@ -817,6 +834,7 @@ class SDVXHelper:
                 sg.Frame(title='',layout=layout_shortcuts_2, border_width=0,font=(None, 9))
             ],
             [par_text('', size=(40,1), key='txt_info')],
+            [sg.Image(source=open('resources/images/discord.png','rb').read(), key='discord_presence_icon', visible=False)]
         ]
         if self.settings['dbg_enable_output']:
             layout.append([sg.Multiline(size=(100,8), key='output', font=(None, 9),expand_x=True)])
@@ -1216,6 +1234,7 @@ class SDVXHelper:
             if self.detect_mode == detect_mode.result:
                 if self.is_onresult():
                     self.save_playerinfo()
+                    
             if self.detect_mode == detect_mode.select:
                 title, diff_hash, diff = self.gen_summary.ocr_only_jacket(
                     self.img_rot.crop(self.get_detect_points('select_jacket')),
@@ -1224,6 +1243,14 @@ class SDVXHelper:
                     self.img_rot.crop(self.get_detect_points('select_exh')),
                     self.img_rot.crop(self.get_detect_points('select_APPEND')),
                 )
+                
+                    
+                self.update_discord_presence(
+                    title=title,
+                    difficulty=upper(diff),
+                    mode=PlayStates.SELECT
+                )
+                
                 # 選曲画面から自己べを取り込む
                 if self.settings['import_from_select']:
                     sc,lamp,is_arcade = self.gen_summary.get_score_on_select(self.img_rot)
@@ -1270,6 +1297,23 @@ class SDVXHelper:
                         self.sdvx_logger.update_rival_view(title, diff)
                         self.sdvx_logger.gen_vf_onselect(title, diff)
                         self.sdvx_logger.gen_history_cursong(title, diff)
+
+
+                        # Maybe alternative way to find the level? If not needed send find_song_rating back to the play_log_sync                                               
+                        level = find_song_rating(title,diff,self.gen_summary.musiclist)
+                        
+                        # Started playing song, we want to:
+                        # - Upload and update cover
+                        # - Update: Title, difficulty and level 
+                        self.last_cover_upload_url = self.presence.upload_cover('out/select_jacket.png')
+                        self.update_discord_presence(
+                            cover=self.last_cover_upload_url,
+                            title=title,
+                            difficulty=diff,
+                            level=self.gen_summary.level,
+                            mode=PlayStates.DETECT
+                        )
+                        
                         done_thissong = True
                 #if self.is_onplay() and done_thissong: # 曲決定画面を検出してから入る(曲終了時に何度も入らないように)
                 if self.is_onplay():
@@ -1299,9 +1343,21 @@ class SDVXHelper:
                         diff = (now - self.last_autosave_time).total_seconds()
                         logger.debug(f'diff = {diff}s')
                         if diff > self.settings['autosave_interval']: # VF演出の前後で繰り返さないようにする
-                            self.save_screenshot_general()
+                            songData = self.save_screenshot_general()
                             self.sdvx_logger.gen_sdvx_battle()
                             self.sdvx_logger.save_alllog()
+                            
+                            # Result, we want to:
+                            # - Update: Title, difficulty and level, score
+                            self.update_discord_presence(
+                                cover=self.last_cover_upload_url,
+                                title=songData.title,
+                                difficulty=songData.difficulty,
+                                level=self.gen_summary.level,
+                                score=cur_score,
+                                lamp=songData.lamp,
+                                mode=PlayStates.RESULT)
+                            
                 if self.detect_mode == detect_mode.select:
                     self.control_obs_sources('select0')
                     if self.chk_blastermax():
