@@ -26,6 +26,8 @@ import pyautogui as pgui
 import sdvx_utils
 from sdvxh_classes import *
 
+from discord_presence import SDVX_discord_presence
+
 
 # フラットウィンドウ、右下モード(左に上部側がくる)
 # フルスクリーン、2560x1440に指定してもキャプは1920x1080で撮れてるっぽい
@@ -111,6 +113,11 @@ class SDVXHelper:
         
         logger.debug('created.')
         logger.debug(f'settings:{self.settings}')
+        
+    def setup_discord_presence(self):
+        self.presence = SDVX_discord_presence()
+        self.presence.update_custom(custom_text="Starting...")
+        self.logToWindow("Discord presence initilized")
         
         
     def logToWindow(self, msg):
@@ -550,6 +557,7 @@ class SDVXHelper:
             self.settings['import_arcade_score'] = val['import_arcade_score']
             self.settings['autosave_prewait'] = val['autosave_prewait']
             self.settings['always_update_vf'] = val['update_vf']
+            self.settings['enable_discord_presence'] = val['update_discord_presence']
 
     def build_layout_one_scene(self, name, LR=None):
         """OBS制御設定画面におけるシーン1つ分のGUIを出力する。
@@ -744,6 +752,7 @@ class SDVXHelper:
             [sg.Checkbox(self.i18n('checkbox.settings.importFromSelect'),self.settings['import_from_select'],key='import_from_select', enable_events=True),sg.Checkbox(self.i18n('checkbox.settings.includeArcadeScores'),self.settings['import_arcade_score'],key='import_arcade_score', enable_events=True)],
             [sg.Checkbox(self.i18n('checkbox.settings.correctWindowsCoordinates'),self.settings['clip_lxly'],key='clip_lxly', enable_events=True, tooltip=self.i18n('checkbox.settings.correctWindowsCoordinates.tooltip'))],
             [sg.Checkbox(self.i18n('checkbox.settings.allwaysUpdateVF'),self.settings['always_update_vf'],key='update_vf', enable_events=True, tooltip=self.i18n('checkbox.settings.allwaysUpdateVF.tooltip'))],
+            [sg.Checkbox(self.i18n('checkbox.settings.discordPresence'),self.settings['enable_discord_presence'],key='update_discord_presence', enable_events=True, tooltip=self.i18n('checkbox.settings.discordPresence.tooltip'))],
         ]
         layout = [
             [sg.Frame(self.i18n('text.settings.obsSettings.title'), layout=layout_obs, title_color='#000044')],
@@ -817,6 +826,9 @@ class SDVXHelper:
         
         if self.connect_obs():
             self.window['txt_obswarning'].update('')
+        
+        if self.settings['enable_discord_presence']: 
+            self.setup_discord_presence()
 
     def start_detect(self):
         """認識スレッドを開始する。
@@ -1367,6 +1379,9 @@ class SDVXHelper:
                     self.send_playlist()
                     self.logToWindow(f'{self.i18n("message.main.playLogSaved")}')
                     vf_filename = f"{self.settings['autosave_dir']}/{self.starttime.strftime('%Y%m%d')}_total_vf.png"
+                    
+                    if self.settings['enable_discord_presence'] :
+                        self.presence.destroy()
                     #print(f"VF対象一覧を保存中 (OBSに設定していれば保存されます) ...\n==> {vf_filename}")
                     try:
                         tmps, tmpid = self.obs.search_itemid(self.settings[f'obs_scene_select'], 'sdvx_stats.html')
