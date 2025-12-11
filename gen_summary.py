@@ -11,8 +11,16 @@ import sdvx_utils
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
+
+log_dir = 'log'
+log_path = os.path.join(log_dir, 'ocr.log')
+os.makedirs(log_dir, exist_ok=True)
+if not os.path.exists(log_path):
+    open(log_path, 'w').close() 
+
 hdl = logging.handlers.RotatingFileHandler(
-    f'log/{os.path.basename(__file__).split(".")[0]}.log',
+    #f'log/{os.path.basename(__file__).split(".")[0]}.log',
+    log_path,
     encoding='utf-8',
     maxBytes=1024*1024*2,
     backupCount=1,
