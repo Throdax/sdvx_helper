@@ -27,6 +27,7 @@ import sdvx_utils
 from sdvxh_classes import *
 
 from discord_presence import SDVXDiscordPresence, PlayStates
+from scipy.stats._morestats import false_discovery_control
 
 
 # フラットウィンドウ、右下モード(左に上部側がくる)
@@ -111,6 +112,8 @@ class SDVXHelper:
         
         self.session_plays = []
         
+        self.prepare_function_icons()
+        
         logger.debug('created.')
         logger.debug(f'settings:{self.settings}')
         
@@ -158,6 +161,35 @@ class SDVXHelper:
             base_path = os.path.abspath(".")
         return os.path.join(base_path, relative_path)
     
+    def prepare_function_icons(self):
+        
+        width = 25
+        height = 25
+        
+        img = Image.open('resources/images/function_capture.png')
+        resized_img = img.resize((width, height))
+        buffer = io.BytesIO()
+        resized_img.save(buffer, format='PNG')
+        self.capture_icon = buffer.getvalue()
+        
+        img = Image.open('resources/images/function_summary.png')
+        resized_img = img.resize((width,height))
+        buffer = io.BytesIO()
+        resized_img.save(buffer, format='PNG')
+        self.summary_icon = buffer.getvalue()
+        
+        img = Image.open('resources/images/function_volforce.png')
+        resized_img = img.resize((width, height))
+        buffer = io.BytesIO()
+        resized_img.save(buffer, format='PNG')
+        self.volforce_icon = buffer.getvalue()
+        
+        img = Image.open('resources/images/function_discord.png')
+        resized_img = img.resize((width, height))
+        buffer = io.BytesIO()
+        resized_img.save(buffer, format='PNG')
+        self.discord_icon = buffer.getvalue()
+        
     def update_musiclist(self):
         """曲リスト(musiclist.pkl)を最新化する
         """
@@ -227,6 +259,8 @@ class SDVXHelper:
         dst_filename = f"sdvx_{fmtnow}.png"
         tmp = self.get_capture_after_rotate()
         self.gen_summary.cut_result_parts(tmp)
+        self.window['capture_icon'].update(visible=True)
+        
         cur,pre = self.gen_summary.get_score(tmp)
         res_ocr = self.gen_summary.ocr(notify=True)
         if res_ocr != False and self.detect_mode == detect_mode.result: # OCRで曲名認識に成功
@@ -276,6 +310,7 @@ class SDVXHelper:
             
         self.gen_summary.generate() # ここでサマリも更新
         self.logToWindow(f"{self.i18n('message.screenshot.saved')} -> {dst_filename}")
+        self.window['summary_icon'].update(visible=True)
 
         # ライバル欄更新
         if type(title) == str:
@@ -419,11 +454,13 @@ class SDVXHelper:
         vf_cur.save('out/vf_cur.png')
         class_cur.save('out/class_cur.png')
         
+        self.window['volforce_icon'].update(visible=True)
+        
         #self.logToWindow(self.i18n('message.screenshot.save.volforce'))
     
     def capture_summary_btn(self):
         self.gen_summary.generate()  
-        self.logToWindow(self.i18n('message.screenshot.save.summary'))  
+        self.logToWindow(self.i18n('message.screenshot.save.summary'))
 
     def save_playerinfo(self):
         """プレイヤー情報(VF,段位)を切り出して画像として保存する。
@@ -833,8 +870,13 @@ class SDVXHelper:
                 sg.Frame(title='',layout=layout_shortcuts_1, border_width=0,font=(None, 9)),
                 sg.Frame(title='',layout=layout_shortcuts_2, border_width=0,font=(None, 9))
             ],
-            [par_text('', size=(40,1), key='txt_info')],
-            [sg.Image(source=open('resources/images/discord.png','rb').read(), key='discord_presence_icon', visible=False)]
+            #[par_text('', size=(40,1), key='txt_info')],
+            [
+                sg.Image(source=self.capture_icon, key='capture_icon', visible=False),
+                sg.Image(source=self.summary_icon, key='summary_icon', visible=False),
+                sg.Image(source=self.volforce_icon, key='volforce_icon', visible=False),
+                sg.Image(source=self.discord_icon, key='discord_presence_icon', visible=False)
+            ]
         ]
         if self.settings['dbg_enable_output']:
             layout.append([sg.Multiline(size=(100,8), key='output', font=(None, 9),expand_x=True)])
@@ -1187,6 +1229,12 @@ class SDVXHelper:
         """
         self.window.write_event_value('-import_score_on_select-', " ")
 
+
+    def reset_icons(self):
+        self.window['capture_icon'].update(visible=False)
+        self.window['summary_icon'].update(visible=False)
+        self.window['volforce_icon'].update(visible=False)
+
     def detect(self):
         """認識処理を行う。無限ループになっており、メインスレッドから別スレッドで起動される。
 
@@ -1244,10 +1292,14 @@ class SDVXHelper:
                     self.img_rot.crop(self.get_detect_points('select_APPEND')),
                 )
                 
+                self.reset_icons()
+                
+                level = find_song_rating(title,diff,self.gen_summary.musiclist)
                     
                 self.update_discord_presence(
                     title=title,
                     difficulty=upper(diff),
+                    level=level,
                     mode=PlayStates.SELECT
                 )
                 
