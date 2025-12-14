@@ -4,7 +4,8 @@ import pickle
 from gen_summary import *
 from datetime import datetime, timedelta
 import imagehash
-from PIL import Image 
+from PIL import Image
+import hashlib 
 
 def load():
     ret = None
@@ -15,6 +16,28 @@ def load():
 def save(dat:dict):
     with open('resources/musiclist.pkl', 'wb') as f:
         pickle.dump(dat, f)
+        
+def calculate_jacket_hash() :
+    
+    root_folder = 'D:/Tools/SoundVoltex/sdvx_helper/jackets'
+    
+    results = os.listdir(root_folder)
+    results.sort(key=lambda s: os.path.getctime(os.path.join(root_folder, s)))
+    
+    with open(root_folder+'/0b4341982f37aefe33fef630d.png', 'rb') as f:
+        # Create a SHA256 hash object
+        hasher = hashlib.sha256()
+        
+        # Read the file in chunks and update the hash object
+        for chunk in iter(lambda: f.read(4096), b''):
+            hasher.update(chunk)
+        
+            # Get the hexadecimal representation of the hash
+            hashed_file = hasher.hexdigest()
+        
+        # Print the hashed file
+        print(hashed_file)
+    
         
 def update_saved_jackets() :
     
@@ -86,6 +109,7 @@ def update_music_list_hash_size(hash_size:int=10) :
     save(a)        
 
 if __name__ == '__main__':
-    update_saved_jackets()
+    #update_saved_jackets()
+    calculate_jacket_hash()
 
     

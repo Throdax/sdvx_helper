@@ -6,8 +6,8 @@ set target_ocr=ocr_reporter
 set target_manager=manage_score
 set target_updater=update
 set target_sync=play_log_sync
-set pyin="%userprofile%\AppData\Local\Programs\Python\Python314\Scripts\pyinstaller.exe"
-REM set pyin="%userprofile%\AppData\Roaming\Python\Python313\Scripts\pyinstaller.exe"
+REM set pyin="%userprofile%\AppData\Local\Programs\Python\Python314\Scripts\pyinstaller.exe"
+set pyin="%userprofile%\AppData\Roaming\Python\Python313\Scripts\pyinstaller.exe"
 
 set SDVX=Not Build
 set OCR=Not Build

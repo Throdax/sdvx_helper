@@ -54,7 +54,7 @@ class PlayLogSync():
             print(msg)
 
     def is_special_title(self, song_title):
-        return song_title.strip() in special_titles
+        return song_title.strip() in special_titles.special_titles
     
     def load_song_list(self, song_list):
         ret = None
@@ -84,7 +84,7 @@ class PlayLogSync():
             
     def is_song_in_log(self, song_log, song_to_search, file_number):
         
-        if song_to_search.title in ignored_names:
+        if song_to_search.title in special_titles.ignored_names:
             return True
             
         song_exists = False
@@ -141,7 +141,7 @@ class PlayLogSync():
         self.logToWindow('--------------------------------------------------')
         self.logToWindow('Searching for direct removal songs...')
         for i, song in enumerate(song_log):
-            if song.title in direct_removes:
+            if song.title in special_titles.direct_removes:
                 self.logToWindow(f'Song \'{song.title}\' marked as direct removal. Removing from log...')
                 song_log.pop(i)
         
@@ -265,7 +265,7 @@ class PlayLogSync():
                             self.logToWindow(f'Removed incorrect song with title {song_title} from play log.')
                             break                                                                    
                             
-                song_title = self.restore_title(song_title)
+                song_title = sdvx_utils.restore_title(song_title)
                 
                 play_score = score_from_image[0];
                 previous_score = score_from_image[1]
@@ -302,9 +302,9 @@ class PlayLogSync():
         self.logToWindow(f'Dumping {len(song_log)} song plays to XML...')
         for song_from_log in song_log:
             
-            title = self.restore_title(song_from_log.title)
+            title = sdvx_utils.restore_title(song_from_log.title)
             
-            rating = self.find_song_rating(song_from_log, song_list, self.logToWindow)
+            rating = sdvx_utils.find_song_rating(song_from_log.title, song_from_log.difficulty, song_list, self.logToWindow)
             song_hash_play = str(hash(title + "_" + song_from_log.difficulty + "_" + rating))
             song_hash_title = str(hash(title))
                     
