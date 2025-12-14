@@ -72,5 +72,6 @@ default_val = {
     # debug
     'send_webhook':True, # OCR失敗時にwebhookで自動報告するかどうか
     'dbg_enable_output':True, # GUIのoutput部分を表示するかどうか。Falseにすると標準出力される。
-    'enable_discord_presence': False
+    'discord_presence_enable': False,
+    'discord_presence_song_as_title': False
 }

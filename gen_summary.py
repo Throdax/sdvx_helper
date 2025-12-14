@@ -432,7 +432,7 @@ class GenSummary:
     # 返り値: 曲名, hash差分の最小値
     def ocr_only_jacket(self, jacket, nov, adv, exh, APPEND,hash_size:int=10):
         hash_jacket = imagehash.average_hash(jacket,hash_size)
-        title = False
+        title = "Unknown Song"
         minval = 99999
         sum_nov = np.array(nov).sum()
         sum_adv = np.array(adv).sum()
@@ -447,12 +447,14 @@ class GenSummary:
             difficulty = 'exh'
         else:
             difficulty = 'APPEND'
+            
+        hash_threshold = 4    
         
         # 曲名を検出
         for h in self.musiclist_hash['jacket'][difficulty].keys():
             if h != '' :
                 hash_cur = imagehash.hex_to_hash(h)
-                if len(hash_cur) == len(hash_jacket) and abs(hash_cur - hash_jacket) < minval:
+                if len(hash_cur) == len(hash_jacket) and abs(hash_cur - hash_jacket) < hash_threshold:
                     minval = abs(hash_cur - hash_jacket)
                     title = self.musiclist_hash['jacket'][difficulty][h]
         return title, minval, difficulty
@@ -468,6 +470,8 @@ class GenSummary:
         jacket      = Image.open('out/select_jacket.png')
         hash_jacket = imagehash.average_hash(jacket,hash_size)
         diff        = Image.open('out/select_difficulty.png')
+        hash_diff = imagehash.average_hash(diff)
+        
         target = {}
         target['nov'] = imagehash.hex_to_hash('267e7c787a787c7e')
         target['adv'] = imagehash.hex_to_hash('43478889a9b99cdf')
@@ -477,7 +481,6 @@ class GenSummary:
         target['hvn'] = imagehash.hex_to_hash('484c04fcfcbcb6ff')
         target['mxm'] = imagehash.hex_to_hash('001099cdcdddfdef')
         target['vvd'] = imagehash.hex_to_hash('1c3c3c3c3c3c3cbc')
-        hash_diff = imagehash.average_hash(diff)
         # hash差分が最小の難易度を見つける
         minval = 999
         for t in target.keys():
@@ -487,15 +490,17 @@ class GenSummary:
                 difficulty = t
         if difficulty not in ('nov', 'adv', 'exh'):
             difficulty = 'APPEND'
-        title       = False
+        title       = "Unknown Song"
         minval      = 99999
+        
+        hash_threshold = 4
 
         # 曲名を検出
-        for h in self.musiclist_hash['jacket'][difficulty].keys():
-            hash_cur = imagehash.hex_to_hash(h)
-            if len(hash_cur) == len(hash_jacket) and abs(hash_cur - hash_jacket) < minval:
+        for existing_hash in self.musiclist_hash['jacket'][difficulty].keys():
+            hash_cur = imagehash.hex_to_hash(existing_hash)
+            if len(hash_cur) == len(hash_jacket) and abs(hash_cur - hash_jacket) < hash_threshold:
                 minval = abs(hash_cur - hash_jacket)
-                title = self.musiclist_hash['jacket'][difficulty][h]
+                title = self.musiclist_hash['jacket'][difficulty][existing_hash]
         logger.debug(f"title:{title}, difficulty:{difficulty}, minval:{minval}")
         return title, minval, difficulty
 
@@ -525,36 +530,36 @@ class GenSummary:
                 difficulty = 'APPEND'
             self.difficulty = difficulty
             
-            for h in self.musiclist_hash['jacket'][difficulty].keys():
-                h = imagehash.hex_to_hash(h)
+            for existing_hash in self.musiclist_hash['jacket'][difficulty].keys():
+                existing_hash = imagehash.hex_to_hash(existing_hash)
                 
                 threshold = 3
                 
                 # Special Help me, ERINNNNNN!! #幻想郷ホロイズムver. hash that has a lot of conflicts with シアワセうさぎ・ぺこみこマリン
                 # It's basicaly the same jacket with a diferent text and the algoritm cannot handle that
-                if str(h) == 'e3c87e1f9ff7c0f8367c03040' :
+                if str(existing_hash) == 'e3c87e1f9ff7c0f8367c03040' :
                     threshold = 0
                 
-                if len(h) == len(hash_jacket) and abs(h - hash_jacket) < threshold:
-                    self.hash_hit = h
+                if len(existing_hash) == len(hash_jacket) and abs(existing_hash - hash_jacket) < threshold:
+                    self.hash_hit = existing_hash
                     if self.settings['save_jacketimg']:
-                        tt = f"jackets/{str(h)}.png"
+                        tt = f"jackets/{str(existing_hash)}.png"
                         if not os.path.exists(tt):
                             self.result_parts['jacket_org'].save(tt)
                     detected = True
-                    ret = self.musiclist_hash['jacket'][difficulty][str(h)]
-                    logger.debug(f"OCR pass: {abs(h - hash_jacket) < 2}, h:{str(h)}, cur:{str(hash_jacket)}, diff:{abs(h - hash_jacket) < 2}")
+                    ret = self.musiclist_hash['jacket'][difficulty][str(existing_hash)]
+                    logger.debug(f"OCR pass: {abs(existing_hash - hash_jacket) < 2}, existing_hash:{str(existing_hash)}, cur:{str(hash_jacket)}, diff:{abs(existing_hash - hash_jacket) < 2}")
                     break
-                elif len(h) != len(hash_jacket) :
-                    logger.debug(f"Comparing old length hash (8) with new length hash ({hash_size}): {str(hash_jacket)}. Skipping...")
+                elif len(existing_hash) != len(hash_jacket) :
+                    logger.debug(f"Comparing old length hash (8) '{str(existing_hash)}' with new length hash ({hash_size}): {str(hash_jacket)}. Skipping...")
             if not detected:
                 if notify and self.settings['send_webhook']:
                     self.send_webhook()
                 # 曲名エリアからの認識だと精度が悪いので放置
-                #for h in self.musiclist_hash['info'][difficulty].keys():
-                #    h = imagehash.hex_to_hash(h)
-                #    if abs(h - hash_info) < 5:
-                #        ret = self.musiclist_hash['info'][difficulty][str(h)]
+                #for existing_hash in self.musiclist_hash['info'][difficulty].keys():
+                #    existing_hash = imagehash.hex_to_hash(existing_hash)
+                #    if abs(existing_hash - hash_info) < 5:
+                #        ret = self.musiclist_hash['info'][difficulty][str(existing_hash)]
                 #        #break
             else:
                 tmp = Image.open('resources/images/no_jacket.png')
