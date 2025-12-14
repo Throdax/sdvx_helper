@@ -55,7 +55,19 @@ def compare_version(ver1:str, ver2:str) -> int:
     
     return -1 if int(ver1_splits[comparing_index]) > int(ver2_splits[comparing_index]) else 1
 
-def find_song_rating(song_title, song_difficulty, song_list, logger):
+def find_song_composer(song_title, song_difficulty, song_list, logger=None):
+    
+    restored_song_title = restore_title(song_title)
+        
+    # Find the numeric value of the song rating based on it's difficulty category
+    song = song_list['titles'].get(restored_song_title, None)
+    
+    if song is not None:
+        return song[1]
+    
+    return "Unknown"
+
+def find_song_rating(song_title, song_difficulty, song_list, logger=None):
         
         rating = 0
         
@@ -78,7 +90,7 @@ def find_song_rating(song_title, song_difficulty, song_list, logger):
             if logger is not None:
                 logger(f'[{restored_song_title}-{song_difficulty.upper()}] Could not find song in song list for rating. Searching for direct overrides...')
             
-            override = direct_overides.get(restored_song_title)
+            override = special_titles.direct_overides.get(restored_song_title)
             
             if override is not None:
                 for override_rating in override:
@@ -96,8 +108,8 @@ def find_song_rating(song_title, song_difficulty, song_list, logger):
             
         return str(rating)
      
-def restore_title( song_title): 
-        return special_titles.get(song_title.strip(), song_title.strip())
+def restore_title(song_title): 
+        return special_titles.special_titles.get(song_title.strip(), song_title.strip())
     
         
     
