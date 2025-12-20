@@ -24,6 +24,7 @@ from obssocket import OBSSocket
 from poor_man_resource_bundle import *
 import pyautogui as pgui
 import sdvx_utils
+from ocr_auto import AutoOCR
 from sdvxh_classes import *
 
 from discord_presence import *
@@ -115,10 +116,12 @@ class SDVXHelper:
         self.gen_summary = False
         #self.result_vf_saved = False
         self.last_vf_hash = None
+        self.last_cover_upload_url = None
         
         self.session_plays = []
         
         self.prepare_function_icons()
+        self.auto_ocr = AutoOCR()
         
         logger.debug('created.')
         logger.debug(f'settings:{self.settings}')
@@ -336,7 +339,7 @@ class SDVXHelper:
         if self.detect_mode == detect_mode.result: 
             level = sdvx_utils.find_song_rating(tmp_playdata.title,tmp_playdata.difficulty,self.gen_summary.musiclist)
             composer = sdvx_utils.find_song_composer(tmp_playdata.title,tmp_playdata.difficulty,self.gen_summary.musiclist)
-                                
+            
             # Result, we want to:
             # - Update: Title, difficulty and level, score
             self.update_discord_presence(
@@ -644,6 +647,8 @@ class SDVXHelper:
             self.settings['always_update_vf'] = val['update_vf']
             self.settings['discord_presence_enable'] = val['update_discord_presence']
             self.settings['discord_presence_song_as_title'] = val['update_discord_presence_as_tile']
+            self.settings['discord_presence_upload_jacket'] = val['update_discord_presence_jacket']
+            self.settings['discord_presence_ocr_titles'] = val['update_discord_ocr_titles']
 
     def build_layout_one_scene(self, name, LR=None):
         """OBS制御設定画面におけるシーン1つ分のGUIを出力する。
@@ -838,16 +843,21 @@ class SDVXHelper:
             [sg.Checkbox(self.i18n('checkbox.settings.importFromSelect'),self.settings['import_from_select'],key='import_from_select', enable_events=True),sg.Checkbox(self.i18n('checkbox.settings.includeArcadeScores'),self.settings['import_arcade_score'],key='import_arcade_score', enable_events=True)],
             [sg.Checkbox(self.i18n('checkbox.settings.correctWindowsCoordinates'),self.settings['clip_lxly'],key='clip_lxly', enable_events=True, tooltip=self.i18n('checkbox.settings.correctWindowsCoordinates.tooltip'))],
             [sg.Checkbox(self.i18n('checkbox.settings.allwaysUpdateVF'),self.settings['always_update_vf'],key='update_vf', enable_events=True, tooltip=self.i18n('checkbox.settings.allwaysUpdateVF.tooltip'))],
+            
+        ]
+        layout_discord = [
             [
                 sg.Checkbox(self.i18n('checkbox.settings.discordPresence'),self.settings['discord_presence_enable'],key='update_discord_presence', enable_events=True, tooltip=self.i18n('checkbox.settings.discordPresence.tooltip')),
-                sg.Checkbox(self.i18n('checkbox.settings.discordPresence.useSongAsTitle'),self.settings['discord_presence_song_as_title'],key='update_discord_presence_as_tile', enable_events=True, tooltip=self.i18n('checkbox.settings.discordPresence.useSongAsTitle.tooltip'))
-                
-            ],
-        ]
+                sg.Checkbox(self.i18n('checkbox.settings.discordPresence.useSongAsTitle'),self.settings['discord_presence_song_as_title'],key='update_discord_presence_as_tile', enable_events=True, tooltip=self.i18n('checkbox.settings.discordPresence.useSongAsTitle.tooltip'), visible=True),
+                sg.Checkbox(self.i18n('checkbox.settings.discordPresence.uploadJacket'),self.settings['discord_presence_upload_jacket'],key='update_discord_presence_jacket', enable_events=True, tooltip=self.i18n('checkbox.settings.discordPresence.uploadJacket.tooltip'), visible=True),
+                sg.Checkbox(self.i18n('checkbox.settings.discordPresence.ocrTitles'),self.settings['discord_presence_ocr_titles'],key='update_discord_ocr_titles', enable_events=True, tooltip=self.i18n('checkbox.settings.discordPresence.ocrTitles.tooltip'), visible=True),
+            ]
+        ] 
         layout = [
             [sg.Frame(self.i18n('text.settings.obsSettings.title'), layout=layout_obs, title_color='#000044')],
             [sg.Frame(self.i18n('text.settings.gameSettings.title'), layout=layout_gamemode, title_color='#000044')],
             [sg.Frame(self.i18n('text.settings.otherSettings.title'), layout=layout_etc, title_color='#000044')],
+            [sg.Frame(self.i18n('text.settings.discordSettings.title'), layout=layout_discord, title_color='#000044')],
         ]
         self.gui_mode = gui_mode.setting
         self.window = sg.Window(self.i18n('window.settings.title'), layout, grab_anywhere=True,return_keyboard_events=True,resizable=False,finalize=True,enable_close_attempted_event=True,icon=self.ico,location=(self.settings['lx'], self.settings['ly']))
@@ -1388,22 +1398,34 @@ class SDVXHelper:
                         self.sdvx_logger.gen_history_cursong(title, diff)
 
 
-                        # Maybe alternative way to find the level? If not needed send find_song_rating back to the play_log_sync                                               
-                        level = sdvx_utils.find_song_rating(title,diff,self.gen_summary.musiclist)
-                        composer = sdvx_utils.find_song_composer(title,diff,self.gen_summary.musiclist)
+                        if self.settings['discord_presence_enable'] :
+                            # Maybe alternative way to find the level? If not needed send find_song_rating back to the play_log_sync                                               
+                            
                         
-                        # Started playing song, we want to:
-                        # - Upload and update cover
-                        # - Update: Title, difficulty and level 
-                        self.last_cover_upload_url = self.presence.upload_cover('out/select_jacket.png')
-                        self.update_discord_presence(
-                            cover=self.last_cover_upload_url,
-                            title=title,
-                            difficulty=diff,
-                            level=level,
-                            composer=composer,
-                            mode=PlayStates.DETECT
-                        )
+                            # Started playing song, we want to:
+                            # - Upload and update cover
+                            # - Update: Title, difficulty and level 
+                            if self.settings['discord_presence_upload_jacket'] :
+                                self.last_cover_upload_url = self.presence.upload_cover('out/select_jacket.png')
+                                
+                            if self.settings['discord_presence_ocr_titles'] :
+                                presence_title, presence_composer = self.auto_ocr.parse_title('out/select_title.png')
+                                presence_level, presence_difficulty = self.auto_ocr.parse_title('out/select_level.png')
+                            else :
+                                presence_title = title
+                                presence_difficulty = diff
+                                presence_level = sdvx_utils.find_song_rating(title,diff,self.gen_summary.musiclist)
+                                presence_composer = sdvx_utils.find_song_composer(title,diff,self.gen_summary.musiclist)
+                                
+                                
+                            self.update_discord_presence(
+                                cover=self.last_cover_upload_url,
+                                title=presence_title,
+                                difficulty=presence_difficulty,
+                                level=presence_level,
+                                composer=presence_composer,
+                                mode=PlayStates.DETECT
+                            )
                         
                         done_thissong = True
                 #if self.is_onplay() and done_thissong: # 曲決定画面を検出してから入る(曲終了時に何度も入らないように)
