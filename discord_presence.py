@@ -2,11 +2,13 @@ from pypresence import Presence
 from pypresence.types import ActivityType, StatusDisplayType
 import time
 import requests
+from requests.exceptions import Timeout
 import params_secret
 import enum
 import logging, logging.handlers, traceback
 import os, sys, re
 import datetime
+import threading
 
 log_dir = 'log'
 log_path = os.path.join(log_dir, 'presense.log')
@@ -19,7 +21,7 @@ logger.setLevel(logging.INFO)
 hdl = logging.handlers.RotatingFileHandler(
     log_path,
     encoding='utf-8',
-    maxBytes=1024*1024*2,
+    maxBytes=1024 * 1024 * 2,
     backupCount=1,
 )
 hdl.setLevel(logging.INFO)
@@ -34,6 +36,7 @@ class PlayStates(enum.Enum):
     PLAY = 2
     RESULT = 3
     DETECT = 4
+
     
 class DisplayMode(enum.Enum):
     DEFAULT = 0
@@ -43,8 +46,10 @@ class DisplayMode(enum.Enum):
 class SDVXDiscordPresence:
     
     init = False
+    is_litterbox_up = False
     last_presence_update = datetime.datetime.now()
     display_type = StatusDisplayType.NAME
+    litterbox_thread = None
     
     def __init__(self):
         
@@ -53,7 +58,8 @@ class SDVXDiscordPresence:
             return
         
         self.client_id = params_secret.discord_presence_client_id
-        self.litterbox_url = "https://litterbox.catbox.moe/resources/internals/api.php"
+        self.litterbox_base_url = "https://litterbox.catbox.moe"
+        self.litterbox_api_url = f"{self.litterbox_base_url}/resources/internals/api.php"
         self.RPC = Presence(self.client_id)  # Initialize the Presence client
         self.RPC.connect()  # Start the handshake loop
 
@@ -61,12 +67,15 @@ class SDVXDiscordPresence:
         self.start_time = int(time.time()) 
         self.init = True
         
+        self.create_litterbox_ping_thread()
+        
+        
+        
     def set_display_mode(self, display_mode:DisplayMode):
         if display_mode == DisplayMode.DEFAULT:
             self.display_type = StatusDisplayType.NAME
-        else :
+        else:
             self.display_type = StatusDisplayType.DETAILS
-            
         
     def update_custom(self, custom_text:str):
         
@@ -82,7 +91,6 @@ class SDVXDiscordPresence:
             start=self.start_time)
 
         logger.info(f"Presence updated with: {custom_text}")
-        
 
     def update(self, cover_url:str=None, title:str=None, difficulty:str=None, level:str=None, score:int=None, score_diff:int=None, composer:str=None, lamp:str=None, state:PlayStates=PlayStates.OTHER):
         
@@ -97,36 +105,40 @@ class SDVXDiscordPresence:
         update_title = title
         
         if (datetime.datetime.now() - self.last_presence_update).total_seconds() < 5 and state == PlayStates.SELECT:
-                can_upate = False
+            can_upate = False
         
         if  (state == PlayStates.OTHER or state == PlayStates.SELECT) and title is None:
-            update_title = '<<< Selecting next song >>>'
+            update_title = 'Selecting next song...'
             
         elif state == PlayStates.PLAY or state == PlayStates.DETECT:
+            # For now while the song title detection doesn't improve don't display titles
+            #update_title = 'Playing a song...'
             score = f'{difficulty.upper()}-{level}'
         
         elif state == PlayStates.RESULT:
+            #update_title = 'Result:'
+            # For now while the song title detection doesn't improve don't display titles
             update_title = f'{title}-{difficulty.upper()}-{level}'
         
         if state == PlayStates.RESULT and score is not None:
             
             update_lamp = lamp.upper()
             
-            if update_lamp == 'EXH' :
+            if update_lamp == 'EXH':
                 update_lamp = 'MAXXIVE'
             
             # Need to format the score to the 1st 4 or 3 digits
             if len(str(score)) == 8: 
-                score = f'Result: {update_lamp} - {str(score)[:4]} ({str(score-score_diff)})'
-            else :
-                score = f'Result: {update_lamp} - {str(score)[:3]}  ({str(score-score_diff)})'
+                score = f'{update_lamp}: {str(score)[:4]} ({str(score-score_diff)})'
+            else:
+                score = f'{update_lamp}: {str(score)[:3]} ({str(score-score_diff)})'
                 
         update_composer = composer
         if composer is not None:
             update_composer = f'Composed by: {composer}' 
         
         # Update only every 5s
-        if can_upate :    
+        if can_upate: 
             self.RPC.update(
                 activity_type=ActivityType.PLAYING,
                 status_display_type=self.display_type,
@@ -137,7 +149,7 @@ class SDVXDiscordPresence:
                 large_text=update_composer,
                 start=self.start_time)
     
-            logger.info(f"Presence updated with: {title}, {composer}, {difficulty}, {lamp}, {level}, {score}, {cover_url}")
+            logger.info(f"Presence updated with: Title: {title}, Composer: {composer}, Diff: {difficulty}, Lamp: {lamp}, Level: {level}, Score: {score}, Cover: {cover_url}")
             
             self.last_presence_update = datetime.datetime.now()
             
@@ -147,22 +159,71 @@ class SDVXDiscordPresence:
     def upload_cover(self, path:str):
         
         if not self.init:
+            logger.error('Presence not initialised, Cover will not uploaded')
+            return
+        
+        if not is_litterbox_up:
+            logger.error('Litter box is not up, Cover will not uploaded')
             return
         
         if path is None:
             raise AttributeError
         
         with open(path, 'rb') as cover:
-            response = requests.post(self.litterbox_url, data={'reqtype': 'fileupload', 'time': "1h"}, files={'fileToUpload': cover})
+            response = requests.post(self.litterbox_api_url, data={'reqtype': 'fileupload', 'time': "1h"}, files={'fileToUpload': cover})
             
             logger.info(f'Cover {path} uploaded to {response.text}')
             
             return response.text
+    
+    def ping_litterbox(self):
+        
+        timeout_seconds = 5
+        
+        if not self.init :
+            logger.info('Stopping litterbox pinging thread...')
+            return
+        
+        logger.info('Checking if litterbox is up...')
+        
+        try:
+            response = requests.get(self.litterbox_base_url,timeout=timeout_seconds)
+            if response.status_code == 200:
+                logger.info('Litter box is up.')
+                self.is_litterbox_up = True
+            else:
+                if not self.init :
+                    logger.info('Stopping litterbox pinging thread...')
+                    return
+                
+                logger.error(f'Litterbox responded with HTTP {response.status_code}')
+                self.handle_litterbox_not_ready(timeout_seconds)
+        except Timeout:
+            
+            if not self.init :
+                logger.info('Stopping litterbox pinging thread...')
+                return
+            
+            self.handle_litterbox_not_ready(timeout_seconds)
+
+    def handle_litterbox_not_ready(self, timeout):
+        logger.error(f'Litter box is down or didn\'t respond HTTP 200. Will try again in {timeout} seconds')
+        time.sleep(timeout)
+        
+        self.ping_litterbox()
+            
+    def create_litterbox_ping_thread(self):
+        logger.info('Launching ping_litterbox thread...')
+        self.litterbox_thread = threading.Thread(target=self.ping_litterbox,name="Litterbox-ping")
+        self.litterbox_thread.start()
         
     def destroy(self):
-        
+
         if not self.init:
             return
+        
+        # This will cause the pinging thread to end, if one exists
+        self.init = False
         
         self.RPC.close()
         logger.info("Disconnected from discord presence")

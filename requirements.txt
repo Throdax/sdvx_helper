@@ -10,6 +10,7 @@ discord-webhook==1.4.1
 keyboard==0.13.5
 pyautogui==0.9.54
 pyinstaller==6.17.0
+easyocr=1.7.2
 
 # PySimpleGUI (use static URL below)
 # Older version of PySimpleGUI since 5.x has been discontinued
