@@ -5,6 +5,7 @@ import datetime
 import logging, logging.handlers, traceback
 from typing import Union
 from genericpath import exists
+from cmath import log
 
 log_dir = 'log'
 log_path = os.path.join(log_dir, 'auto_ocr.log')
@@ -32,6 +33,9 @@ class AutoOCR:
     init = False
     
     def __init__ (self):
+        """
+        Initialises two the OCR. One OCR will be set to EN/JA and the second one just to EN. 
+        """
         
         dt_start = datetime.datetime.now()
         self.ocr_parser_titles = easyocr.Reader(['en','ja'], gpu=False, download_enabled=True)
@@ -43,44 +47,58 @@ class AutoOCR:
         
         logger.info(f'OCR models loaded in {(dt_end-dt_start).total_seconds():.2f}s')
         
-        init = True
+        self.init = True
         
     def parse_title(self, path:str) -> Union[str, str]:
+        """
+        Uses the EN/JA OCRR to try and retrieve the text of an image
         
-        if not os.path.exists(path) or not init:
+        :param path:str    - The path of the image to OCR. If path does not exist or the class is not initialised, 
+                             it will return "Unknown" for both values.
+        
+        :return str, str   - The first string will be the detected title of the song. The second string will be the composer
+        """
+        
+        if not os.path.exists(path) or not self.init:
             return 'Unknown', 'Unknown' 
         
         dt_start = datetime.datetime.now()
-        
         result = self.ocr_parser_titles.readtext(path,detail=0)
-        
         dt_end = datetime.datetime.now()
         
         title = result[0]
         composer = result[1]
         
-        logger.info(f'Identified title: {title} and composer: {composer} from {path} in {(dt_end-dt_start).total_seconds()*1000:.2f}ms')
+        logger.info(f'Identified title: "{title}" and composer: "{composer}" from {path} in {(dt_end-dt_start).total_seconds()*1000:.2f}ms')
         
         return title, composer
     
     def parse_level(self, path:str) -> Union[str, str]:
+        """
+        Uses the EN OCRR to try and retrieve the text of an image
         
-        if not os.path.exists(path) or not init:
+        :param path:str    - The path of the image to OCR. If path does not exist or the class is not initialised, 
+                             it will return "Unknown" for both values.
+        
+        :return str, str   - The first string will be the detected level of the song. The second string will be the difficulty
+        """
+        
+        if not os.path.exists(path) or not self.init:
             return 'Unknown', 'Unknown'
         
         dt_start = datetime.datetime.now()
-        
-        result = self.ocr_parser_levels.readtext(path,detail=0)
-        
+        result = self.ocr_parser_levels.readtext(path,detail=0)       
         dt_end = datetime.datetime.now()
         
         level = result[0]
         difficulty = result[1].upper()
         
-        logger.info(f'Identified level: {level} and difficulty: {difficulty} from {path} in {(dt_end-dt_start).total_seconds()*1000:.2f}ms')
+        logger.info(f'Identified level: "{level}" and difficulty: "{difficulty}" from {path} in {(dt_end-dt_start).total_seconds()*1000:.2f}ms')
         
         return level, difficulty
         
+    def parse_volforce(self, path:str) -> str:
+        logger.info("Soon")
         
         
 

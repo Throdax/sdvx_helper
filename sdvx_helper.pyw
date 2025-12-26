@@ -127,9 +127,9 @@ class SDVXHelper:
         logger.debug(f'settings:{self.settings}')
         
     def setup_discord_presence(self):
-        self.presence = SDVXDiscordPresence()
-        self.logToWindow("Discord presence initialized")
-        self.update_discord_presence(title="Starting...", mode=PlayStates.OTHER)
+        self.presence = SDVXDiscordPresence(self.default_locale)
+        self.logToWindow(f"{self.i18n('message.discord.presenceInit')}")
+        self.update_discord_presence(title=f"{self.i18n('message.discord.presence.starting')}", mode=PlayStates.OTHER)
         
         if self.settings['discord_presence_song_as_title'] :
             self.presence.set_display_mode(DisplayMode.SONG)
@@ -152,7 +152,56 @@ class SDVXHelper:
                 state=mode
             ) :
                 logger.debug(f"{self.i18n('text.update.presence',mode.name)}")
-                #self.logToWindow(f"{self.i18n('text.update.presence',mode.name)}")
+                
+    def update_discord_presence_detect_screen(self, title, diff, PlayStates):
+        # Started playing song, we want to:
+        # - Upload and update cover
+        # - Update: Title, difficulty and level
+                
+        if self.settings['discord_presence_upload_jacket']:
+            self.last_cover_upload_url = self.presence.upload_jacket('out/select_jacket.png')
+        
+        if self.settings['discord_presence_ocr_titles']:
+            presence_title, presence_composer = self.auto_ocr.parse_title('out/select_title.png')
+            presence_level, presence_difficulty = self.auto_ocr.parse_level('out/select_level.png')
+        else:
+            presence_title = title
+            presence_difficulty = diff
+            presence_level = sdvx_utils.find_song_rating(title, diff, self.gen_summary.musiclist)
+            presence_composer = sdvx_utils.find_song_composer(title, diff, self.gen_summary.musiclist)
+        
+        self.update_discord_presence(
+            cover=self.last_cover_upload_url, 
+            title=presence_title, 
+            difficulty=presence_difficulty, 
+            level=presence_level, 
+            composer=presence_composer, 
+            mode=PlayStates.DETECT)
+        
+    def update_discord_presence_result_screen(self, tmp_playdata):
+        # Result, we want to:
+        # - Update: Title, difficulty and level, score
+        
+        if self.settings['discord_presence_ocr_titles'] and tmp_playdata.title.lower() == '???':
+            presence_title, presence_composer = self.auto_ocr.parse_title('out/select_title.png')
+            presence_level, presence_difficulty = self.auto_ocr.parse_level('out/select_level.png')
+        else:
+            presence_title = tmp_playdata.title
+            presence_difficulty = tmp_playdata.difficulty
+            presence_level = sdvx_utils.find_song_rating(tmp_playdata.title, tmp_playdata.difficulty, self.gen_summary.musiclist)
+            presence_composer = sdvx_utils.find_song_composer(tmp_playdata.title, tmp_playdata.difficulty, self.gen_summary.musiclist)
+            
+        
+        self.update_discord_presence(
+            cover=self.last_cover_upload_url, 
+            title=presence_title, 
+            difficulty=presence_difficulty, 
+            level=presence_level,
+            score=tmp_playdata.cur_score, 
+            score_diff=tmp_playdata.pre_score, 
+            lamp=tmp_playdata.lamp, 
+            composer=presence_composer, 
+            mode=PlayStates.RESULT)
         
         
     def logToWindow(self, msg):
@@ -264,6 +313,7 @@ class SDVXHelper:
             self.settings.pop('top_is_right')
             self.logToWindow('old parameter is updated.\n(top_is_right -> orientation_top)')
 
+
     def save_screenshot_general(self):
         """ゲーム画面のスクショを保存する。ホットキーで呼び出す用。
         """
@@ -337,21 +387,7 @@ class SDVXHelper:
         
         
         if self.detect_mode == detect_mode.result: 
-            level = sdvx_utils.find_song_rating(tmp_playdata.title,tmp_playdata.difficulty,self.gen_summary.musiclist)
-            composer = sdvx_utils.find_song_composer(tmp_playdata.title,tmp_playdata.difficulty,self.gen_summary.musiclist)
-            
-            # Result, we want to:
-            # - Update: Title, difficulty and level, score
-            self.update_discord_presence(
-                cover=self.last_cover_upload_url,
-                title=tmp_playdata.title,
-                difficulty=tmp_playdata.difficulty,
-                level=level,#self.gen_summary.level,
-                score=tmp_playdata.cur_score,
-                score_diff=tmp_playdata.pre_score,
-                lamp=tmp_playdata.lamp,
-                composer=composer,
-                mode=PlayStates.RESULT)
+            self.update_discord_presence_result_screen(tmp_playdata)
         return tmp_playdata
 
     def update_mybest(self):
@@ -994,7 +1030,9 @@ class SDVXHelper:
         Returns:
             bool: 正常終了していればTrue
         """
-        if self.gui_mode == gui_mode.main:
+        
+        # A bug can occur when coming from the options screen in that self.window['txt_mode'] doesn't exist 
+        if self.gui_mode == gui_mode.main and 'txt_mode' in self.window.AllKeysDict :
             self.window['txt_mode'].update(self.detect_mode.name)
         if self.obs == False:
             logger.debug('cannot connect to OBS -> exit')
@@ -1224,11 +1262,7 @@ class SDVXHelper:
         self.window[f'webhook_enable_failed'].update(False)
         
         
-    def format_score(self, score, bold:bool=True):
-        if bold :
-            return '**'+str(score)[0:len(str(score))-4]+"**,"+str(score)[len(str(score))-4:]
-        else :
-            return str(score)[0:len(str(score))-4]+","+str(score)[len(str(score))-4:]
+    
         
     def send_custom_webhook(self, playdata:OnePlayData):
         """カスタムWebhookへの送出を行う
@@ -1264,7 +1298,7 @@ class SDVXHelper:
             if self.settings['webhook_enable_pics'][i]:
                 webhook.add_file(file=img_bytes.getvalue(), filename=f'{playdata.date}.png')
             msg = f'**{playdata.title}** ({playdata.difficulty}, Lv{lv}),   '
-            msg += f'{self.format_score(playdata.cur_score)} ({"+" if playdata.cur_score > playdata.pre_score else ""}{self.format_score(playdata.cur_score - playdata.pre_score,False)}),   '
+            msg += f'{sdvx_utils.format_score(playdata.cur_score)} ({"+" if playdata.cur_score > playdata.pre_score else ""}{sdvx_utils.format_score(playdata.cur_score - playdata.pre_score,False)}),   '
             msg += f'{playdata.lamp},   '
             webhook.content=msg
             try:
@@ -1288,6 +1322,8 @@ class SDVXHelper:
             
         if 'volforce_icon' in self.window.AllKeysDict:            
             self.window['volforce_icon'].update(visible=False)
+
+
 
     def detect(self):
         """認識処理を行う。無限ループになっており、メインスレッドから別スレッドで起動される。
@@ -1399,33 +1435,7 @@ class SDVXHelper:
 
 
                         if self.settings['discord_presence_enable'] :
-                            # Maybe alternative way to find the level? If not needed send find_song_rating back to the play_log_sync                                               
-                            
-                        
-                            # Started playing song, we want to:
-                            # - Upload and update cover
-                            # - Update: Title, difficulty and level 
-                            if self.settings['discord_presence_upload_jacket'] :
-                                self.last_cover_upload_url = self.presence.upload_cover('out/select_jacket.png')
-                                
-                            if self.settings['discord_presence_ocr_titles'] :
-                                presence_title, presence_composer = self.auto_ocr.parse_title('out/select_title.png')
-                                presence_level, presence_difficulty = self.auto_ocr.parse_title('out/select_level.png')
-                            else :
-                                presence_title = title
-                                presence_difficulty = diff
-                                presence_level = sdvx_utils.find_song_rating(title,diff,self.gen_summary.musiclist)
-                                presence_composer = sdvx_utils.find_song_composer(title,diff,self.gen_summary.musiclist)
-                                
-                                
-                            self.update_discord_presence(
-                                cover=self.last_cover_upload_url,
-                                title=presence_title,
-                                difficulty=presence_difficulty,
-                                level=presence_level,
-                                composer=presence_composer,
-                                mode=PlayStates.DETECT
-                            )
+                            self.update_discord_presence_detect_screen(title, diff, PlayStates)
                         
                         done_thissong = True
                 #if self.is_onplay() and done_thissong: # 曲決定画面を検出してから入る(曲終了時に何度も入らないように)
@@ -1771,6 +1781,7 @@ class SDVXHelper:
                 self.bundle = PoorManResourceBundle(val['locale'].lower())
                 self.default_locale = val['locale']
                 self.i18n = self.bundle.get_text
+                self.presence.destroy()
                 self.window.close()
                 self.gui_main()
             elif ev == 'btn_exit':
