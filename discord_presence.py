@@ -10,6 +10,7 @@ import os, sys, re
 import datetime
 import threading
 from poor_man_resource_bundle import *
+import sdvx_utils
 
 log_dir = 'log'
 log_path = os.path.join(log_dir, 'presense.log')
@@ -139,6 +140,7 @@ class SDVXDiscordPresence:
             return False
         
         update_title = title
+        update_score = None
         
         if (datetime.datetime.now() - self.last_presence_update).total_seconds() < 5 and state == PlayStates.SELECT:
             can_upate = False
@@ -147,7 +149,7 @@ class SDVXDiscordPresence:
             update_title = f"{self.i18n('message.discord.presence.select')}"
             
         elif state == PlayStates.PLAY or state == PlayStates.DETECT:
-            score = f'{normalize_difficulty(difficulty.upper())}-{level}'
+            update_score = f'{self.normalize_difficulty(difficulty.upper())}-{level}'
         
         if state == PlayStates.RESULT and score is not None:
             
@@ -156,18 +158,27 @@ class SDVXDiscordPresence:
             if update_lamp == 'EXH':
                 update_lamp = 'MAXXIVE'
                 
-            signal = '-'
+            signal = ''
             
             if score - score_diff > 0:
                 signal = '+'
                 
-            formated_score_diff = sdvx_help.format_score(score - score_diff, False)
+            formated_score_diff = sdvx_utils.format_score(score - score_diff, False)
             
             # Need to format the score to the 1st 4 or 3 digits
-            if len(str(score)) == 8: 
-                score = f'{normalize_difficulty(difficulty.upper())}-{level} {update_lamp}: {str(score)[:4]} ({signal}{str(formated_score_diff)})'
-            else:
-                score = f'{normalize_difficulty(difficulty.upper())}-{level} {update_lamp}: {str(score)[:3]} ({signal}{str(formated_score_diff)})'
+            formated_score = 0
+            if len(str(score)) == 8 :
+                formated_score = str(score)[:4]
+            elif len(str(score)) == 7 :
+                formated_score = str(score)[:3]
+            elif len(str(score)) == 6 :
+                formated_score = str(score)[:2]
+            elif len(str(score)) == 5 :
+                formated_score = str(score)[:1]
+            else :
+                formated_score = str(score)
+             
+            update_score = f'{self.normalize_difficulty(difficulty.upper())}-{level} {update_lamp}: {formated_score} ({signal}{str(formated_score_diff)})'
                 
         update_composer = composer
         if composer is not None:
@@ -180,7 +191,7 @@ class SDVXDiscordPresence:
                 status_display_type=self.display_type,
                 name="Sound Voltex Exceed Gear",
                 details=update_title,
-                state=score,
+                state=update_score,
                 large_image=cover_url,
                 large_text=update_composer,
                 start=self.start_time)
@@ -232,12 +243,16 @@ class SDVXDiscordPresence:
         if path is None:
             raise AttributeError
         
-        with open(path, 'rb') as cover:
-            response = requests.post(self.litterbox_api_url, data={'reqtype': 'fileupload', 'time': "1h"}, files={'fileToUpload': cover})
+        with open(path, 'rb') as jacket:
+            try:
+                response = requests.post(self.litterbox_api_url, data={'reqtype': 'fileupload', 'time': "1h"}, files={'fileToUpload': jacket}, timeout=3)
+                logger.info(f'Cover {path} uploaded to {response.text}')
+                
+                return response.text
+            except Timeout:
+                logger.error("Jacket upload to litterbox timeout")
+                return
             
-            logger.info(f'Cover {path} uploaded to {response.text}')
-            
-            return response.text
     
     def ping_litterbox(self):
         """

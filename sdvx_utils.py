@@ -111,7 +111,7 @@ def find_song_rating(song_title, song_difficulty, song_list, logger=None):
 def restore_title(song_title): 
         return special_titles.special_titles.get(song_title.strip(), song_title.strip())
     
-def format_score(self, score, bold:bool=True):
+def format_score(score, bold:bool=True):
     if bold :
         return '**'+str(score)[0:len(str(score))-4]+"**,"+str(score)[len(str(score))-4:]
     else :
