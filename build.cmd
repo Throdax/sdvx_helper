@@ -91,6 +91,7 @@ REM resources folder
 xcopy /E /I /Y resources %target_sdvx%\resources
 del /F /Q %target_sdvx%\resources\*.bk
 del /F /Q %target_sdvx%\resources\*.size8
+rmdir /s /q %target_sdvx%\resources\test
 
 REM out folder
 del /F /Q out\*.xml
