@@ -5,7 +5,7 @@ from gen_summary import *
 from datetime import datetime, timedelta
 import imagehash
 from PIL import Image
-import hashlib 
+from sha_generator import SHAGenerator
 
 def load():
     ret = None
@@ -16,6 +16,49 @@ def load():
 def save(dat:dict):
     with open('resources/musiclist.pkl', 'wb') as f:
         pickle.dump(dat, f)
+        
+def calculate_jacket_sha() :
+    """
+        a['jacket']['diff']['title'] = hash
+        a['info']['diff']['title'] = hash
+    """
+    
+    root_folder = 'D:/Tools/SoundVoltex/sdvx_helper/jackets'
+    
+    results = os.listdir(root_folder)
+    results.sort(key=lambda s: os.path.getctime(os.path.join(root_folder, s)))
+    
+    generator = SHAGenerator()
+    music_list =  load()
+    hashes = []
+    
+    for i,jacket in enumerate(results):
+        sha = generator.generate_sha256_from_image(root_folder+f'/{jacket}')
+        
+        for diff in music_list['jacket'] :
+            for title in music_list['jacket'][diff] :
+                if music_list['jacket'][diff][title] == str(jacket[:-4]):
+                    
+                    if 'jacket_sha' not in music_list :                   
+                        music_list['jacket_sha'] = {}
+                    
+                    if diff not in music_list['jacket_sha']:
+                        music_list['jacket_sha'][diff] = {}
+                        
+                    if title not in music_list['jacket_sha'][diff]:
+                        music_list['jacket_sha'][diff][title] = sha
+                                
+                    print(f'SHA-256 for {jacket} is {sha} in {title}-{diff}')
+        
+        if sha in hashes:
+            print(f">>> Duplicate hash found {sha}")
+        else :
+            hashes.append(sha)
+            
+    print(f'Generated {len(hashes)} hashes for {i} files')
+    save(music_list)
+        
+    
         
 def calculate_jacket_hash() :
     
@@ -110,6 +153,6 @@ def update_music_list_hash_size(hash_size:int=10) :
 
 if __name__ == '__main__':
     #update_saved_jackets()
-    calculate_jacket_hash()
+    calculate_jacket_sha()
 
     
