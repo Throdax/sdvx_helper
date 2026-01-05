@@ -9,6 +9,17 @@ class SHAGenerator:
     """
     Utility class for generating SHA-256 hashes from image files.
     """
+    def generate_sha256_from_bytes(self, image_bytes: bytes) -> str:
+        """
+        Generates a SHA-256 hash from the given image file.
+        Args:
+            image_bytes (bytes): The bytes of the image file.
+        Returns:
+            str: The SHA-256 hash as a hexadecimal string.
+        """
+        sha256_hash = hashlib.sha256(image_bytes).hexdigest()
+        return sha256_hash
+    
     def generate_sha256_from_image(self, image_path: Union[str, Path]) -> str:
         """
         Generates a SHA-256 hash from the given image file.
