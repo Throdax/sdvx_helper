@@ -8,6 +8,9 @@ import numpy as np
 from discord_webhook import DiscordWebhook
 from params_secret import *
 import sdvx_utils
+from sha_generator import SHAGenerator
+from poor_man_resource_bundle import *
+
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -34,12 +37,15 @@ SWVER = sdvx_utils.get_version("helper")
 
 class GenSummary:
     
-    def __init__(self, now, autosave_dir=None, ignore_rankD=None, logpic_bg_alpha=None, log_maxnum=None):
+    def __init__(self, now, autosave_dir=None, ignore_rankD=None, logpic_bg_alpha=None, log_maxnum=None, locale:str="EN"):
         self.start = now
         self.result_parts = False
         self.difficulty = False
         self.load_settings()
         self.load_hashes()
+        self.sha_generator = SHAGenerator()
+        self.bundle = PoorManResourceBundle(locale)
+        self.i18n = self.bundle.get_text
         
         if autosave_dir : 
             self.savedir = autosave_dir
@@ -125,7 +131,13 @@ class GenSummary:
         self.musiclist_hash['info']['adv'] = {}
         self.musiclist_hash['info']['exh'] = {}
         self.musiclist_hash['info']['APPEND'] = {}
-        for pos in ('jacket', 'info'):
+        self.musiclist_hash['jacket_sha'] = {}
+        self.musiclist_hash['jacket_sha']['nov'] = {}
+        self.musiclist_hash['jacket_sha']['adv'] = {}
+        self.musiclist_hash['jacket_sha']['exh'] = {}
+        self.musiclist_hash['jacket_sha']['APPEND'] = {}
+        
+        for pos in ('jacket', 'info', 'jacket_sha'):
             for diff in ('nov', 'adv', 'exh', 'APPEND'):
                 for s in self.musiclist[pos][diff].keys():
                     self.musiclist_hash[pos][diff][self.musiclist[pos][diff][s]] = s
@@ -281,7 +293,13 @@ class GenSummary:
                 webhook = DiscordWebhook(url=url, username="unknown title info")
                 msg = ''
                 for i in ('jacket_org', 'info'):
-                    msg += f"- **{imagehash.average_hash(self.result_parts[i],hash_size)}**\n"
+                    msg += f"- {i.upper()}: ** {imagehash.average_hash(self.result_parts[i],hash_size)}**\n"
+
+                try :
+                    msg += f"(- {self.i18n('text.ocr.sha.jacket')}: **{self.sha_generator.generate_sha256_from_pil_image(self.result_parts['jacket_org'])}**\n"
+                except Exception as e:
+                    msg += f"(- {self.i18n('text.ocr.sha.jacket.error',str(e))}\n"
+                    logger.warn("Could not generate SHA-256 title")
                 # 添付ファイル
                 img_bytes = io.BytesIO()
                 self.result_parts['info'].crop((0,0,260,65)).save(img_bytes, format='PNG')
@@ -289,7 +307,7 @@ class GenSummary:
                 img_bytes = io.BytesIO()
                 self.result_parts['difficulty'].save(img_bytes, format='PNG')
                 webhook.add_file(file=img_bytes.getvalue(), filename=f'difficulty.png')
-                msg += f"(difficulty: **{self.difficulty.upper()}**, sdvx_helper:{SWVER})"
+                msg += f"(difficulty: **{self.difficulty.upper()}**, sdvx_helper:{SWVER})\n"
 
                 webhook.content=msg
 
@@ -432,6 +450,13 @@ class GenSummary:
     # 返り値: 曲名, hash差分の最小値
     def ocr_only_jacket(self, jacket, nov, adv, exh, APPEND,hash_size:int=10):
         hash_jacket = imagehash.average_hash(jacket,hash_size)
+        
+        try:
+            sha_jacket = self.sha_generator.generate_sha256_from_pil_image(jacket)
+            logger.info(f'Generated SHA {sha_jacket} for jacket {hash_jacket}')
+        except Exception as e:
+            logger.warn(f'Failed to generate SHA for jacket {hash_jacket}: {str(e)}')
+        
         title = "Unknown Song"
         minval = 99999
         sum_nov = np.array(nov).sum()
@@ -517,6 +542,13 @@ class GenSummary:
 
             hash_jacket = imagehash.average_hash(self.result_parts['jacket_org'],hash_size)
             hash_info   = imagehash.average_hash(self.result_parts['info'],hash_size)
+            
+            try:
+                sha_jacket  = self.sha_generator.generate_sha256_from_pil_image(self.result_parts['jacket_org'])
+                logger.info(f'Generated SHA-256 {sha_jacket} for {hash_jacket}')
+            except Exception as e:
+                logger.warn(f'Failed to generate SHA-256 for {hash_jacket}: {str(e)}')
+                
             rsum = np.array(diff)[:,:,0].sum()
             gsum = np.array(diff)[:,:,1].sum()
             bsum = np.array(diff)[:,:,2].sum()
@@ -552,6 +584,11 @@ class GenSummary:
                     break
                 elif len(existing_hash) != len(hash_jacket) :
                     logger.debug(f"Comparing old length hash (8) '{str(existing_hash)}' with new length hash ({hash_size}): {str(hash_jacket)}. Skipping...")
+            
+                             
+            if sha_jacket in self.musiclist_hash['jacket_sha'][difficulty] : 
+                logger.info(f'Found {sha_jacket} in music list for title {self.musiclist_hash["jacket_sha"][difficulty][sha_jacket]}')
+            
             if not detected:
                 if notify and self.settings['send_webhook']:
                     self.send_webhook()

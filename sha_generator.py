@@ -4,6 +4,9 @@ SHAGenerator: Utility class for generating SHA-256 hashes from image files.
 from typing import Union
 from pathlib import Path
 import hashlib
+from PIL import Image
+import io
+
 
 class SHAGenerator:
     """
@@ -17,6 +20,21 @@ class SHAGenerator:
         Returns:
             str: The SHA-256 hash as a hexadecimal string.
         """
+        sha256_hash = hashlib.sha256(image_bytes).hexdigest()
+        return sha256_hash
+    
+    def generate_sha256_from_pil_image(self, image: Image.Image, format: str = 'PNG') -> str:
+        """
+        Generates a SHA-256 hash from a PIL Image object.
+        Args:
+            image (Image.Image): The PIL Image object.
+            format (str): The format to use when saving the image to bytes (default: 'PNG').
+        Returns:
+            str: The SHA-256 hash as a hexadecimal string.
+        """
+        with io.BytesIO() as output:
+            image.save(output, format=format)
+            image_bytes = output.getvalue()
         sha256_hash = hashlib.sha256(image_bytes).hexdigest()
         return sha256_hash
     
