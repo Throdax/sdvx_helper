@@ -1501,7 +1501,7 @@ class SDVXHelper:
         now = datetime.datetime.now()
         now_mod = now - datetime.timedelta(hours=self.settings['logpic_offset_time']) # 多少の猶予をつける。2時間前までは遡る
 
-        self.gen_summary = GenSummary(now_mod)
+        self.gen_summary = GenSummary(now_mod, self.default_locale)
         self.gen_summary.generate()
         self.starttime = now
         self.gui_main()
