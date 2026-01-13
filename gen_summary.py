@@ -598,7 +598,7 @@ class GenSummary:
                 if len(existing_hash) == len(hash_jacket) and abs(existing_hash - hash_jacket) < threshold:
                     self.hash_hit = existing_hash
                     detected = True
-                    title = self.musiclist_hash['jacket_sha'][difficulty][str(existing_hash)]
+                    title = self.musiclist_hash['jacket'][difficulty][str(existing_hash)]
                     logger.debug(f"OCR pass: {abs(existing_hash - hash_jacket) < 2}, existing_hash:{str(existing_hash)}, cur:{str(hash_jacket)}, diff:{abs(existing_hash - hash_jacket) < 2}")
 #                    logger.info(f'Found {sha_jacket} in music list for title {self.musiclist_hash["jacket_sha"][difficulty][sha_jacket]}')
                     

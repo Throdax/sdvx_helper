@@ -420,7 +420,7 @@ class Reporter:
                     []
                     ,headings=['Title', 'Hash']
                     ,auto_size_columns=False
-                    ,col_widths=[50,25]
+                    ,col_widths=[50,27]
                     ,alternating_row_color='#eeeeee'
                     ,justification='left'
                     ,key='db'
