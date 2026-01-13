@@ -1,4 +1,5 @@
 import os
+import logging, logging.handlers
 
 bundles = {}
 
@@ -7,7 +8,7 @@ class PoorManResourceBundle:
     bundle = None
     active_locale = None
     
-    def __init__(self, locale:str='JA'):
+    def __init__(self, locale:str='JA', logger=None):
         """
         Initializes a PoorManResourceBundle instance with a specified locale.
     
@@ -18,9 +19,15 @@ class PoorManResourceBundle:
         :param locale: The locale code to use for the resource bundle. Defaults to 'ja'.
         """
         
+        self.logger = print
+        if logger is not None :
+            self.logger = logger.info
+            
         self.load_bundles()
         self.bundle = bundles.get(locale.upper());
         self.active_locale = locale
+        
+        
 
     def load_bundle(self, bundle_file, locale):
         """
@@ -35,7 +42,8 @@ class PoorManResourceBundle:
         :param bundle_file: The name of the bundle file to load.
         :param locale: The locale code associated with the bundle file.
         """
-        print(f'Loading bundle "{locale}" from file "{bundle_file}"...')
+        
+        self.logger(f'Loading bundle "{locale}" from file "{bundle_file}"...')
         
         with open('resources/i18n/' + bundle_file, 'r', encoding="utf-8") as f:
             locale_bundle = {}
@@ -59,7 +67,7 @@ class PoorManResourceBundle:
             
             bundles[locale] = locale_bundle
             
-        print(f'Bundle "{locale}" loaded.')
+        self.logger(f'Bundle "{locale}" loaded.')
 
     def load_bundles(self):
         """
@@ -82,7 +90,7 @@ class PoorManResourceBundle:
                 self.load_bundle(bundle_file, locale.upper())
                 
             else:
-                print(f'File "{bundle_file}" is not a valid bundle file. Skipping...')
+                self.logger(f'File "{bundle_file}" is not a valid bundle file. Skipping...')
         
     def get_text(self, key: str, *args):
         """

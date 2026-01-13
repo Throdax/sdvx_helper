@@ -49,7 +49,7 @@ class ScoreViewer:
     def __init__(self):
         # TODO: Save default locale to the setting.json and loaded it here
         self.default_locale = 'EN'
-        self.bundle = PoorManResourceBundle(self.default_locale)
+        self.bundle = PoorManResourceBundle(self.default_locale,logger)
         self.i18n = self.bundle.get_text
         
         self.load_settings()
@@ -431,7 +431,7 @@ class ScoreViewer:
                 except Exception:
                     print(traceback.format_exc())
             elif ev == 'locale':
-                self.bundle = PoorManResourceBundle(val['locale'])
+                self.bundle = PoorManResourceBundle(val['locale'],logger)
                 self.default_locale = val['locale']
                 self.i18n = self.bundle.get_text
                 self.window.close()

@@ -28,7 +28,7 @@ hdl = logging.handlers.RotatingFileHandler(
     maxBytes=1024*1024*2,
     backupCount=1,
 )
-hdl.setLevel(logging.DEBUG)
+hdl.setLevel(logging.INFO)
 hdl_formatter = logging.Formatter('%(asctime)s %(filename)s:%(lineno)5d %(funcName)s() [%(levelname)s] %(message)s')
 hdl.setFormatter(hdl_formatter)
 logger.addHandler(hdl)
@@ -44,7 +44,7 @@ class GenSummary:
         self.load_settings()
         self.load_hashes()
         self.sha_generator = SHAGenerator()
-        self.bundle = PoorManResourceBundle(locale)
+        self.bundle = PoorManResourceBundle(locale,logger)
         self.i18n = self.bundle.get_text
         
         if autosave_dir : 
@@ -294,9 +294,9 @@ class GenSummary:
                     msg += f"- {i.upper()}: ** {imagehash.average_hash(self.result_parts[i],hash_size)}**\n"
 
                 try :
-                    msg += f"(- {self.i18n('text.ocr.sha.jacket')}: **{self.sha_generator.generate_sha256_from_pil_image(self.result_parts['jacket_org'])}**\n"
+                    msg += f"- {self.i18n('text.ocr.sha.jacket')}: **{self.sha_generator.generate_sha256_from_pil_image(self.result_parts['jacket_org'])}**\n"
                 except Exception as e:
-                    msg += f"(- {self.i18n('text.ocr.sha.jacket.error',str(e))}\n"
+                    msg += f"- {self.i18n('text.ocr.sha.jacket.error',str(e))}\n"
                     logger.warn("Could not generate SHA-256 title")
                 # 添付ファイル
                 img_bytes = io.BytesIO()
@@ -449,11 +449,13 @@ class GenSummary:
     def ocr_only_jacket(self, jacket, nov, adv, exh, APPEND,hash_size:int=10):
         hash_jacket = imagehash.average_hash(jacket,hash_size)
         
+#        sha_jacket = '000000000000'
+        
         try:
             sha_jacket = self.sha_generator.generate_sha256_from_pil_image(jacket)
-            logger.info(f'Generated SHA {sha_jacket} for jacket {hash_jacket}')
+            logger.info(f'Generated SHA {sha_jacket} for jacket.')
         except Exception as e:
-            logger.warn(f'Failed to generate SHA for jacket {hash_jacket}: {str(e)}')
+            logger.warn(f'Failed to generate SHA for jacket: {str(e)}')
         
         title = "Unknown Song"
         minval = 99999
@@ -474,12 +476,16 @@ class GenSummary:
         hash_threshold = 4    
         
         # 曲名を検出
+#        if sha_jacket in self.musiclist_hash['jacket_sha'][difficulty] :
+            
         for h in self.musiclist_hash['jacket'][difficulty].keys():
             if h != '' :
                 hash_cur = imagehash.hex_to_hash(h)
+                
                 if len(hash_cur) == len(hash_jacket) and abs(hash_cur - hash_jacket) < hash_threshold:
                     minval = abs(hash_cur - hash_jacket)
                     title = self.musiclist_hash['jacket'][difficulty][h]
+                    
         return title, minval, difficulty
 
     def ocr_from_detect(self,hash_size:int=10):
@@ -492,6 +498,8 @@ class GenSummary:
         """
         jacket      = Image.open('out/select_jacket.png')
         hash_jacket = imagehash.average_hash(jacket,hash_size)
+        sha_jacket = self.sha_generator.generate_sha256_from_pil_image(jacket)
+        
         diff        = Image.open('out/select_difficulty.png')
         hash_diff = imagehash.average_hash(diff)
         
@@ -518,17 +526,32 @@ class GenSummary:
         
         hash_threshold = 4
 
+
         # 曲名を検出
+#        if sha_jacket in self.musiclist_hash['jacket_sha'][difficulty] :
         for existing_hash in self.musiclist_hash['jacket'][difficulty].keys():
             hash_cur = imagehash.hex_to_hash(existing_hash)
             if len(hash_cur) == len(hash_jacket) and abs(hash_cur - hash_jacket) < hash_threshold:
                 minval = abs(hash_cur - hash_jacket)
                 title = self.musiclist_hash['jacket'][difficulty][existing_hash]
-        logger.debug(f"title:{title}, difficulty:{difficulty}, minval:{minval}")
+#            title = self.musiclist_hash['jacket_sha'][difficulty][sha_jacket]
+        logger.info(f"From detect: Title:{title}, Difficulty:{difficulty}, SHA:{hash_cur}")
         return title, minval, difficulty
 
+
+    def move_old_jacket_file(self, song_title, difficulty):
+        
+        old_hash = self.musiclist['jacket'][difficulty][song_title]
+        old_jacket = f"jackets/{str(old_hash)}.png"
+        
+        if not os.path.exists('jackets/old/'):
+            os.mkdir('jackets/old/')
+        if os.path.exists(old_jacket):
+            os.rename(old_jacket, f"jackets/old/{str(old_hash)}.png")
+            
+
     def ocr(self, notify:bool=False,hash_size:int=10):
-        ret = False
+        title = False
         difficulty = False
         detected = False
         try:
@@ -560,6 +583,7 @@ class GenSummary:
                 difficulty = 'APPEND'
             self.difficulty = difficulty
             
+#            for existing_hash in self.musiclist_hash['jacket_sha'][difficulty].keys():
             for existing_hash in self.musiclist_hash['jacket'][difficulty].keys():
                 existing_hash = imagehash.hex_to_hash(existing_hash)
                 
@@ -569,16 +593,22 @@ class GenSummary:
                 # It's basicaly the same jacket with a diferent text and the algoritm cannot handle that
                 if str(existing_hash) == 'e3c87e1f9ff7c0f8367c03040' :
                     threshold = 0
-                
+                    
+#                if sha_jacket == existing_hash :
                 if len(existing_hash) == len(hash_jacket) and abs(existing_hash - hash_jacket) < threshold:
                     self.hash_hit = existing_hash
+                    detected = True
+                    title = self.musiclist_hash['jacket_sha'][difficulty][str(existing_hash)]
+                    logger.debug(f"OCR pass: {abs(existing_hash - hash_jacket) < 2}, existing_hash:{str(existing_hash)}, cur:{str(hash_jacket)}, diff:{abs(existing_hash - hash_jacket) < 2}")
+#                    logger.info(f'Found {sha_jacket} in music list for title {self.musiclist_hash["jacket_sha"][difficulty][sha_jacket]}')
+                    
                     if self.settings['save_jacketimg']:
                         tt = f"jackets/{str(existing_hash)}.png"
                         if not os.path.exists(tt):
                             self.result_parts['jacket_org'].save(tt)
-                    detected = True
-                    ret = self.musiclist_hash['jacket'][difficulty][str(existing_hash)]
-                    logger.debug(f"OCR pass: {abs(existing_hash - hash_jacket) < 2}, existing_hash:{str(existing_hash)}, cur:{str(hash_jacket)}, diff:{abs(existing_hash - hash_jacket) < 2}")
+                        
+                        #self.move_old_jacket_file(title, difficulty)
+                        
                     break
                 elif len(existing_hash) != len(hash_jacket) :
                     logger.debug(f"Comparing old length hash (8) '{str(existing_hash)}' with new length hash ({hash_size}): {str(hash_jacket)}. Skipping...")
@@ -594,7 +624,7 @@ class GenSummary:
                 #for existing_hash in self.musiclist_hash['info'][difficulty].keys():
                 #    existing_hash = imagehash.hex_to_hash(existing_hash)
                 #    if abs(existing_hash - hash_info) < 5:
-                #        ret = self.musiclist_hash['info'][difficulty][str(existing_hash)]
+                #        title = self.musiclist_hash['info'][difficulty][str(existing_hash)]
                 #        #break
             else:
                 tmp = Image.open('resources/images/no_jacket.png')
@@ -604,7 +634,7 @@ class GenSummary:
         except Exception:
             logger.debug(traceback.format_exc())
             raise Exception
-        return ret
+        return title
     
     # OCRの動作確認用。未検出のものを見つけて報告するために使う。
     def chk_ocr(self, iternum=500):
@@ -629,7 +659,7 @@ class GenSummary:
 
     def get_result_files(self):
         return sorted(glob.glob(self.savedir+'/sdvx_*.png'), key=os.path.getmtime, reverse=True)
-
+ 
     def generate(self): # max_num_offset: 1日の最後など、全リザルトを対象としたい場合に大きい値を設定する
         logger.debug(f'called! ignore_rankD={self.ignore_rankD}, savedir={self.savedir}')
 
