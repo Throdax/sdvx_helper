@@ -34,7 +34,7 @@ class OBSSocket():
         self.active = True
         self.ev = obsws.EventClient(host=self.host,port=self.port,password=self.passwd)
         self.ev.callback.register([self.on_exit_started,])
-        logger.debug(f'host:{self.host}, port:{self.port}, pass:{self.passwd}')
+        logger.debug(f'host:{self.host}, port:{self.port}, pass:*****')
 
     def close(self):
         try:
@@ -108,15 +108,23 @@ class OBSSocket():
 
     def enable_source(self, scenename, sourceid): # グループ内のitemはscenenameにグループ名を指定する必要があるので注意
         try:
-            res = self.ws.set_scene_item_enabled(scenename, sourceid, enabled=True)
-            return True
+            if sourceid is not None :
+                res = self.ws.set_scene_item_enabled(scenename, sourceid, enabled=True)
+                return True
+            
+            logger.debug(f'Source id is None for scene {scenename}. Cannot enable.')
+            return False
         except Exception as e:
             return False
 
     def disable_source(self, scenename, sourceid):
         try:
-            res = self.ws.set_scene_item_enabled(scenename, sourceid, enabled=False)
-            return True
+            if sourceid is not None :
+                res = self.ws.set_scene_item_enabled(scenename, sourceid, enabled=False)
+                return True
+            
+            logger.debug(f'Source id is None for scene {scenename}. Cannot disable.')
+            return False
         except Exception as e:
             return False
         
@@ -146,6 +154,10 @@ class OBSSocket():
 
         except:
             pass
+        
+        if ret[1] is None :
+            logger.info(f'Source not found in OBS: Scene: {scene}, Target: {target}')
+        
         return ret
     
     def get_scene_collection_list(self):

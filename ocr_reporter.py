@@ -60,7 +60,7 @@ class Reporter:
     def __init__(self, chk_update:bool=True):
         # TODO: Save default locale to the setting.json and loaded it here
         self.default_locale = 'EN'
-        self.bundle = PoorManResourceBundle(self.default_locale)
+        self.bundle = PoorManResourceBundle(self.default_locale, logger)
         self.i18n = self.bundle.get_text
         self.sha_generator = SHAGenerator()
         
@@ -69,7 +69,7 @@ class Reporter:
         if chk_update:
             self.update_musiclist()
         #self.gen_summary = GenSummary(start,autosave_dir='D:/Tools/SoundVoltex/results')
-        self.gen_summary = GenSummary(self.start)        
+        self.gen_summary = GenSummary(self.start, locale=self.default_locale)        
         self.ico=self.resource_path('icon.ico')
         self.font_noto=self.resource_path('NotoSansJP-Regular.ttf')
         self.num_added_fumen = 0 # 登録した譜面数
@@ -420,12 +420,13 @@ class Reporter:
                     []
                     ,headings=['Title', 'Hash']
                     ,auto_size_columns=False
-                    ,col_widths=[23, 17]
+                    ,col_widths=[50,25]
                     ,alternating_row_color='#eeeeee'
                     ,justification='left'
                     ,key='db'
                     ,enable_events=True
                     ,font=("Courier New", 16)
+                    ,vertical_scroll_only=False
                 )
             ],
         ]
@@ -445,7 +446,9 @@ class Reporter:
             ],
             [
                 sg.Text(self.i18n('text.ocr.title'), font=(None,16)), 
-                sg.Input('', key='txt_title', font=("Noto Sans JP",16), size=(50,1),disabled=True)
+                sg.Input('', key='txt_title', font=("Noto Sans JP",16), size=(50,1),disabled=True),
+                sg.Text(self.i18n('text.ocr.sha.jacket'), font=(None,16)), 
+                sg.Input('', key='sha_jacket', size=(80,1), font=("Courier New",16),disabled=True),
             ],
             [
                 sg.Text(self.i18n('text.ocr.hash.jacket'), font=(None,16)), 
@@ -454,8 +457,7 @@ class Reporter:
                 sg.Input('', key='hash_info', size=(25,1),font=("Courier New",16),disabled=True),
                 sg.Text(self.i18n('text.difficulty')+':', font=(None,16)), 
                 sg.Combo(['', 'nov', 'adv', 'exh', 'APPEND'], key='combo_difficulty', font=(None,16)),
-                sg.Text(self.i18n('text.ocr.sha.jacket'), font=(None,12)), 
-                sg.Input('', key='sha_jacket', size=(70,1), font=("Courier New",12),disabled=True),
+                
             ],
             [sg.Button(self.i18n('button.resgister'), key='register',disabled=True), sg.Button(self.i18n('button.rescan'), key='coloring',disabled=True), sg.Button(self.i18n('button.rescan.missing'), key='coloring_missing',disabled=True)],
             [sg.Column(layout_tables, key='column_table'), sg.Column(layout_db, key='column_db')],
@@ -657,7 +659,7 @@ class Reporter:
 
     def register_song(self, val, len, str, print, music, hash_jacket, hash_info, sha_jacket):
         difficulty = val['combo_difficulty']
-        print(difficulty, hash_jacket, hash_info)
+        print(difficulty, hash_jacket, hash_info, sha_jacket)
         pat = re.compile(r'[0-9a-f]{16}')
         if (difficulty != '') and bool(pat.search(hash_jacket)):
             # TODO ジャケットなしの曲はinfoを登録する
@@ -683,6 +685,7 @@ class Reporter:
                 print(f'{self.i18n("log.song.already.registered")} ({difficulty}) {self.i18n("log.hash.fixed")}')
                 
                 self.musiclist['jacket'][difficulty][music] = str(hash_jacket)
+                self.musiclist['jacket_sha'][difficulty][music] = str(sha_jacket)
                 
                 if hash_info != '':
                     self.musiclist['info'][difficulty][music] = str(hash_info)
@@ -719,6 +722,7 @@ class Reporter:
                         if self.gen_summary.is_result(img):
                             parts = self.gen_summary.cut_result_parts(Image.open(f))
                             parts['jacket_org'].resize((100,100)).save('out/tmp_jacket.png')
+                            parts['jacket_org'].save('out/tmp_jacket_full.png')
                             parts['info'].save('out/tmp_info.png')
                             parts['difficulty_org'].save('out/tmp_difficulty.png')
                             self.window['jacket'].update('out/tmp_jacket.png')
@@ -798,7 +802,7 @@ class Reporter:
                 self.save()
                 self.send_pkl()
             elif ev == 'locale':
-                self.bundle = PoorManResourceBundle(val['locale'].lower())
+                self.bundle = PoorManResourceBundle(val['locale'].lower(),logger)
                 self.default_locale = val['locale']
                 self.i18n = self.bundle.get_text
                 self.window.close()

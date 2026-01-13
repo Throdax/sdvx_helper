@@ -66,7 +66,7 @@ class SDVXDiscordPresence:
             print('No discord client key defined. Presence cannot be used')
             return
         
-        self.bundle = PoorManResourceBundle(locale)
+        self.bundle = PoorManResourceBundle(locale,logger)
         self.i18n = self.bundle.get_text
         self.client_id = params_secret.discord_presence_client_id
         self.litterbox_base_url = "https://litterbox.catbox.moe"

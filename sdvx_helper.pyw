@@ -28,7 +28,7 @@ from ocr_auto import AutoOCR
 from sdvxh_classes import *
 
 from discord_presence import *
-from scipy.stats._morestats import false_discovery_control
+from sha_generator import SHAGenerator
 
 
 # フラットウィンドウ、右下モード(左に上部側がくる)
@@ -69,7 +69,7 @@ class SDVXHelper:
     def __init__(self):
         # TODO: Save default locale to the setting.json and loaded it here
         self.default_locale = 'EN'
-        self.bundle = PoorManResourceBundle(self.default_locale)
+        self.bundle = PoorManResourceBundle(self.default_locale, logger)
         self.i18n = self.bundle.get_text
         self.ico=self.ico_path('icon.ico')
         self.detect_mode = detect_mode.init
@@ -122,6 +122,7 @@ class SDVXHelper:
         
         self.prepare_function_icons()
         self.auto_ocr = AutoOCR()
+        self.sha_generator = SHAGenerator()
         
         logger.debug('created.')
         logger.debug(f'settings:{self.settings}')
@@ -502,7 +503,7 @@ class SDVXHelper:
             self.logToWindow(self.i18n('message.rivals.data.failed')) # ネットワーク接続やURL設定を見直す必要がある
             
     def capture_volforce_btn(self, vf_capture=None, class_capture=None):
-        capture_volforce(vf_capture,class_capture)
+        self.capture_volforce(vf_capture,class_capture)
         self.logToWindow(self.i18n('message.screenshot.save.volforce'))
             
     def capture_volforce(self, vf_capture=None, class_capture=None):
@@ -551,15 +552,20 @@ class SDVXHelper:
             
             save_vf = False
             
+            #vf_cur_sha = self.sha_generator.generate_sha256_from_pil_image(vf_cur)
+            
             # If the hash of the last capture VF is the same as this one, don't save it
             if self.last_vf_hash is None :
+                 #self.last_vf_hash = vf_cur_sha
                  self.last_vf_hash = hash_function(vf_cur,10)
                  save_vf = True
                  #self.logToWindow(f"No previous VF hash. Last VF hash is now {self.last_vf_hash}")
             else  :   
                  vf_cur_hash = hash_function(vf_cur,10)
                  if abs(self.last_vf_hash - vf_cur_hash) > 2 :
+                 #if self.last_vf_hash != vf_cur_sha :
                     #self.logToWindow(f"VF hash differ from last. Last: {self.last_vf_hash} | New: {vf_cur_hash}.")
+                    #self.last_vf_hash = vf_cur_sha
                     self.last_vf_hash = vf_cur_hash
                     save_vf = True
 
@@ -998,8 +1004,8 @@ class SDVXHelper:
         """
         try:
             winsound.PlaySound(filename, winsound.SND_FILENAME)
-        except:
-            logger.debug(traceback.format_exc())
+        except Exception as e:
+            logger.debug(f"Could not play sound: {e}")
 
     def connect_obs(self):
         if self.obs != False:
@@ -1011,8 +1017,8 @@ class SDVXHelper:
                 self.window['txt_obswarning'].update('')
                 self.logToWindow(self.i18n('message.obs.connect'))
             return True
-        except:
-            logger.debug(traceback.format_exc())
+        except Exception as e:
+            logger.debug(f"Could not connect to OBS: {e}")
             self.obs = False
             self.logToWindow('obs socket error!')
             if self.gui_mode == gui_mode.main:
@@ -1501,7 +1507,7 @@ class SDVXHelper:
         now = datetime.datetime.now()
         now_mod = now - datetime.timedelta(hours=self.settings['logpic_offset_time']) # 多少の猶予をつける。2時間前までは遡る
 
-        self.gen_summary = GenSummary(now_mod, self.default_locale)
+        self.gen_summary = GenSummary(now_mod, locale=self.default_locale)
         self.gen_summary.generate()
         self.starttime = now
         self.gui_main()
@@ -1778,7 +1784,7 @@ class SDVXHelper:
                 else:
                     self.logToWindow(self.i18n('message.main.error.noSongSelection'))                    
             elif ev == 'locale':
-                self.bundle = PoorManResourceBundle(val['locale'].lower())
+                self.bundle = PoorManResourceBundle(val['locale'].lower(),logger)
                 self.default_locale = val['locale']
                 self.i18n = self.bundle.get_text
                 self.presence.destroy()

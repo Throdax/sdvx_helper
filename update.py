@@ -36,7 +36,7 @@ class Updater:
     
     def __init__(self):
         self.default_locale = 'EN'
-        self.bundle = PoorManResourceBundle(self.default_locale)
+        self.bundle = PoorManResourceBundle(self.default_locale,logger)
         self.i18n = self.bundle.get_text
         self.ico=self.ico_path('icon.ico')
     
