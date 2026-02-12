@@ -76,7 +76,7 @@ class GenSummary:
                 self.settings = json.load(f)
             with open(self.settings['params_json'], 'r') as f:
                 self.params = json.load(f)
-            logger.debug(f"params={self.params}")
+            #logger.debug(f"params={self.params}")
         except Exception as e:
             logger.debug(traceback.format_exc())
             with open('resources/params.json', 'r') as f:
@@ -259,7 +259,9 @@ class GenSummary:
                 lamp = k
         if not lamp: # puc, uc以外はimagehashを使わずに判定
             a = np.array(img_lamp)[:,:,:3]
-            if a.sum() > 620000:
+            if a.sum() > 820000:
+                lamp = 'exh'
+            elif a.sum() > 620000:
                 lamp = 'hard'
             elif a.sum() < 400000:
                 lamp = 'failed'
@@ -333,30 +335,36 @@ class GenSummary:
     def cut_result_parts(self, img):
         parts = {}
         parts['rank'] = img.crop(self.get_detect_points('log_crop_rank'))
+        parts['lamp_crop'] = img.crop(self.get_detect_points('lamp'))
+        parts['gauge'] = img.crop(self.get_detect_points('gauge'))
 
         # 各パーツの切り取り
         for i in ('title', 'title_small', 'difficulty', 'rate', 'score', 'jacket', 'info'):
             parts[i] = img.crop(self.get_detect_points('log_crop_'+i))
+            
+        for part in parts.keys() :
+            parts[part].save(f'out/part_{part}.png')
 
         # クリアランプの抽出
         lamp = ''
-        if self.comp_images(img.crop(self.get_detect_points('lamp')), Image.open('resources/images/lamp_puc.png')):
+        
+        if self.comp_images(parts['lamp_crop'], Image.open('resources/images/lamp_puc.png')):
             lamp = 'puc'
-        elif self.comp_images(img.crop(self.get_detect_points('lamp')), Image.open('resources/images/lamp_uc.png')):
+        elif self.comp_images(parts['lamp_crop'], Image.open('resources/images/lamp_uc.png')):
             lamp = 'uc'
-        elif self.comp_images(img.crop(self.get_detect_points('lamp')), Image.open('resources/images/lamp_clear.png')):
-            rsum = np.array(img.crop(self.get_detect_points('gauge')))[:,:,0].sum()
-            gsum = np.array(img.crop(self.get_detect_points('gauge')))[:,:,1].sum()
-            bsum = np.array(img.crop(self.get_detect_points('gauge')))[:,:,2].sum()
-            #print(rsum, gsum, bsum)
-            if rsum < gsum:
+        elif self.comp_images(parts['lamp_crop'], Image.open('resources/images/lamp_clear.png')):
+            rsum = np.array(parts['gauge'])[:,:,0].sum()
+            gsum = np.array(parts['gauge'])[:,:,1].sum()
+            bsum = np.array(parts['gauge'])[:,:,2].sum()
+            if rsum+gsum+bsum > 800000:
+                lamp = 'exh'
+            elif rsum < gsum:
                 lamp = 'clear'
+            elif gsum > 200000:
+                lamp = 'class_clear'
             else:
-                if gsum > 200000:
-                    lamp = 'class_clear'
-                else:
-                    lamp = 'hard'
-        elif self.comp_images(img.crop(self.get_detect_points('lamp')), Image.open('resources/images/lamp_failed.png')):
+                lamp = 'hard'
+        elif self.comp_images(parts['lamp_crop'], Image.open('resources/images/lamp_failed.png')):
             lamp = 'failed'
 
         if lamp == '':
@@ -453,7 +461,7 @@ class GenSummary:
         
         try:
             sha_jacket = self.sha_generator.generate_sha256_from_pil_image(jacket)
-            logger.info(f'Generated SHA {sha_jacket} for jacket.')
+            #logger.info(f'Generated SHA {sha_jacket} for jacket.')
         except Exception as e:
             logger.warn(f'Failed to generate SHA for jacket: {str(e)}')
         
@@ -566,7 +574,7 @@ class GenSummary:
             
             try:
                 sha_jacket  = self.sha_generator.generate_sha256_from_pil_image(self.result_parts['jacket_org'])
-                logger.info(f'Generated SHA-256 {sha_jacket} for {hash_jacket}')
+                #logger.info(f'Generated SHA-256 {sha_jacket} for {hash_jacket}')
             except Exception as e:
                 logger.warn(f'Failed to generate SHA-256 for {hash_jacket}: {str(e)}')
                 
@@ -598,9 +606,12 @@ class GenSummary:
                 if len(existing_hash) == len(hash_jacket) and abs(existing_hash - hash_jacket) < threshold:
                     self.hash_hit = existing_hash
                     detected = True
-                    title = self.musiclist_hash['jacket'][difficulty][str(existing_hash)]
-                    logger.debug(f"OCR pass: {abs(existing_hash - hash_jacket) < 2}, existing_hash:{str(existing_hash)}, cur:{str(hash_jacket)}, diff:{abs(existing_hash - hash_jacket) < 2}")
-#                    logger.info(f'Found {sha_jacket} in music list for title {self.musiclist_hash["jacket_sha"][difficulty][sha_jacket]}')
+                    try :
+                        title = self.musiclist_hash['jacket'][difficulty][str(existing_hash)]
+                        logger.debug(f"OCR pass: {abs(existing_hash - hash_jacket) < threshold}, existing_hash:{str(existing_hash)}, cur:{str(hash_jacket)}, diff:{abs(existing_hash - hash_jacket) < 2}")
+    #                    logger.info(f'Found {sha_jacket} in music list for title {self.musiclist_hash["jacket_sha"][difficulty][sha_jacket]}')
+                    except Exception:
+                        logger.error(f'For some reason {str(existing_hash)} was not found in the music map for {difficulty} despite being inside the for...')
                     
                     if self.settings['save_jacketimg']:
                         tt = f"jackets/{str(existing_hash)}.png"
@@ -632,7 +643,7 @@ class GenSummary:
                 if abs(hash_jacket - hash_no_jacket) < 5:
                     print('ジャケット削除済みの曲なので判定結果をクリアします。')
         except Exception:
-            logger.debug(traceback.format_exc())
+            logger.error(traceback.format_exc())
             raise Exception
         return title
     
@@ -716,13 +727,13 @@ if __name__ == '__main__':
     start = datetime.datetime(year=2023,month=10,day=15,hour=0)
     a = GenSummary(start)
     #a.generate()
-    #import glob
-    #for f in glob.glob('tmp/sel_*png'):
-    #    img = Image.open(f)
-    #    print(f, a.get_score_on_select(img))
-    #a.generate_today_all('hoge.png')
-    #a.chk_ocr(60)
-    for f in ['debug/profession_exh.png', 'debug/gambol_inf.png', 'debug/gorira_adv.png', 'debug/unlimi_nov.png']:
-    #for f in ['debug/profession_exh.png']:
-        a.update_musicinfo(Image.open(f))
-        print(f, a.ocr_from_detect())
+    import glob
+    for f in glob.glob('debug/result/*'):
+        tmp = Image.open(f)
+        a.cut_result_parts(tmp)
+        cur,pre = a.get_score(tmp)
+        res_ocr = a.ocr(notify=True)
+        print(f, res_ocr, a.lamp)
+    for f in glob.glob('debug/select/*png'):
+        img = Image.open(f)
+        print(f, a.get_score_on_select(img))
