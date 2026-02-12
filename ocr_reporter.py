@@ -560,7 +560,10 @@ class Reporter:
             print(f'{self.i18n("log.file.not.ocr_found")} ({f})')
             return
         if gen_summary_local.is_result(img):
-            gen_summary_local.cut_result_parts(img)
+            if not gen_summary_local.cut_result_parts(img) :
+                logger.warning(f"File '{f}' isResult but could not find lamp parts. File will be skipped")
+                return
+            
             res = gen_summary_local.ocr()
             if res != False:
                 with parent.color_lock :

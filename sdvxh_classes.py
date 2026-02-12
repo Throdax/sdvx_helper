@@ -712,7 +712,7 @@ class SDVXLogger:
             bpm    = tmp[2]
             lv     = tmp[3+diff_table.index(difficulty.upper())]
         except:
-            logger.debug(traceback.format_exc())
+            logger.warn(f'Could not find title "{title}" in play data.')
             artist = ''
             bpm = ''
             lv = '??'
