@@ -306,7 +306,7 @@ class Reporter:
                 webhook.add_file(file=img_bytes.getvalue(), filename=f'difficulty.png')
             msg += f" ({self.i18n('webhook.ocr.difficulty')}: **{difficulty.upper()}**)"
 
-            msg += f'\n- {self.i18n("text.ocr.sha.jacket")}: **{sha_jacket}**'
+            #msg += f'\n- {self.i18n("text.ocr.sha.jacket")}: **{sha_jacket}**'
             
             webhook.content=msg
             res = webhook.execute()
@@ -447,8 +447,8 @@ class Reporter:
             [
                 sg.Text(self.i18n('text.ocr.title'), font=(None,16)), 
                 sg.Input('', key='txt_title', font=("Noto Sans JP",16), size=(50,1),disabled=True),
-                sg.Text(self.i18n('text.ocr.sha.jacket'), font=(None,16)), 
-                sg.Input('', key='sha_jacket', size=(80,1), font=("Courier New",16),disabled=True),
+                #sg.Text(self.i18n('text.ocr.sha.jacket'), font=(None,16)), 
+                #sg.Input('', key='sha_jacket', size=(80,1), font=("Courier New",16),disabled=True),
             ],
             [
                 sg.Text(self.i18n('text.ocr.hash.jacket'), font=(None,16)), 
@@ -676,7 +676,7 @@ class Reporter:
                     if hash_info != '':
                         self.musiclist['info'][diff][music] = str(hash_info)
                         
-                    self.musiclist['jacket_sha'][difficulty][music] = str(sha_jacket)
+                    #self.musiclist['jacket_sha'][difficulty][music] = str(sha_jacket)
                 
                 if len(val['files']) > 0:
                     self.filelist_bgcolor[val['files'][0]][-2] = '#dddddd'
@@ -688,7 +688,7 @@ class Reporter:
                 print(f'{self.i18n("log.song.already.registered")} ({difficulty}) {self.i18n("log.hash.fixed")}')
                 
                 self.musiclist['jacket'][difficulty][music] = str(hash_jacket)
-                self.musiclist['jacket_sha'][difficulty][music] = str(sha_jacket)
+                #self.musiclist['jacket_sha'][difficulty][music] = str(sha_jacket)
                 
                 if hash_info != '':
                     self.musiclist['info'][difficulty][music] = str(hash_info)
@@ -697,14 +697,14 @@ class Reporter:
                     self.filelist_bgcolor[val['files'][0]][-1] = '#333399'
                     self.window['files'].update(row_colors=self.filelist_bgcolor)
                     
-                self.musiclist['jacket_sha'][difficulty][music] = str(sha_jacket)
+                #self.musiclist['jacket_sha'][difficulty][music] = str(sha_jacket)
                 
             self.window['num_added_fumen'].update(self.num_added_fumen)
             self.save()
             self.window['hash_jacket'].update('')
             self.window['hash_info'].update('')
             self.window['txt_title'].update('')
-            self.window['sha_jacket'].update('')
+            #self.window['sha_jacket'].update('')
         else:
             print('難易度 or ハッシュ値エラー')
             self.window['state'].update(self.i18n('message.error.cannot.obtain'), text_color='#000000')
@@ -734,7 +734,7 @@ class Reporter:
                             self.window['state'].update('')
                             self.window['hash_jacket'].update(str(imagehash.average_hash(parts['jacket_org'],10)))
                             self.window['hash_info'].update(str(imagehash.average_hash(parts['info'],10)))
-                            self.window['sha_jacket'].update(str(self.sha_generator.generate_sha256_from_pil_image(parts['jacket_org'])))
+                            #self.window['sha_jacket'].update(str(self.sha_generator.generate_sha256_from_pil_image(parts['jacket_org'])))
                             res_ocr = self.gen_summary.ocr()
                             if self.gen_summary.difficulty != False:
                                 self.window['combo_difficulty'].update(self.gen_summary.difficulty)
@@ -786,7 +786,7 @@ class Reporter:
                 if music != '':
                     hash_jacket = self.window['hash_jacket'].get()
                     hash_info = self.window['hash_info'].get()
-                    sha_jacket = self.window['sha_jacket'].get()
+                    #sha_jacket = self.window['sha_jacket'].get()
                     
                     tmp = Image.open('resources/images/no_jacket.png')
                     hash_no_jacket = imagehash.average_hash(tmp,10)
@@ -794,7 +794,7 @@ class Reporter:
                     if hash_jacket == str(hash_no_jacket) :
                         self.window['state'].update(self.i18n('message.song.jacketHashIsNoJacket',music))
                     else :    
-                        self.register_song(val, len, str, print, music, hash_jacket, hash_info, sha_jacket)
+                        self.register_song(val, len, str, print, music, hash_jacket, hash_info, None)
                 else:
                     self.window['state'].update(self.i18n('message.error.no.title'), text_color='#000000')
             elif ev == 'combo_diff_db': # hash値リスト側の難易度設定を変えた時に入る

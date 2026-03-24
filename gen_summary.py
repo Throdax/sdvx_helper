@@ -295,11 +295,12 @@ class GenSummary:
                 for i in ('jacket_org', 'info'):
                     msg += f"- {i.upper()}: ** {imagehash.average_hash(self.result_parts[i],hash_size)}**\n"
 
-                try :
-                    msg += f"- {self.i18n('text.ocr.sha.jacket')}: **{self.sha_generator.generate_sha256_from_pil_image(self.result_parts['jacket_org'])}**\n"
-                except Exception as e:
-                    msg += f"- {self.i18n('text.ocr.sha.jacket.error',str(e))}\n"
-                    logger.warn("Could not generate SHA-256 title")
+#                try :
+#                    msg += f"- {self.i18n('text.ocr.sha.jacket')}: **{self.sha_generator.generate_sha256_from_pil_image(self.result_parts['jacket_org'])}**\n"
+#                except Exception as e:
+#                    msg += f"- {self.i18n('text.ocr.sha.jacket.error',str(e))}\n"
+#                    logger.warn("Could not generate SHA-256 title")
+
                 # 添付ファイル
                 img_bytes = io.BytesIO()
                 self.result_parts['info'].crop((0,0,260,65)).save(img_bytes, format='PNG')
