@@ -23,7 +23,7 @@ import java.util.Map;
  * ensure forward-compatibility when new settings are introduced without requiring a
  * manual migration step.</p>
  *
- * @author sdvx-helper
+ * @author Throdax
  * @since 2.0.0
  */
 public class SettingsRepository {

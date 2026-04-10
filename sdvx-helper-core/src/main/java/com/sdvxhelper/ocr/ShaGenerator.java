@@ -20,7 +20,7 @@ import javax.imageio.ImageIO;
  * captured from OBS.  Replaces the Python {@code SHAGenerator} class in
  * {@code sha_generator.py}.</p>
  *
- * @author sdvx-helper
+ * @author Throdax
  * @since 2.0.0
  */
 public class ShaGenerator {

@@ -36,3 +36,7 @@ __pycache__
 .classpath
 .project
 .settings/
+
+# Secrets
+secrets.properties
+

@@ -24,7 +24,7 @@ import java.util.ResourceBundle;
  * them back when the user confirms the dialog (via the OK button which calls
  * {@link #save()}).  The dialog is opened by {@code MainController.onSettings()}.</p>
  *
- * @author sdvx-helper
+ * @author Throdax
  * @since 2.0.0
  */
 public class SettingsController implements Initializable {

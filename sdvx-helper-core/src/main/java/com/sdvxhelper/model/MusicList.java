@@ -30,7 +30,7 @@ import java.util.List;
  * <p>Each nested dict is represented here as a list of typed JAXB elements to work
  * around JAXB's lack of native support for {@code Map<String, Map<String, String>>}.</p>
  *
- * @author sdvx-helper
+ * @author Throdax
  * @since 2.0.0
  */
 @XmlRootElement(name = "MusicList")

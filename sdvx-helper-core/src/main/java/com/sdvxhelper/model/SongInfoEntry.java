@@ -11,7 +11,7 @@ import jakarta.xml.bind.annotation.XmlElement;
  * <p>Used inside {@link MusicList#getTitles()} to represent the Python
  * {@code musiclist['titles']} dictionary as an XML element list.</p>
  *
- * @author sdvx-helper
+ * @author Throdax
  * @since 2.0.0
  */
 @XmlAccessorType(XmlAccessType.FIELD)

@@ -27,7 +27,7 @@ import java.util.stream.Collectors;
  * back to {@code settings.json} when the user confirms the dialog (OK button
  * triggers {@link #save()}).</p>
  *
- * @author sdvx-helper
+ * @author Throdax
  * @since 2.0.0
  */
 public class ObsControlController implements Initializable {

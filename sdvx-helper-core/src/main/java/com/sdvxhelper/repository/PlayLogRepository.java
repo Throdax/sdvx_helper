@@ -18,7 +18,7 @@ import java.util.Collections;
  * On first use (when no file exists), an empty {@link PlayLog} is returned and
  * written to disk on the next {@link #save(PlayLog)} call.</p>
  *
- * @author sdvx-helper
+ * @author Throdax
  * @since 2.0.0
  */
 public class PlayLogRepository extends JaxbRepository<PlayLog> {

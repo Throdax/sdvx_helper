@@ -11,7 +11,7 @@ import jakarta.xml.bind.annotation.XmlElement;
  * <p>Used to represent one difficulty tier (e.g. {@code "exh"}) within the nested
  * hash maps in {@link MusicList}.</p>
  *
- * @author sdvx-helper
+ * @author Throdax
  * @since 2.0.0
  */
 @XmlAccessorType(XmlAccessType.FIELD)

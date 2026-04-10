@@ -13,7 +13,7 @@ package com.sdvxhelper.config;
  *   <li>{@code MAYA2_KEY} – HMAC key used to sign Maya2 upload payloads.</li>
  * </ul>
  *
- * @author sdvx-helper
+ * @author Throdax
  * @since 2.0.0
  */
 public final class SecretConfig {

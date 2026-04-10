@@ -23,7 +23,7 @@ import java.util.Map;
  * path specified in the user settings ({@code params_json} key), falling back to
  * the bundled classpath resource.</p>
  *
- * @author sdvx-helper
+ * @author Throdax
  * @since 2.0.0
  */
 public class ParamsRepository {

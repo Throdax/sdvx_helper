@@ -7,7 +7,7 @@ import jakarta.xml.bind.annotation.XmlAttribute;
 /**
  * A single title-to-hash mapping used within {@link DifficultyHashes}.
  *
- * @author sdvx-helper
+ * @author Throdax
  * @since 2.0.0
  */
 @XmlAccessorType(XmlAccessType.FIELD)

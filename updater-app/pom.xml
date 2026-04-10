@@ -2,12 +2,13 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
         <groupId>com.sdvxhelper</groupId>
         <artifactId>sdvx-helper-parent</artifactId>
-        <version>2.0.0</version>
+        <version>1.0.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>updater-app</artifactId>
@@ -15,6 +16,10 @@
     
     <name>Updater App</name>
     <description>Self-updater from GitHub releases (maps to update.py)</description>
+    
+    <properties>
+		<configuration-finalName>update</configuration-finalName>
+	</properties>
 
     <dependencies>
         <dependency>
@@ -29,7 +34,7 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
                 <configuration>
-                    <finalName>update</finalName>
+                    <finalName>${configuration-finalName}</finalName>
                     <transformers>
                         <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                             <mainClass>com.sdvxhelper.app.Launcher</mainClass>
@@ -42,10 +47,31 @@
                 <groupId>org.panteleyev</groupId>
                 <artifactId>jpackage-maven-plugin</artifactId>
                 <configuration>
-                    <name>update</name>
-                    <mainJar>update.jar</mainJar>
+                    <name>${configuration-finalName}</name>
+                    <mainJar>${configuration-finalName}.jar</mainJar>
+                    <appVersion>${updater}</appVersion>
                 </configuration>
             </plugin>
+            <plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-antrun-plugin</artifactId>
+				<configuration>
+					<target>
+						<attrib file="${project.build.directory}/jpackage/${configuration-finalName}/${configuration-finalName}.exe" 
+							readonly="false" 
+							verbose="true"/>
+					</target>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>properties-maven-plugin</artifactId>
+				<configuration>
+					<files>
+						<file>..\version.properties</file>
+					</files>
+				</configuration>
+			</plugin>
         </plugins>
     </build>
 </project>

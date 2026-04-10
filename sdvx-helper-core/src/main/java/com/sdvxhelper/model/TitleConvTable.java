@@ -16,7 +16,7 @@ import java.util.Map;
  * <p>Serialised to / deserialised from {@code title_conv_table.xml}.
  * Replaces the Python {@code resources/title_conv_table.pkl} pickle file.</p>
  *
- * @author sdvx-helper
+ * @author Throdax
  * @since 2.0.0
  */
 @XmlRootElement(name = "TitleConversionTable")

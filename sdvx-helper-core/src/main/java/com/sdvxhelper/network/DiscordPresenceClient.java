@@ -17,7 +17,7 @@ import java.time.Instant;
  * <p>Presence updates are throttled to at most once every 5 seconds to avoid
  * hitting Discord rate limits.</p>
  *
- * @author sdvx-helper
+ * @author Throdax
  * @since 2.0.0
  */
 public class DiscordPresenceClient implements Closeable {

@@ -2,12 +2,13 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
         <groupId>com.sdvxhelper</groupId>
         <artifactId>sdvx-helper-parent</artifactId>
-        <version>2.0.0</version>
+        <version>1.0.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>sdvx-helper-dist</artifactId>
@@ -19,6 +20,10 @@
         the JPackage app-images for all 5 tools together with shared resources.
         Java equivalent of the packaging section in python/build.cmd.
     </description>
+    
+    <properties>
+        <zip-final-name>sdvx_helper_java_en_all</zip-final-name>
+    </properties>
 
     <!--
       These dependencies are declared solely to enforce reactor build order:
@@ -93,7 +98,7 @@
                                 sdvx_helper_en_all.zip
                               appendAssemblyId=false suppresses the "-dist" suffix.
                             -->
-                            <finalName>sdvx_helper_en_all</finalName>
+                            <finalName>${zip-final-name}</finalName>
                             <appendAssemblyId>false</appendAssemblyId>
                         </configuration>
                     </execution>
@@ -115,6 +120,15 @@
                     </execution>
                 </executions>
             </plugin>
+            <plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>properties-maven-plugin</artifactId>
+				<configuration>
+					<files>
+						<file>..\version.properties</file>
+					</files>
+				</configuration>
+			</plugin>
         </plugins>
     </build>
 

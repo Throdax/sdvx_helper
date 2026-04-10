@@ -15,7 +15,7 @@ import java.util.Map;
  * at construction; each digit region is cropped from the result image and compared
  * against all digit templates using Hamming distance.</p>
  *
- * @author sdvx-helper
+ * @author Throdax
  * @since 2.0.0
  */
 public class ScoreDetector {

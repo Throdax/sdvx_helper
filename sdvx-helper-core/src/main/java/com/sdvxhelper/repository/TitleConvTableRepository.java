@@ -17,7 +17,7 @@ import java.util.Map;
  * <p>Replaces the Python {@code pickle.load} call on
  * {@code resources/title_conv_table.pkl}.</p>
  *
- * @author sdvx-helper
+ * @author Throdax
  * @since 2.0.0
  */
 public class TitleConvTableRepository extends JaxbRepository<TitleConvTable> {

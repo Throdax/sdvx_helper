@@ -19,7 +19,7 @@ import java.util.UUID;
  * <p>Used by the Discord Rich Presence feature to host jacket images.
  * Replaces the Python litterbox upload in {@code discord_presence.py}.</p>
  *
- * @author sdvx-helper
+ * @author Throdax
  * @since 2.0.0
  */
 public class LitterboxClient {

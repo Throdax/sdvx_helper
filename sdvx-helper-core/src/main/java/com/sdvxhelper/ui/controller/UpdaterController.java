@@ -27,7 +27,7 @@ import java.util.concurrent.Executors;
  * <p>Checks GitHub for a newer release and downloads/installs the update.
  * Replaces the Python {@code Updater} class in {@code update.py}.</p>
  *
- * @author sdvx-helper
+ * @author Throdax
  * @since 2.0.0
  */
 public class UpdaterController implements Initializable {

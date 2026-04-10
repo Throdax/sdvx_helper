@@ -15,7 +15,7 @@ package com.sdvxhelper.app;
  * {@link javafx.application.Application#launch(Class, String...)} internally — a code
  * path that is tolerant of the classpath deployment model.</p>
  *
- * @author sdvx-helper
+ * @author Throdax
  * @since 2.0.0
  */
 public class Launcher {

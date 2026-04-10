@@ -22,7 +22,7 @@ import java.nio.file.StandardCopyOption;
  * application crash.</p>
  *
  * @param <T> the JAXB-annotated root element type
- * @author sdvx-helper
+ * @author Throdax
  * @since 2.0.0
  */
 public abstract class JaxbRepository<T> {

@@ -20,7 +20,7 @@ import java.time.Duration;
  * automatically, matching the behaviour of the Python implementation in
  * {@code sdvxh_classes.py} (the {@code dl_googledrive_csv()} method).</p>
  *
- * @author sdvx-helper
+ * @author Throdax
  * @since 2.0.0
  */
 public class GoogleDriveClient {

@@ -24,7 +24,7 @@ import java.util.List;
  *
  * <p>All dependencies are supplied via constructor injection for testability.</p>
  *
- * @author sdvx-helper
+ * @author Throdax
  * @since 2.0.0
  */
 public class SdvxLoggerService {

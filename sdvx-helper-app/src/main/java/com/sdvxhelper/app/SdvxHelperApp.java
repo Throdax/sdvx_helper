@@ -22,7 +22,7 @@ import java.util.ResourceBundle;
  * <p>Provides the detection loop, OBS capture, and play-logging GUI.
  * Replaces {@code sdvx_helper.pyw}.</p>
  *
- * @author sdvx-helper
+ * @author Throdax
  * @since 2.0.0
  */
 public class SdvxHelperApp extends Application {

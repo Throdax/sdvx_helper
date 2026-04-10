@@ -22,7 +22,7 @@ import java.util.List;
  * <p>The alllog CSV is exported in Shift-JIS (to match the original Python behaviour)
  * while other CSVs use UTF-8.  Both encodings are configurable via the write methods.</p>
  *
- * @author sdvx-helper
+ * @author Throdax
  * @since 2.0.0
  */
 public class CsvExportService {

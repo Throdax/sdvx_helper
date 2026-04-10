@@ -36,7 +36,7 @@ import java.util.ResourceBundle;
  * filterable, sortable table.  Replaces the Python {@code ScoreViewer} class
  * in {@code manage_score.py}.</p>
  *
- * @author sdvx-helper
+ * @author Throdax
  * @since 2.0.0
  */
 public class ScoreViewerController implements Initializable {

@@ -18,7 +18,7 @@ import java.util.Map;
  * {@link PerceptualHasher} to compare jacket image crops against the music-list
  * database to identify the currently selected or playing song.</p>
  *
- * @author sdvx-helper
+ * @author Throdax
  * @since 2.0.0
  */
 public class ImageAnalysisService {

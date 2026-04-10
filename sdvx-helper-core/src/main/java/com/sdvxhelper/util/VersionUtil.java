@@ -16,7 +16,7 @@ import java.util.Properties;
  *
  * <p>Maps to the version-related helpers in the Python {@code sdvx_utils.py} file.</p>
  *
- * @author sdvx-helper
+ * @author Throdax
  * @since 2.0.0
  */
 public final class VersionUtil {

@@ -35,7 +35,7 @@ import java.util.ResourceBundle;
  * and produces OBS overlay XML files.  Replaces the Python {@code PlayLogSync}
  * class in {@code play_log_sync.py}.</p>
  *
- * @author sdvx-helper
+ * @author Throdax
  * @since 2.0.0
  */
 public class PlayLogSyncController implements Initializable {

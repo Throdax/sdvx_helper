@@ -46,7 +46,7 @@ import java.util.concurrent.Executors;
  *
  * <p>Replaces the Python {@code SDVXHelper} class in {@code sdvx_helper.pyw}.</p>
  *
- * @author sdvx-helper
+ * @author Throdax
  * @since 2.0.0
  */
 public class MainController implements Initializable {

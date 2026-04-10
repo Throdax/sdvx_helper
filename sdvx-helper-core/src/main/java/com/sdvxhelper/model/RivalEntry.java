@@ -14,7 +14,7 @@ import java.util.List;
  * <p>Used within {@link RivalLog} to represent the Python
  * {@code rival_log.pkl} dict entry for one rival name.</p>
  *
- * @author sdvx-helper
+ * @author Throdax
  * @since 2.0.0
  */
 @XmlAccessorType(XmlAccessType.FIELD)

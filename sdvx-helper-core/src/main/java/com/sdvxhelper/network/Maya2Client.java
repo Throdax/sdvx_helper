@@ -24,7 +24,7 @@ import java.util.HexFormat;
  * the final CSV row, matching the Python implementation in
  * {@code ManageMaya2} / {@code connect_maya2.py}.</p>
  *
- * @author sdvx-helper
+ * @author Throdax
  * @since 2.0.0
  */
 public class Maya2Client {

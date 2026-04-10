@@ -15,7 +15,7 @@ import java.io.IOException;
  *
  * <p>Replaces the Python {@code pickle.load/dump} calls on {@code rival_log.pkl}.</p>
  *
- * @author sdvx-helper
+ * @author Throdax
  * @since 2.0.0
  */
 public class RivalLogRepository extends JaxbRepository<RivalLog> {

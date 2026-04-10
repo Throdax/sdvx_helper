@@ -20,7 +20,7 @@ import java.util.Locale;
  * {@code gen_vf_onselect()}, {@code gen_rival_xml()}, and related methods in the
  * Python code.  All output files are written UTF-8 encoded.</p>
  *
- * @author sdvx-helper
+ * @author Throdax
  * @since 2.0.0
  */
 public class XmlExportService {

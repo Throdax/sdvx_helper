@@ -12,7 +12,7 @@ import java.util.List;
  * {@code sdvx_utils.restore_title()} and {@code find_song_rating()} in the Python
  * code.  All data is loaded at startup from {@link SpecialTitlesRepository}.</p>
  *
- * @author sdvx-helper
+ * @author Throdax
  * @since 2.0.0
  */
 public class TitleNormalizer {

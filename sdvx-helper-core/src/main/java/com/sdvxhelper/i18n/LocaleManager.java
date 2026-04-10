@@ -28,7 +28,7 @@ import java.util.ResourceBundle;
  * attached to {@link #localeProperty()} are notified so that each open
  * {@code *App} can rebuild its scene.</p>
  *
- * @author sdvx-helper
+ * @author Throdax
  * @since 2.0.0
  */
 public final class LocaleManager {

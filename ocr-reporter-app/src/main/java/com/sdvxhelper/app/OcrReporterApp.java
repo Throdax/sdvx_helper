@@ -21,7 +21,7 @@ import java.util.ResourceBundle;
  * <p>Allows maintainers to register unknown jacket hashes and update the music list.
  * Replaces {@code ocr_reporter.py}.</p>
  *
- * @author sdvx-helper
+ * @author Throdax
  * @since 2.0.0
  */
 public class OcrReporterApp extends Application {

@@ -34,7 +34,7 @@ import java.util.ResourceBundle;
  * hash in the music list.  Replaces the Python {@code Reporter} class in
  * {@code ocr_reporter.py}.</p>
  *
- * @author sdvx-helper
+ * @author Throdax
  * @since 2.0.0
  */
 public class OcrReporterController implements Initializable {

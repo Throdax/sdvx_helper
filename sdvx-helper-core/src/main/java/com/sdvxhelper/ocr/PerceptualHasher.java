@@ -22,7 +22,7 @@ import java.awt.image.BufferedImage;
  *
  * <p>Two hashes can be compared via their Hamming distance to determine similarity.</p>
  *
- * @author sdvx-helper
+ * @author Throdax
  * @since 2.0.0
  */
 public class PerceptualHasher {

@@ -23,7 +23,7 @@ import java.util.ResourceBundle;
  * String formatted = ms.get("status.vf", 36.9);
  * }</pre>
  *
- * @author sdvx-helper
+ * @author Throdax
  * @since 2.0.0
  */
 public class MessageService {

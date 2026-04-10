@@ -26,7 +26,7 @@ import java.nio.charset.StandardCharsets;
  * <p>New title mappings, rating overrides, or ignore rules can be added by editing
  * {@code special_titles.json} — no recompilation or new release is required.</p>
  *
- * @author sdvx-helper
+ * @author Throdax
  * @since 2.0.0
  */
 public class SpecialTitlesRepository {

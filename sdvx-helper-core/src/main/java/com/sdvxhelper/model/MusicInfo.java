@@ -15,7 +15,7 @@ import jakarta.xml.bind.annotation.XmlTransient;
  *
  * <p>Maps to the Python {@code MusicInfo} class in {@code sdvxh_classes.py}.</p>
  *
- * @author sdvx-helper
+ * @author Throdax
  * @since 2.0.0
  */
 @XmlAccessorType(XmlAccessType.FIELD)

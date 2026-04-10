@@ -13,7 +13,7 @@ import java.util.Map;
  * {@code SettingsRepository} merges these defaults with any stored user settings
  * on load, ensuring forward-compatibility when new keys are added.</p>
  *
- * @author sdvx-helper
+ * @author Throdax
  * @since 2.0.0
  */
 public final class DefaultSettings {

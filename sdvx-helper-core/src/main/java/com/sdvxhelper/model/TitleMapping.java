@@ -9,7 +9,7 @@ import jakarta.xml.bind.annotation.XmlAttribute;
  *
  * <p>Maps the local filesystem-safe title string to the corresponding Maya2 server title.</p>
  *
- * @author sdvx-helper
+ * @author Throdax
  * @since 2.0.0
  */
 @XmlAccessorType(XmlAccessType.FIELD)

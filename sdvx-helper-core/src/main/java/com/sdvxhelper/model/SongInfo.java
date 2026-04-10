@@ -10,7 +10,7 @@ import jakarta.xml.bind.annotation.XmlAttribute;
  * <p>Corresponds to one row in the Python {@code musiclist['titles']} dictionary,
  * which stores {@code [artist, bpm, lv_nov, lv_adv, lv_exh, lv_append]} per title.</p>
  *
- * @author sdvx-helper
+ * @author Throdax
  * @since 2.0.0
  */
 @XmlAccessorType(XmlAccessType.FIELD)

@@ -10,7 +10,7 @@ import java.util.Map;
  * computation.  Maps to the Python {@code OneLevelStat} class in
  * {@code sdvxh_classes.py}.</p>
  *
- * @author sdvx-helper
+ * @author Throdax
  * @since 2.0.0
  */
 public class OneLevelStat {

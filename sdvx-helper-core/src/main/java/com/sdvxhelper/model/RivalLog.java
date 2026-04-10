@@ -14,7 +14,7 @@ import java.util.List;
  * <p>Serialised to / deserialised from {@code rival_log.xml}.
  * Replaces the Python {@code rival_log.pkl} pickle file.</p>
  *
- * @author sdvx-helper
+ * @author Throdax
  * @since 2.0.0
  */
 @XmlRootElement(name = "RivalLog")

@@ -5,7 +5,7 @@ package com.sdvxhelper.model.enums;
  *
  * <p>Maps to the Python {@code PlayStates} enum in {@code discord_presence.py}.</p>
  *
- * @author sdvx-helper
+ * @author Throdax
  * @since 2.0.0
  */
 public enum PlayState {

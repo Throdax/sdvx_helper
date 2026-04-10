@@ -8,7 +8,7 @@ import java.util.Locale;
  * <p>Provides consistent formatting of scores, Volforce values, and level labels
  * across all views and OBS overlay XML files.</p>
  *
- * @author sdvx-helper
+ * @author Throdax
  * @since 2.0.0
  */
 public final class ScoreFormatter {

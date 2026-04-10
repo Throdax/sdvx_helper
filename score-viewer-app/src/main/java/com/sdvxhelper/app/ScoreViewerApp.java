@@ -21,7 +21,7 @@ import java.util.ResourceBundle;
  * <p>Provides a sortable table of personal-best scores per chart.
  * Replaces {@code manage_score.py}.</p>
  *
- * @author sdvx-helper
+ * @author Throdax
  * @since 2.0.0
  */
 public class ScoreViewerApp extends Application {

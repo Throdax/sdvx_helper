@@ -7,7 +7,7 @@ package com.sdvxhelper.model.enums;
  * Each constant also exposes the minimum score required and the grade coefficient
  * used in the Volforce calculation.</p>
  *
- * @author sdvx-helper
+ * @author Throdax
  * @since 2.0.0
  */
 public enum ScoreRank {

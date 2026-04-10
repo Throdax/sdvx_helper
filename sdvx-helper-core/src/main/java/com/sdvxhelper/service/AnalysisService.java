@@ -12,7 +12,7 @@ import java.util.List;
  * <p>Replaces the Python {@code SDVXLogger.analyze()} method.  Computes how many
  * charts can be improved and by how much, to project future Volforce values.</p>
  *
- * @author sdvx-helper
+ * @author Throdax
  * @since 2.0.0
  */
 public class AnalysisService {

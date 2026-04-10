@@ -23,7 +23,7 @@ import java.util.regex.Pattern;
  * <p>Replaces the GitHub version-check logic in the Python {@code sdvx_utils.py} file.
  * Falls back to HTML tag scraping if the API rate limit is reached.</p>
  *
- * @author sdvx-helper
+ * @author Throdax
  * @since 2.0.0
  */
 public class GitHubVersionClient {

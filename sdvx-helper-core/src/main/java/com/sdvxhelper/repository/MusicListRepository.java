@@ -22,7 +22,7 @@ import java.util.Map;
  * <p>Replaces the Python {@code pickle.load/dump} calls on {@code musiclist.pkl}.
  * Also builds in-memory index maps for O(1) hash lookups during the detection loop.</p>
  *
- * @author sdvx-helper
+ * @author Throdax
  * @since 2.0.0
  */
 public class MusicListRepository extends JaxbRepository<MusicList> {

@@ -27,7 +27,7 @@ import java.util.Map;
  * lamp classifier, which requires externally-provided reference images to
  * reach full accuracy.</p>
  *
- * @author sdvx-helper
+ * @author Throdax
  * @since 2.0.0
  */
 class ImageAnalysisServiceTest {

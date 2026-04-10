@@ -6,7 +6,7 @@ package com.sdvxhelper.model.enums;
  * <p>Maps to the Python {@code detect_mode} enum defined in {@code sdvxh_classes.py}.
  * The detection loop transitions through these states as images are analysed.</p>
  *
- * @author sdvx-helper
+ * @author Throdax
  * @since 2.0.0
  */
 public enum DetectMode {

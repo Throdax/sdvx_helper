@@ -18,7 +18,7 @@ import java.util.UUID;
  * <p>Replaces the Python {@code DiscordWebhook} usage in {@code gen_summary.py}.
  * Uses the JDK {@code java.net.http.HttpClient} for multipart POST requests.</p>
  *
- * @author sdvx-helper
+ * @author Throdax
  * @since 2.0.0
  */
 public class DiscordWebhookClient {

@@ -16,7 +16,7 @@ import java.util.Map;
  * <p>Maps to one entry in the Python {@code musiclist['gradeS_lv17']} / {@code gradeS_lv18}
  * / {@code gradeS_lv19} dictionaries.</p>
  *
- * @author sdvx-helper
+ * @author Throdax
  * @since 2.0.0
  */
 @XmlAccessorType(XmlAccessType.FIELD)

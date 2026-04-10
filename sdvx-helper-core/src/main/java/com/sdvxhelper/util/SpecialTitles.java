@@ -17,7 +17,7 @@ import java.util.Map;
  *
  * <p>JSON-B annotations map to the {@code special_titles.json} key names.</p>
  *
- * @author sdvx-helper
+ * @author Throdax
  * @since 2.0.0
  */
 public class SpecialTitles {

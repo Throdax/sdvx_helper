@@ -20,7 +20,7 @@ import javax.imageio.ImageIO;
  *
  * <p>Maps to the Python {@code OBSSocket} class in {@code obssocket.py}.</p>
  *
- * @author sdvx-helper
+ * @author Throdax
  * @since 2.0.0
  */
 public class ObsWebSocketClient implements Closeable {

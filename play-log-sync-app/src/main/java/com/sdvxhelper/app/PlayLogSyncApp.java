@@ -21,7 +21,7 @@ import java.util.ResourceBundle;
  * <p>Reconciles screenshot files with the play log and exports XML for
  * the OBS overlays.  Replaces {@code play_log_sync.py}.</p>
  *
- * @author sdvx-helper
+ * @author Throdax
  * @since 2.0.0
  */
 public class PlayLogSyncApp extends Application {

@@ -16,7 +16,7 @@ import java.util.Map;
  * {@code musiclist['jacket'][difficulty]} in the Python code.  JAXB serialises this
  * as a list of {@link HashEntry} elements.</p>
  *
- * @author sdvx-helper
+ * @author Throdax
  * @since 2.0.0
  */
 @XmlAccessorType(XmlAccessType.FIELD)

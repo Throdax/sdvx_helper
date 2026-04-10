@@ -22,7 +22,7 @@ import com.sdvxhelper.model.enums.ScoreRank;
  * {@code OnePlayData} and {@code MusicInfo}, and the total-VF calculation in
  * {@code SDVXLogger.update_total_vf()} in {@code sdvxh_classes.py}.</p>
  *
- * @author sdvx-helper
+ * @author Throdax
  * @since 2.0.0
  */
 public final class VolforceCalculator {

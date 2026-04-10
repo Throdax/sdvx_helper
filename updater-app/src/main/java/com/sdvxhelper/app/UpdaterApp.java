@@ -21,7 +21,7 @@ import java.util.ResourceBundle;
  * <p>Checks GitHub for a newer release and downloads/installs the update.
  * Replaces {@code update.py}.</p>
  *
- * @author sdvx-helper
+ * @author Throdax
  * @since 2.0.0
  */
 public class UpdaterApp extends Application {

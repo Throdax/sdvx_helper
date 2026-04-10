@@ -1,88 +1,88 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.sdvxhelper</groupId>
-    <artifactId>sdvx-helper-parent</artifactId>
-    <version>2.0.0</version>
-    <packaging>pom</packaging>
+	<groupId>com.sdvxhelper</groupId>
+	<artifactId>sdvx-helper-parent</artifactId>
+	<version>1.0.0-SNAPSHOT</version>
+	<packaging>pom</packaging>
 
-    <name>SDVX Helper</name>
-    <description>Sound Voltex Helper -- multi-module parent POM</description>
+	<name>SDVX Helper</name>
+	<description>Sound Voltex Helper -- multi-module parent POM</description>
 
-    <modules>
-        <module>sdvx-helper-core</module>
-        <module>sdvx-helper-app</module>
-        <module>score-viewer-app</module>
-        <module>ocr-reporter-app</module>
-        <module>play-log-sync-app</module>
-        <module>updater-app</module>
-        <!--
+	<modules>
+		<module>sdvx-helper-core</module>
+		<module>sdvx-helper-app</module>
+		<module>score-viewer-app</module>
+		<module>ocr-reporter-app</module>
+		<module>play-log-sync-app</module>
+		<module>updater-app</module>
+		<!--
           sdvx-helper-dist is intentionally NOT listed here.
           It is only included when building with the "native" profile
           (mvn package -Pnative) because it depends on JPackage output.
         -->
-    </modules>
+	</modules>
 
-    <properties>
-        <java.version>25</java.version>
-        <javafx.version>23</javafx.version>
-        <maven.compiler.source>25</maven.compiler.source>
-        <maven.compiler.target>25</maven.compiler.target>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+	<properties>
+		<java.version>25</java.version>
+		<javafx.version>23</javafx.version>
+		<maven.compiler.source>25</maven.compiler.source>
+		<maven.compiler.target>25</maven.compiler.target>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-        <!-- Library versions -->
-        <jaxb.version>4.0.5</jaxb.version>
-        <jaxb.runtime.version>4.0.5</jaxb.runtime.version>
-        <jsonb.api.version>3.0.1</jsonb.api.version>
-        <jsonp.api.version>2.1.3</jsonp.api.version>
-        <yasson.version>3.0.4</yasson.version>
-        <parsson.version>1.1.7</parsson.version>
-        <jsoup.version>1.18.3</jsoup.version>
-        <tess4j.version>5.13.0</tess4j.version>
-        <jnativehook.version>2.2.2</jnativehook.version>
-        <slf4j.version>2.0.16</slf4j.version>
-        <log4j.version>2.24.3</log4j.version>
-        <obs.websocket.version>2.0.0</obs.websocket.version>
-        <junit.version>5.11.4</junit.version>
-        <mockito.version>5.15.2</mockito.version>
-        <maven.shade.version>3.6.0</maven.shade.version>
-        <jpackage.plugin.version>1.6.5</jpackage.plugin.version>
-        <maven.surefire.version>3.5.2</maven.surefire.version>
-        <maven.javadoc.version>3.11.2</maven.javadoc.version>
-        <maven.assembly.version>3.7.1</maven.assembly.version>
-    </properties>
+		<!-- Library versions -->
+		<jaxb.version>4.0.5</jaxb.version>
+		<jaxb.runtime.version>4.0.5</jaxb.runtime.version>
+		<jsonb.api.version>3.0.1</jsonb.api.version>
+		<jsonp.api.version>2.1.3</jsonp.api.version>
+		<yasson.version>3.0.4</yasson.version>
+		<parsson.version>1.1.7</parsson.version>
+		<jsoup.version>1.18.3</jsoup.version>
+		<tess4j.version>5.13.0</tess4j.version>
+		<jnativehook.version>2.2.2</jnativehook.version>
+		<slf4j.version>2.0.16</slf4j.version>
+		<log4j.version>2.24.3</log4j.version>
+		<obs.websocket.version>2.0.0</obs.websocket.version>
+		<junit.version>5.11.4</junit.version>
+		<mockito.version>5.15.2</mockito.version>
+		<maven.shade.version>3.6.0</maven.shade.version>
+		<jpackage.plugin.version>1.6.5</jpackage.plugin.version>
+		<maven.surefire.version>3.5.2</maven.surefire.version>
+		<maven.javadoc.version>3.11.2</maven.javadoc.version>
+		<maven.assembly.version>3.7.1</maven.assembly.version>
+	</properties>
 
-    <dependencyManagement>
-        <dependencies>
-            <!-- Internal core module -->
-            <dependency>
-                <groupId>com.sdvxhelper</groupId>
-                <artifactId>sdvx-helper-core</artifactId>
-                <version>${project.version}</version>
-            </dependency>
+	<dependencyManagement>
+		<dependencies>
+			<!-- Internal core module -->
+			<dependency>
+				<groupId>com.sdvxhelper</groupId>
+				<artifactId>sdvx-helper-core</artifactId>
+				<version>${project.version}</version>
+			</dependency>
 
-            <!-- JavaFX cross-platform JARs (module descriptors + Java classes) -->
-            <dependency>
-                <groupId>org.openjfx</groupId>
-                <artifactId>javafx-controls</artifactId>
-                <version>${javafx.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.openjfx</groupId>
-                <artifactId>javafx-fxml</artifactId>
-                <version>${javafx.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.openjfx</groupId>
-                <artifactId>javafx-swing</artifactId>
-                <version>${javafx.version}</version>
-            </dependency>
+			<!-- JavaFX cross-platform JARs (module descriptors + Java classes) -->
+			<dependency>
+				<groupId>org.openjfx</groupId>
+				<artifactId>javafx-controls</artifactId>
+				<version>${javafx.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.openjfx</groupId>
+				<artifactId>javafx-fxml</artifactId>
+				<version>${javafx.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.openjfx</groupId>
+				<artifactId>javafx-swing</artifactId>
+				<version>${javafx.version}</version>
+			</dependency>
 
-            <!--
+			<!--
               Windows-specific JavaFX JARs that contain the native DLLs
               (glass.dll, prism_d3d.dll, javafx_font.dll, …).
               Declaring them as regular dependencies causes the Shade plugin
@@ -92,208 +92,233 @@
               JavaFX on the module path.
               Change classifier to "linux" or "mac" for other platforms.
             -->
-            <dependency>
-                <groupId>org.openjfx</groupId>
-                <artifactId>javafx-base</artifactId>
-                <version>${javafx.version}</version>
-                <classifier>win</classifier>
-            </dependency>
-            <dependency>
-                <groupId>org.openjfx</groupId>
-                <artifactId>javafx-graphics</artifactId>
-                <version>${javafx.version}</version>
-                <classifier>win</classifier>
-            </dependency>
-            <dependency>
-                <groupId>org.openjfx</groupId>
-                <artifactId>javafx-controls</artifactId>
-                <version>${javafx.version}</version>
-                <classifier>win</classifier>
-            </dependency>
-            <dependency>
-                <groupId>org.openjfx</groupId>
-                <artifactId>javafx-fxml</artifactId>
-                <version>${javafx.version}</version>
-                <classifier>win</classifier>
-            </dependency>
-            <dependency>
-                <groupId>org.openjfx</groupId>
-                <artifactId>javafx-swing</artifactId>
-                <version>${javafx.version}</version>
-                <classifier>win</classifier>
-            </dependency>
+			<dependency>
+				<groupId>org.openjfx</groupId>
+				<artifactId>javafx-base</artifactId>
+				<version>${javafx.version}</version>
+				<classifier>win</classifier>
+			</dependency>
+			<dependency>
+				<groupId>org.openjfx</groupId>
+				<artifactId>javafx-graphics</artifactId>
+				<version>${javafx.version}</version>
+				<classifier>win</classifier>
+			</dependency>
+			<dependency>
+				<groupId>org.openjfx</groupId>
+				<artifactId>javafx-controls</artifactId>
+				<version>${javafx.version}</version>
+				<classifier>win</classifier>
+			</dependency>
+			<dependency>
+				<groupId>org.openjfx</groupId>
+				<artifactId>javafx-fxml</artifactId>
+				<version>${javafx.version}</version>
+				<classifier>win</classifier>
+			</dependency>
+			<dependency>
+				<groupId>org.openjfx</groupId>
+				<artifactId>javafx-swing</artifactId>
+				<version>${javafx.version}</version>
+				<classifier>win</classifier>
+			</dependency>
 
-            <!-- JAXB (Jakarta XML Binding) -->
-            <dependency>
-                <groupId>jakarta.xml.bind</groupId>
-                <artifactId>jakarta.xml.bind-api</artifactId>
-                <version>${jaxb.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.glassfish.jaxb</groupId>
-                <artifactId>jaxb-runtime</artifactId>
-                <version>${jaxb.runtime.version}</version>
-            </dependency>
+			<!-- JAXB (Jakarta XML Binding) -->
+			<dependency>
+				<groupId>jakarta.xml.bind</groupId>
+				<artifactId>jakarta.xml.bind-api</artifactId>
+				<version>${jaxb.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.glassfish.jaxb</groupId>
+				<artifactId>jaxb-runtime</artifactId>
+				<version>${jaxb.runtime.version}</version>
+			</dependency>
 
-            <!-- JSON-B API -->
-            <dependency>
-                <groupId>jakarta.json.bind</groupId>
-                <artifactId>jakarta.json.bind-api</artifactId>
-                <version>${jsonb.api.version}</version>
-            </dependency>
-            <!-- JSON-P API -->
-            <dependency>
-                <groupId>jakarta.json</groupId>
-                <artifactId>jakarta.json-api</artifactId>
-                <version>${jsonp.api.version}</version>
-            </dependency>
-            <!-- Eclipse Yasson (JSON-B implementation) -->
-            <dependency>
-                <groupId>org.eclipse</groupId>
-                <artifactId>yasson</artifactId>
-                <version>${yasson.version}</version>
-            </dependency>
-            <!-- Eclipse Parsson (JSON-P implementation) -->
-            <dependency>
-                <groupId>org.eclipse.parsson</groupId>
-                <artifactId>parsson</artifactId>
-                <version>${parsson.version}</version>
-            </dependency>
+			<!-- JSON-B API -->
+			<dependency>
+				<groupId>jakarta.json.bind</groupId>
+				<artifactId>jakarta.json.bind-api</artifactId>
+				<version>${jsonb.api.version}</version>
+			</dependency>
+			<!-- JSON-P API -->
+			<dependency>
+				<groupId>jakarta.json</groupId>
+				<artifactId>jakarta.json-api</artifactId>
+				<version>${jsonp.api.version}</version>
+			</dependency>
+			<!-- Eclipse Yasson (JSON-B implementation) -->
+			<dependency>
+				<groupId>org.eclipse</groupId>
+				<artifactId>yasson</artifactId>
+				<version>${yasson.version}</version>
+			</dependency>
+			<!-- Eclipse Parsson (JSON-P implementation) -->
+			<dependency>
+				<groupId>org.eclipse.parsson</groupId>
+				<artifactId>parsson</artifactId>
+				<version>${parsson.version}</version>
+			</dependency>
 
-            <!-- Jsoup (HTML parsing) -->
-            <dependency>
-                <groupId>org.jsoup</groupId>
-                <artifactId>jsoup</artifactId>
-                <version>${jsoup.version}</version>
-            </dependency>
+			<!-- Jsoup (HTML parsing) -->
+			<dependency>
+				<groupId>org.jsoup</groupId>
+				<artifactId>jsoup</artifactId>
+				<version>${jsoup.version}</version>
+			</dependency>
 
-            <!-- Tess4J (OCR via Tesseract) -->
-            <dependency>
-                <groupId>net.sourceforge.tess4j</groupId>
-                <artifactId>tess4j</artifactId>
-                <version>${tess4j.version}</version>
-            </dependency>
+			<!-- Tess4J (OCR via Tesseract) -->
+			<dependency>
+				<groupId>net.sourceforge.tess4j</groupId>
+				<artifactId>tess4j</artifactId>
+				<version>${tess4j.version}</version>
+			</dependency>
 
-            <!-- JNativeHook (global keyboard/mouse hooks) -->
-            <dependency>
-                <groupId>com.github.kwhat</groupId>
-                <artifactId>jnativehook</artifactId>
-                <version>${jnativehook.version}</version>
-            </dependency>
+			<!-- JNativeHook (global keyboard/mouse hooks) -->
+			<dependency>
+				<groupId>com.github.kwhat</groupId>
+				<artifactId>jnativehook</artifactId>
+				<version>${jnativehook.version}</version>
+			</dependency>
 
-            <!-- SLF4J API -->
-            <dependency>
-                <groupId>org.slf4j</groupId>
-                <artifactId>slf4j-api</artifactId>
-                <version>${slf4j.version}</version>
-            </dependency>
-            <!-- Log4J2 core + API -->
-            <dependency>
-                <groupId>org.apache.logging.log4j</groupId>
-                <artifactId>log4j-api</artifactId>
-                <version>${log4j.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.logging.log4j</groupId>
-                <artifactId>log4j-core</artifactId>
-                <version>${log4j.version}</version>
-            </dependency>
-            <!-- SLF4J -> Log4J2 bridge -->
-            <dependency>
-                <groupId>org.apache.logging.log4j</groupId>
-                <artifactId>log4j-slf4j2-impl</artifactId>
-                <version>${log4j.version}</version>
-            </dependency>
+			<!-- SLF4J API -->
+			<dependency>
+				<groupId>org.slf4j</groupId>
+				<artifactId>slf4j-api</artifactId>
+				<version>${slf4j.version}</version>
+			</dependency>
+			<!-- Log4J2 core + API -->
+			<dependency>
+				<groupId>org.apache.logging.log4j</groupId>
+				<artifactId>log4j-api</artifactId>
+				<version>${log4j.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.apache.logging.log4j</groupId>
+				<artifactId>log4j-core</artifactId>
+				<version>${log4j.version}</version>
+			</dependency>
+			<!-- SLF4J -> Log4J2 bridge -->
+			<dependency>
+				<groupId>org.apache.logging.log4j</groupId>
+				<artifactId>log4j-slf4j2-impl</artifactId>
+				<version>${log4j.version}</version>
+			</dependency>
 
-            <!-- OBS WebSocket Java client -->
-            <dependency>
-                <groupId>io.obs-websocket.community</groupId>
-                <artifactId>client</artifactId>
-                <version>${obs.websocket.version}</version>
-            </dependency>
+			<!-- OBS WebSocket Java client -->
+			<dependency>
+				<groupId>io.obs-websocket.community</groupId>
+				<artifactId>client</artifactId>
+				<version>${obs.websocket.version}</version>
+			</dependency>
 
-            <!-- Testing -->
-            <dependency>
-                <groupId>org.junit.jupiter</groupId>
-                <artifactId>junit-jupiter</artifactId>
-                <version>${junit.version}</version>
-                <scope>test</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.mockito</groupId>
-                <artifactId>mockito-core</artifactId>
-                <version>${mockito.version}</version>
-                <scope>test</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.mockito</groupId>
-                <artifactId>mockito-junit-jupiter</artifactId>
-                <version>${mockito.version}</version>
-                <scope>test</scope>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
+			<!-- Testing -->
+			<dependency>
+				<groupId>org.junit.jupiter</groupId>
+				<artifactId>junit-jupiter</artifactId>
+				<version>${junit.version}</version>
+				<scope>test</scope>
+			</dependency>
+			<dependency>
+				<groupId>org.mockito</groupId>
+				<artifactId>mockito-core</artifactId>
+				<version>${mockito.version}</version>
+				<scope>test</scope>
+			</dependency>
+			<dependency>
+				<groupId>org.mockito</groupId>
+				<artifactId>mockito-junit-jupiter</artifactId>
+				<version>${mockito.version}</version>
+				<scope>test</scope>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
 
-    <build>
-        <pluginManagement>
-            <plugins>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-compiler-plugin</artifactId>
-                    <version>3.13.0</version>
-                    <configuration>
-                        <source>${java.version}</source>
-                        <target>${java.version}</target>
-                        <encoding>UTF-8</encoding>
-                    </configuration>
-                </plugin>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-surefire-plugin</artifactId>
-                    <version>${maven.surefire.version}</version>
-                    <configuration>
-                        <!--
+	<build>
+		<plugins>
+			<!-- Read version properties from file -->
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>properties-maven-plugin</artifactId>
+				<configuration>
+					<files>
+						<file>version.properties</file>
+					</files>
+				</configuration>
+			</plugin>
+		</plugins>
+		<pluginManagement>
+			<plugins>
+				<plugin>
+					<groupId>org.codehaus.mojo</groupId>
+					<artifactId>properties-maven-plugin</artifactId>
+					<version>1.2.1</version>
+					<executions>
+						<execution>
+							<phase>initialize</phase>
+							<goals>
+								<goal>read-project-properties</goal>
+							</goals>
+						</execution>
+					</executions>
+				</plugin>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-compiler-plugin</artifactId>
+					<version>3.13.0</version>
+					<configuration>
+						<source>${java.version}</source>
+						<target>${java.version}</target>
+						<encoding>UTF-8</encoding>
+					</configuration>
+				</plugin>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-surefire-plugin</artifactId>
+					<version>${maven.surefire.version}</version>
+					<configuration>
+						<!--
                           Byte Buddy (used by Mockito for mocking) requires this flag
                           to instrument classes compiled for Java versions newer than its
                           highest officially supported version.
                         -->
-                        <argLine>-Dnet.bytebuddy.experimental=true</argLine>
-                    </configuration>
-                </plugin>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-javadoc-plugin</artifactId>
-                    <version>${maven.javadoc.version}</version>
-                    <configuration>
-                        <source>${java.version}</source>
-                        <encoding>UTF-8</encoding>
-                        <charset>UTF-8</charset>
-                        <docencoding>UTF-8</docencoding>
-                    </configuration>
-                </plugin>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-shade-plugin</artifactId>
-                    <version>${maven.shade.version}</version>
-                    <executions>
-                        <execution>
-                            <phase>package</phase>
-                            <goals>
-                                <goal>shade</goal>
-                            </goals>
-                        </execution>
-                    </executions>
-                    <configuration>
-                        <createDependencyReducedPom>false</createDependencyReducedPom>
-                        <filters>
-                            <filter>
-                                <artifact>*:*</artifact>
-                                <excludes>
-                                    <!-- Drop JAR signatures that become invalid after repackaging -->
-                                    <exclude>META-INF/*.SF</exclude>
-                                    <exclude>META-INF/*.DSA</exclude>
-                                    <exclude>META-INF/*.RSA</exclude>
-                                    <!--
+						<argLine>-Dnet.bytebuddy.experimental=true</argLine>
+					</configuration>
+				</plugin>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-javadoc-plugin</artifactId>
+					<version>${maven.javadoc.version}</version>
+					<configuration>
+						<source>${java.version}</source>
+						<encoding>UTF-8</encoding>
+						<charset>UTF-8</charset>
+						<docencoding>UTF-8</docencoding>
+					</configuration>
+				</plugin>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-shade-plugin</artifactId>
+					<version>${maven.shade.version}</version>
+					<executions>
+						<execution>
+							<phase>package</phase>
+							<goals>
+								<goal>shade</goal>
+							</goals>
+						</execution>
+					</executions>
+					<configuration>
+						<createDependencyReducedPom>false</createDependencyReducedPom>
+						<filters>
+							<filter>
+								<artifact>*:*</artifact>
+								<excludes>
+									<!-- Drop JAR signatures that become invalid after repackaging -->
+									<exclude>META-INF/*.SF</exclude>
+									<exclude>META-INF/*.DSA</exclude>
+									<exclude>META-INF/*.RSA</exclude>
+									<!--
                                       Drop module descriptors from every dependency JAR.
                                       JavaFX win-classifier JARs are proper Java modules; keeping
                                       their module-info.class in the fat JAR triggers a split-package
@@ -302,13 +327,13 @@
                                       allowing JavaFX's NativeLibLoader to extract the embedded DLLs
                                       at runtime without any module-path configuration.
                                     -->
-                                    <exclude>module-info.class</exclude>
-                                </excludes>
-                            </filter>
-                        </filters>
-                    </configuration>
-                </plugin>
-                <!--
+									<exclude>module-info.class</exclude>
+								</excludes>
+							</filter>
+						</filters>
+					</configuration>
+				</plugin>
+				<!--
                   jpackage: creates a self-contained app-image (EXE + bundled JRE).
                   No execution is declared here by default — the execution is only
                   added in the "native" profile (see below).  Shared configuration
@@ -318,61 +343,63 @@
                   dependencies), so JavaFX's NativeLibLoader extracts and loads them at
                   runtime without any module-path configuration.
                 -->
-                <plugin>
-                    <groupId>org.panteleyev</groupId>
-                    <artifactId>jpackage-maven-plugin</artifactId>
-                    <version>${jpackage.plugin.version}</version>
-                    <configuration>
-                        <type>APP_IMAGE</type>
-                        <destination>${project.build.directory}/jpackage</destination>
-                        <input>${project.build.directory}</input>
-                    </configuration>
-                </plugin>
-            </plugins>
-        </pluginManagement>
-    </build>
+				<plugin>
+					<groupId>org.panteleyev</groupId>
+					<artifactId>jpackage-maven-plugin</artifactId>
+					<version>${jpackage.plugin.version}</version>
+					<configuration>
+						<type>APP_IMAGE</type>
+						<destination>${project.build.directory}/jpackage</destination>
+						<input>${project.build.directory}</input>
+					</configuration>
+				</plugin>
+			</plugins>
+		</pluginManagement>
+	</build>
 
-    <profiles>
-        <!--
-          native profile: runs JPackage for all 5 app modules and assembles
-          the distribution ZIP.
-
-          Usage:
-            mvn package -Pnative          (from the project root)
-            mvn package -Pnative -DskipTests
-
-          Default build (no profile) compiles, tests, and produces fat JARs only.
-        -->
-        <profile>
-            <id>native</id>
-            <modules>
-                <!-- must be last: depends on all 5 app modules JPackage output -->
-                <module>sdvx-helper-dist</module>
-            </modules>
-            <build>
-                <pluginManagement>
-                    <plugins>
-                        <!--
+	<profiles>
+		<profile>
+			<id>dist</id>
+			<modules>
+				<module>sdvx-helper-dist</module>
+			</modules>
+			<build>
+				<pluginManagement>
+					<plugins>
+						<!--
                           Re-add the jpackage execution so it is bound to the
                           package phase in all 5 app modules when this profile is active.
                         -->
-                        <plugin>
-                            <groupId>org.panteleyev</groupId>
-                            <artifactId>jpackage-maven-plugin</artifactId>
-                            <version>${jpackage.plugin.version}</version>
-                            <executions>
-                                <execution>
-                                    <id>jpackage-app-image</id>
-                                    <phase>package</phase>
-                                    <goals>
-                                        <goal>jpackage</goal>
-                                    </goals>
-                                </execution>
-                            </executions>
-                        </plugin>
-                    </plugins>
-                </pluginManagement>
-            </build>
-        </profile>
-    </profiles>
+						<plugin>
+							<groupId>org.panteleyev</groupId>
+							<artifactId>jpackage-maven-plugin</artifactId>
+							<version>${jpackage.plugin.version}</version>
+							<executions>
+								<execution>
+									<id>jpackage-app-image</id>
+									<phase>package</phase>
+									<goals>
+										<goal>jpackage</goal>
+									</goals>
+								</execution>
+							</executions>
+						</plugin>
+						<plugin>
+							<groupId>org.apache.maven.plugins</groupId>
+							<artifactId>maven-antrun-plugin</artifactId>
+							<version>3.1.0</version>
+							<executions>
+								<execution>
+									<goals>
+										<goal>run</goal>
+									</goals>
+									<phase>verify</phase>
+								</execution>
+							</executions>
+						</plugin>
+					</plugins>
+				</pluginManagement>
+			</build>
+		</profile>
+	</profiles>
 </project>

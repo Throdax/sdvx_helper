@@ -22,7 +22,7 @@ import java.util.List;
  * </PlayLog>
  * }</pre>
  *
- * @author sdvx-helper
+ * @author Throdax
  * @since 2.0.0
  */
 @XmlRootElement(name = "PlayLog")
