@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Generates the OBS overlay XML files consumed by OBS browser sources.
@@ -163,7 +164,7 @@ public class XmlExportService {
     // -------------------------------------------------------------------------
 
     private static String formatVf(int vfInt) {
-        return String.format("%.1f", vfInt / 10.0);
+        return String.format(Locale.ROOT, "%.1f", vfInt / 10.0);
     }
 
     private static String xmlEsc(String s) {

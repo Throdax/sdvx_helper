@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.sdvxhelper</groupId>
+        <artifactId>sdvx-helper-parent</artifactId>
+        <version>2.0.0</version>
+    </parent>
+
+    <artifactId>sdvx-helper-dist</artifactId>
+    <packaging>pom</packaging>
+
+    <name>SDVX Helper Distribution</name>
+    <description>
+        Assembles the full distribution ZIP (sdvx_helper_en_all.zip) containing
+        the JPackage app-images for all 5 tools together with shared resources.
+        Java equivalent of the packaging section in python/build.cmd.
+    </description>
+
+    <!--
+      These dependencies are declared solely to enforce reactor build order:
+      Maven will build all 5 app modules (and their JPackage output) before
+      this module runs the assembly plugin.
+      They carry no transitive classpath meaning for this pom-packaged module.
+    -->
+    <dependencies>
+        <dependency>
+            <groupId>com.sdvxhelper</groupId>
+            <artifactId>sdvx-helper-app</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.sdvxhelper</groupId>
+            <artifactId>score-viewer-app</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.sdvxhelper</groupId>
+            <artifactId>ocr-reporter-app</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.sdvxhelper</groupId>
+            <artifactId>play-log-sync-app</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.sdvxhelper</groupId>
+            <artifactId>updater-app</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>provided</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <!--
+              Maven Assembly Plugin: collects the JPackage app-images and shared
+              resources into a single distribution ZIP.
+
+              Run with:  mvn package  (from project root, or from this module)
+              Output:    sdvx-helper-dist/target/sdvx_helper_en_all.zip
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <version>${maven.assembly.version}</version>
+                <executions>
+                    <execution>
+                        <id>make-dist-zip</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                        <configuration>
+                            <descriptors>
+                                <descriptor>src/assembly/dist.xml</descriptor>
+                            </descriptors>
+                            <!--
+                              Human-friendly output name, matching the Python build:
+                                sdvx_helper_en_all.zip
+                              appendAssemblyId=false suppresses the "-dist" suffix.
+                            -->
+                            <finalName>sdvx_helper_en_all</finalName>
+                            <appendAssemblyId>false</appendAssemblyId>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!--
+              Skip the default Maven JAR plugin behaviour (this is a pom module;
+              there is nothing to compile).
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.4.2</version>
+                <executions>
+                    <execution>
+                        <id>default-jar</id>
+                        <phase>none</phase>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>

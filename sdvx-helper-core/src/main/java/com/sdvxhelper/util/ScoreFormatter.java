@@ -1,5 +1,7 @@
 package com.sdvxhelper.util;
 
+import java.util.Locale;
+
 /**
  * Formatting helpers for score-related display strings.
  *
@@ -22,7 +24,7 @@ public final class ScoreFormatter {
      * @return formatted score string
      */
     public static String formatScore(int score) {
-        return String.format("%,d", score);
+        return String.format(Locale.ROOT, "%,d", score);
     }
 
     /**
@@ -33,7 +35,7 @@ public final class ScoreFormatter {
      * @return formatted VF string
      */
     public static String formatVf(int vfInt) {
-        return String.format("%.1f", vfInt / 10.0);
+        return String.format(Locale.ROOT, "%.1f", vfInt / 10.0);
     }
 
     /**
@@ -44,7 +46,7 @@ public final class ScoreFormatter {
      * @return formatted total-VF string
      */
     public static String formatTotalVf(int totalVfInt) {
-        return String.format("%.3f", totalVfInt / 1000.0);
+        return String.format(Locale.ROOT, "%.3f", totalVfInt / 1000.0);
     }
 
     /**
@@ -55,7 +57,7 @@ public final class ScoreFormatter {
      * @return signed, comma-separated string
      */
     public static String formatDiff(int diff) {
-        return String.format("%+,d", diff);
+        return String.format(Locale.ROOT, "%+,d", diff);
     }
 
     /**

@@ -96,7 +96,7 @@
 
         <!-- OBS WebSocket -->
         <dependency>
-            <groupId>io.obswebsocket.community</groupId>
+            <groupId>io.obs-websocket.community</groupId>
             <artifactId>client</artifactId>
         </dependency>
 

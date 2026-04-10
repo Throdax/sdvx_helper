@@ -18,9 +18,9 @@ class VolforceCalculatorTest {
 
     @Test
     void pucSRankLevel20GivesExpectedVf() {
-        // 20 * 9_900_000 * 1.05 * 1.10 * 20 / 10_000_000 = 456.456 -> 456
+        // 20 * 9_900_000 * 1.05 (S coef) * 1.10 (PUC coef) * 20 / 10_000_000 = 457.38 -> 457
         int vf = VolforceCalculator.computeSingleVf(9_900_000, "puc", 20);
-        Assertions.assertEquals(456, vf);
+        Assertions.assertEquals(457, vf);
     }
 
     @Test

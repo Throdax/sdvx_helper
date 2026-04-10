@@ -35,7 +35,9 @@ class SdvxLoggerServiceTest {
     void setUp() {
         PlayLog emptyLog = new PlayLog();
         Mockito.when(playLogRepo.load()).thenReturn(emptyLog);
-        Mockito.when(musicListRepo.findSongInfo(ArgumentMatchers.any())).thenReturn(null);
+        // This stub is not needed by every test (e.g. popOnEmptyLogReturnsNull never
+        // calls pushPlay), so it is declared lenient to avoid UnnecessaryStubbingException.
+        Mockito.lenient().when(musicListRepo.findSongInfo(ArgumentMatchers.any())).thenReturn(null);
         service = new SdvxLoggerService(playLogRepo, musicListRepo);
     }
 

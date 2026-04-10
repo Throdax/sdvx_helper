@@ -1,0 +1,278 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Assembly descriptor for the SDVX Helper full distribution ZIP.
+
+  Produces:  sdvx_helper_en_all.zip
+
+  ZIP layout (mirrors the Python build.cmd output):
+
+    sdvx_helper.exe     – main tool launcher   (runs from ZIP root)
+    manage_score.exe    – score viewer launcher (runs from ZIP root)
+    ocr_reporter.exe    – OCR reporter launcher (runs from ZIP root)
+    play_log_sync.exe   – play-log sync launcher(runs from ZIP root)
+    update.exe          – self-updater launcher (runs from ZIP root)
+
+    version.properties  – per-tool version strings
+
+    runtime/            – shared bundled JRE (all 5 EXEs look for runtime/
+                          relative to themselves, i.e. here at ZIP root)
+    app/                – JAR files + jpackage launcher configs (one per tool);
+                          EXEs resolve $APPDIR as app/ relative to themselves
+
+    resources/          – shared data and detection resources
+      alllog.xml            play history (Java XML equivalent of alllog.pkl)
+      musiclist.xml         song database (Java XML equivalent of musiclist.pkl)
+      title_conv_table.xml  title mapping  (Java XML equiv of title_conv_table.pkl)
+      special_titles.json   user-editable title-normalisation rules
+      params.json           OCR detection parameters
+      blastermax.wav        audio alert
+      i18n/                 localisation bundles
+      images/               all image templates (score digits, lamps, overlays …)
+
+    out/                – empty; application writes OBS overlay files here
+    log/                – empty; application writes rotating log files here
+-->
+<assembly xmlns="http://maven.apache.org/ASSEMBLY/2.2.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/ASSEMBLY/2.2.0
+                              https://maven.apache.org/xsd/assembly-2.2.0.xsd">
+
+    <id>dist</id>
+
+    <formats>
+        <format>zip</format>
+    </formats>
+
+    <!--
+      No wrapping base directory: contents land at the root of the ZIP,
+      matching the Python build (extract → double-click sdvx_helper.exe).
+    -->
+    <includeBaseDirectory>false</includeBaseDirectory>
+
+    <fileSets>
+
+        <!-- ================================================================
+             Launcher EXEs at ZIP root.
+
+             JPackage EXEs locate resources relative to the directory that
+             contains the EXE itself.  Placing all five EXEs here and
+             supplying a single shared runtime/ + app/ at the same level is
+             sufficient — no per-app sub-directories required.
+             ================================================================ -->
+
+        <fileSet>
+            <directory>../sdvx-helper-app/target/jpackage/sdvx_helper</directory>
+            <outputDirectory>.</outputDirectory>
+            <includes>
+                <include>*.exe</include>
+            </includes>
+            <fileMode>0755</fileMode>
+        </fileSet>
+
+        <fileSet>
+            <directory>../score-viewer-app/target/jpackage/manage_score</directory>
+            <outputDirectory>.</outputDirectory>
+            <includes>
+                <include>*.exe</include>
+            </includes>
+            <fileMode>0755</fileMode>
+        </fileSet>
+
+        <fileSet>
+            <directory>../ocr-reporter-app/target/jpackage/ocr_reporter</directory>
+            <outputDirectory>.</outputDirectory>
+            <includes>
+                <include>*.exe</include>
+            </includes>
+            <fileMode>0755</fileMode>
+        </fileSet>
+
+        <fileSet>
+            <directory>../play-log-sync-app/target/jpackage/play_log_sync</directory>
+            <outputDirectory>.</outputDirectory>
+            <includes>
+                <include>*.exe</include>
+            </includes>
+            <fileMode>0755</fileMode>
+        </fileSet>
+
+        <fileSet>
+            <directory>../updater-app/target/jpackage/update</directory>
+            <outputDirectory>.</outputDirectory>
+            <includes>
+                <include>*.exe</include>
+            </includes>
+            <fileMode>0755</fileMode>
+        </fileSet>
+
+        <!-- ================================================================
+             Shared JRE (runtime/).
+
+             All five apps are built against the same JDK with the same set
+             of jlink modules, so one copy of the runtime satisfies all EXEs.
+             Sourced from the main app-image; the directory is copied verbatim.
+             ================================================================ -->
+
+        <fileSet>
+            <directory>../sdvx-helper-app/target/jpackage/sdvx_helper/runtime</directory>
+            <outputDirectory>runtime</outputDirectory>
+            <fileMode>0755</fileMode>
+        </fileSet>
+
+        <!-- ================================================================
+             Per-app launcher configs and uber JARs → app/.
+
+             Each EXE resolves $APPDIR as app/ relative to itself (ZIP root),
+             so all cfg + jar files share one app/ directory.
+
+             Only *.cfg and *.jar files are included; Maven build artefacts
+             (classes/, generated-sources/, maven-archiver/, maven-status/,
+             .jpackage.xml) are excluded implicitly because they do not match
+             the include patterns.
+             ================================================================ -->
+
+        <fileSet>
+            <directory>../sdvx-helper-app/target/jpackage/sdvx_helper/app</directory>
+            <outputDirectory>app</outputDirectory>
+            <includes>
+                <include>*.cfg</include>
+                <include>*.jar</include>
+            </includes>
+        </fileSet>
+
+        <fileSet>
+            <directory>../score-viewer-app/target/jpackage/manage_score/app</directory>
+            <outputDirectory>app</outputDirectory>
+            <includes>
+                <include>*.cfg</include>
+                <include>*.jar</include>
+            </includes>
+        </fileSet>
+
+        <fileSet>
+            <directory>../ocr-reporter-app/target/jpackage/ocr_reporter/app</directory>
+            <outputDirectory>app</outputDirectory>
+            <includes>
+                <include>*.cfg</include>
+                <include>*.jar</include>
+            </includes>
+        </fileSet>
+
+        <fileSet>
+            <directory>../play-log-sync-app/target/jpackage/play_log_sync/app</directory>
+            <outputDirectory>app</outputDirectory>
+            <includes>
+                <include>*.cfg</include>
+                <include>*.jar</include>
+            </includes>
+        </fileSet>
+
+        <fileSet>
+            <directory>../updater-app/target/jpackage/update/app</directory>
+            <outputDirectory>app</outputDirectory>
+            <includes>
+                <include>*.cfg</include>
+                <include>*.jar</include>
+            </includes>
+        </fileSet>
+
+        <!-- ================================================================
+             Root-level configuration files.
+             ================================================================ -->
+
+        <!-- version.properties: per-tool version strings, equivalent to the
+             Python build's version.properties at the ZIP root. -->
+        <fileSet>
+            <directory>src/assembly</directory>
+            <outputDirectory>.</outputDirectory>
+            <includes>
+                <include>version.properties</include>
+            </includes>
+        </fileSet>
+
+        <!-- special_titles.json in resources/ so users can edit it easily. -->
+        <fileSet>
+            <directory>../sdvx-helper-core/src/main/resources</directory>
+            <outputDirectory>resources</outputDirectory>
+            <includes>
+                <include>special_titles.json</include>
+            </includes>
+        </fileSet>
+
+        <!-- ================================================================
+             Shared resources → resources/
+
+             Mirrors the python/resources/ folder in the Python distribution:
+               alllog.xml / musiclist.xml / title_conv_table.xml
+                   Java XML equivalents of the Python PKL data files.
+               params.json
+                   OCR detection parameters (sourced from python/resources/).
+               blastermax.wav
+                   Audio alert (sourced from python/resources/).
+               i18n/
+                   Localisation property files (sourced from python/resources/).
+               images/
+                   All image templates: score digits, lamps, overlays, etc.
+                   Sourced from sdvx-helper-core/src/main/resources/images/.
+             ================================================================ -->
+
+        <!-- Migrated XML data files (Java equivalents of the Python PKL files). -->
+        <fileSet>
+            <directory>../sdvx-helper-core/src/main/resources</directory>
+            <outputDirectory>resources</outputDirectory>
+            <includes>
+                <include>alllog.xml</include>
+                <include>musiclist.xml</include>
+                <include>title_conv_table.xml</include>
+            </includes>
+        </fileSet>
+
+        <!-- Detection parameters and audio alert from Python resources. -->
+        <fileSet>
+            <directory>../python/resources</directory>
+            <outputDirectory>resources</outputDirectory>
+            <includes>
+                <include>params.json</include>
+                <include>blastermax.wav</include>
+            </includes>
+        </fileSet>
+
+        <!-- Localisation bundles from the Java core module. -->
+        <fileSet>
+            <directory>../sdvx-helper-core/src/main/resources/i18n</directory>
+            <outputDirectory>resources/i18n</outputDirectory>
+        </fileSet>
+
+        <!-- Full image template set from the Java core module.
+             Includes all lamp, rank, overlay and score-digit images needed
+             by every tool at runtime. -->
+        <fileSet>
+            <directory>../sdvx-helper-core/src/main/resources/images</directory>
+            <outputDirectory>resources/images</outputDirectory>
+        </fileSet>
+
+        <!-- ================================================================
+             Empty output directories.
+             .gitkeep files are excluded so the directories appear empty in
+             the ZIP; the application creates files here at runtime.
+             ================================================================ -->
+
+        <fileSet>
+            <directory>src/assembly/placeholder/out</directory>
+            <outputDirectory>out</outputDirectory>
+            <excludes>
+                <exclude>.gitkeep</exclude>
+            </excludes>
+        </fileSet>
+
+        <fileSet>
+            <directory>src/assembly/placeholder/log</directory>
+            <outputDirectory>log</outputDirectory>
+            <excludes>
+                <exclude>.gitkeep</exclude>
+            </excludes>
+        </fileSet>
+
+    </fileSets>
+
+</assembly>

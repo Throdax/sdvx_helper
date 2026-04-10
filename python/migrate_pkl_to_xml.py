@@ -101,16 +101,23 @@ def migrate_musiclist(pkl_path: str, out_path: str) -> None:
     _add_hash_groups('jacketShaGroup', 'jacket_sha')
 
     # Titles
+    # Real structure in musiclist.pkl: [title(dup), artist, bpm, lvNov, lvAdv, lvExh, lvAppend]
+    # Index 0 is a duplicate of the dict key and must be skipped.
+    TITLE_FIELDS = [
+        (1, 'artist'),
+        (2, 'bpm'),
+        (3, 'lvNov'),
+        (4, 'lvAdv'),
+        (5, 'lvExh'),
+        (6, 'lvAppend'),
+    ]
     for title, info_list in ml.get('titles', {}).items():
         song_elem = ET.SubElement(root, 'song')
         song_elem.set('title', str(title))
         info_elem = ET.SubElement(song_elem, 'info')
-        # info_list = [artist, bpm, lv_nov, lv_adv, lv_exh, lv_append?]
-        fields = ['artist', 'bpm', 'lvNov', 'lvAdv', 'lvExh', 'lvAppend']
-        for i, field in enumerate(fields):
-            val = info_list[i] if i < len(info_list) else None
-            if val is not None:
-                info_elem.set(field, str(val))
+        for idx, field in TITLE_FIELDS:
+            if idx < len(info_list) and info_list[idx] is not None:
+                info_elem.set(field, str(info_list[idx]))
 
     # GradeS tables
     for key in ('gradeS_lv17', 'gradeS_lv18', 'gradeS_lv19'):
@@ -195,11 +202,11 @@ def main():
     sys.path.insert(0, os.path.dirname(__file__) or '.')
 
     migrate_alllog(
-        pkl_path='alllog.pkl',
+        pkl_path=os.path.join('resources', 'alllog.pkl'),
         out_path=os.path.join(out_dir, 'alllog.xml')
     )
     migrate_musiclist(
-        pkl_path='musiclist.pkl',
+        pkl_path=os.path.join('resources', 'musiclist.pkl'),
         out_path=os.path.join(out_dir, 'musiclist.xml')
     )
     migrate_rival_log(

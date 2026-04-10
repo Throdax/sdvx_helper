@@ -48,9 +48,10 @@ class StatsTest {
     @Test
     void averageScoreComputedCorrectly() {
         OneLevelStat lvStat = new OneLevelStat(20);
-        MusicInfo m1 = makeInfo("20", 9_000_000, "clear");
+        // Use distinct titles so each read() produces a different scores-map key.
+        MusicInfo m1 = new MusicInfo("SongA", "A", "180", "exh", "20", 9_000_000, "clear", "", "", "");
         m1.setRank(ScoreRank.fromScore(9_000_000));
-        MusicInfo m2 = makeInfo("20", 8_000_000, "clear");
+        MusicInfo m2 = new MusicInfo("SongB", "A", "180", "exh", "20", 8_000_000, "clear", "", "", "");
         m2.setRank(ScoreRank.fromScore(8_000_000));
         lvStat.read(m1);
         lvStat.read(m2);

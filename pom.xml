@@ -19,6 +19,8 @@
         <module>ocr-reporter-app</module>
         <module>play-log-sync-app</module>
         <module>updater-app</module>
+        <!-- must be last: depends on all 5 app modules to guarantee build order -->
+        <module>sdvx-helper-dist</module>
     </modules>
 
     <properties>
@@ -48,6 +50,7 @@
         <jpackage.plugin.version>1.6.5</jpackage.plugin.version>
         <maven.surefire.version>3.5.2</maven.surefire.version>
         <maven.javadoc.version>3.11.2</maven.javadoc.version>
+        <maven.assembly.version>3.7.1</maven.assembly.version>
     </properties>
 
     <dependencyManagement>
@@ -160,7 +163,7 @@
 
             <!-- OBS WebSocket Java client -->
             <dependency>
-                <groupId>io.obswebsocket.community</groupId>
+                <groupId>io.obs-websocket.community</groupId>
                 <artifactId>client</artifactId>
                 <version>${obs.websocket.version}</version>
             </dependency>
@@ -204,6 +207,14 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-surefire-plugin</artifactId>
                     <version>${maven.surefire.version}</version>
+                    <configuration>
+                        <!--
+                          Byte Buddy (used by Mockito for mocking) requires this flag
+                          to instrument classes compiled for Java versions newer than its
+                          highest officially supported version.
+                        -->
+                        <argLine>-Dnet.bytebuddy.experimental=true</argLine>
+                    </configuration>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
