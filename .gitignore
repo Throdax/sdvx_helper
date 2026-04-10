@@ -31,3 +31,8 @@ target/
 *.iml
 .classpath
 .factorypath
+.vscode
+__pycache__
+.classpath
+.project
+.settings/
