@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import java.lang.String?>
+<?import javafx.geometry.Insets?>
 <?import javafx.scene.control.*?>
-<?import javafx.scene.layout.*?>
 <?import javafx.scene.image.*?>
+<?import javafx.scene.layout.*?>
 
 <BorderPane xmlns="http://javafx.com/javafx"
             xmlns:fx="http://javafx.com/fxml"
@@ -10,32 +12,39 @@
             prefWidth="900" prefHeight="600">
 
     <top>
-        <HBox spacing="12" style="-fx-padding: 8; -fx-background-color: #161b22;">
-            <Button text="Open Image Folder" fx:id="btnOpenFolder" onAction="#onOpenFolder"/>
-            <Button text="Previous"          fx:id="btnPrev"       onAction="#onPrev" disable="true"/>
-            <Button text="Next"              fx:id="btnNext"       onAction="#onNext" disable="true"/>
-            <Label fx:id="lblImageCount" text="0 / 0" style="-fx-text-fill: #8b949e;"/>
-        </HBox>
+        <VBox>
+            <HBox spacing="12" styleClass="toolbar-bar" alignment="CENTER_LEFT">
+                <Button text="%button.ocr.open.folder" fx:id="btnOpenFolder" onAction="#onOpenFolder"/>
+                <Button text="%button.ocr.prev"        fx:id="btnPrev"       onAction="#onPrev" disable="true"/>
+                <Button text="%button.ocr.next"        fx:id="btnNext"       onAction="#onNext" disable="true"/>
+                <Label fx:id="lblImageCount" text="0 / 0" styleClass="muted"/>
+                <Region HBox.hgrow="ALWAYS"/>
+                <Label text="%label.language" styleClass="muted"/>
+                <ComboBox fx:id="cmbLanguage" styleClass="lang-combo"/>
+            </HBox>
+        </VBox>
     </top>
 
     <center>
         <SplitPane dividerPositions="0.55">
             <!-- Left: image preview -->
-            <VBox spacing="8" style="-fx-padding: 12; -fx-background-color: #0d1117;">
-                <Label text="Screenshot Preview" style="-fx-text-fill: #58a6ff; -fx-font-size: 13;"/>
+            <VBox spacing="8">
+                <padding><Insets top="12" right="12" bottom="12" left="12"/></padding>
+                <Label text="%label.ocr.preview" styleClass="sub-heading"/>
                 <ImageView fx:id="imgPreview" fitWidth="480" fitHeight="360" preserveRatio="true"/>
-                <Label text="Detected Hash:" style="-fx-text-fill: #8b949e;"/>
-                <TextField fx:id="txtHash" editable="false" style="-fx-control-inner-background: #161b22; -fx-text-fill: #4ecdc4;"/>
+                <Label text="%label.ocr.detected.hash" styleClass="muted"/>
+                <TextField fx:id="txtHash" editable="false"/>
             </VBox>
 
             <!-- Right: song matching and registration -->
-            <VBox spacing="8" style="-fx-padding: 12; -fx-background-color: #0d1117;">
-                <Label text="OCR / Song Match" style="-fx-text-fill: #58a6ff; -fx-font-size: 13;"/>
-                <Label text="OCR Title:" style="-fx-text-fill: #8b949e;"/>
-                <TextField fx:id="txtOcrTitle" style="-fx-control-inner-background: #161b22; -fx-text-fill: #e6edf3;"/>
-                <Label text="Song Title (confirmed):" style="-fx-text-fill: #8b949e;"/>
-                <TextField fx:id="txtTitle" style="-fx-control-inner-background: #161b22; -fx-text-fill: #e6edf3;"/>
-                <Label text="Difficulty:" style="-fx-text-fill: #8b949e;"/>
+            <VBox spacing="8">
+                <padding><Insets top="12" right="12" bottom="12" left="12"/></padding>
+                <Label text="OCR / Song Match" styleClass="sub-heading"/>
+                <Label text="%label.ocr.ocr.title" styleClass="muted"/>
+                <TextField fx:id="txtOcrTitle"/>
+                <Label text="%label.ocr.song.title" styleClass="muted"/>
+                <TextField fx:id="txtTitle"/>
+                <Label text="%label.ocr.difficulty" styleClass="muted"/>
                 <ComboBox fx:id="cmbDifficulty">
                     <items>
                         <javafx.collections.FXCollections fx:factory="observableArrayList">
@@ -52,14 +61,13 @@
                     </items>
                 </ComboBox>
                 <Separator/>
-                <Button text="Register Hash" fx:id="btnRegister" onAction="#onRegister"
-                        style="-fx-background-color: #238636; -fx-text-fill: white;"/>
-                <Button text="Skip (Unknown)" fx:id="btnSkip" onAction="#onSkip"
-                        style="-fx-background-color: #6e7681; -fx-text-fill: white;"/>
+                <Button text="%button.ocr.register" fx:id="btnRegister" onAction="#onRegister"
+                        styleClass="button-success"/>
+                <Button text="%button.ocr.skip" fx:id="btnSkip" onAction="#onSkip"/>
                 <Separator/>
-                <Label text="Log:" style="-fx-text-fill: #8b949e;"/>
+                <Label text="%label.ocr.log" styleClass="muted"/>
                 <TextArea fx:id="txtLog" prefRowCount="8" editable="false"
-                          style="-fx-control-inner-background: #0d1117; -fx-text-fill: #8b949e; -fx-font-family: monospace;"/>
+                          style="-fx-font-family: monospace;"/>
             </VBox>
         </SplitPane>
     </center>

@@ -1,22 +1,29 @@
 package com.sdvxhelper.ui.controller;
 
+import com.github.kwhat.jnativehook.GlobalScreen;
+import com.github.kwhat.jnativehook.NativeHookException;
+import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent;
+import com.github.kwhat.jnativehook.keyboard.NativeKeyListener;
+import com.sdvxhelper.i18n.LocaleManager;
 import com.sdvxhelper.model.MusicInfo;
 import com.sdvxhelper.model.OnePlayData;
 import com.sdvxhelper.model.enums.DetectMode;
 import com.sdvxhelper.repository.MusicListRepository;
 import com.sdvxhelper.repository.PlayLogRepository;
-import com.sdvxhelper.repository.SettingsRepository;
-import com.sdvxhelper.repository.SpecialTitlesRepository;
 import com.sdvxhelper.service.SdvxLoggerService;
-import com.sdvxhelper.service.TitleNormalizer;
 import com.sdvxhelper.util.ScoreFormatter;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
+import javafx.scene.Parent;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
@@ -27,7 +34,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URL;
-import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -36,7 +42,7 @@ import java.util.concurrent.Executors;
  * Controller for the main application window ({@code main.fxml}).
  *
  * <p>Orchestrates the detection loop, updates the UI with the current song info,
- * and handles user actions (start/stop detection, undo last play).
+ * and handles user actions (start/stop detection, undo last play, function hotkeys).
  *
  * <p>Replaces the Python {@code SDVXHelper} class in {@code sdvx_helper.pyw}.</p>
  *
@@ -64,6 +70,7 @@ public class MainController implements Initializable {
     @FXML private Label lblStatus;
     @FXML private Button btnStartStop;
     @FXML private Button btnPopPlay;
+    @FXML private Button btnF9;
     @FXML private TableView<OnePlayData> tblSessionLog;
     @FXML private TableColumn<OnePlayData, String> colLogTitle;
     @FXML private TableColumn<OnePlayData, String> colLogDiff;
@@ -71,16 +78,17 @@ public class MainController implements Initializable {
     @FXML private TableColumn<OnePlayData, String> colLogLamp;
     @FXML private TableColumn<OnePlayData, String> colLogDate;
     @FXML private TextArea txtOutput;
+    @FXML private ComboBox<String> cmbLanguage;
 
     // -------------------------------------------------------------------------
     // State
     // -------------------------------------------------------------------------
 
     private SdvxLoggerService loggerService;
-    private Map<String, Object> settings;
     private final ObservableList<OnePlayData> sessionLogData = FXCollections.observableArrayList();
     private volatile boolean detectionRunning = false;
     private ExecutorService executor;
+    private NativeKeyListener hotkeyListener;
 
     // -------------------------------------------------------------------------
     // Initializable
@@ -95,6 +103,17 @@ public class MainController implements Initializable {
         colLogLamp.setCellValueFactory(new PropertyValueFactory<>("lamp"));
         colLogDate.setCellValueFactory(new PropertyValueFactory<>("date"));
         tblSessionLog.setItems(sessionLogData);
+        tblSessionLog.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+
+        // F9 button label (no image, text only)
+        if (btnF9 != null) {
+            btnF9.setText("F9");
+        }
+
+        // Language combo
+        cmbLanguage.setItems(LocaleManager.getInstance().getAvailableLocaleCodes());
+        cmbLanguage.setValue(LocaleManager.getInstance().getCurrentCode());
+        cmbLanguage.setOnAction(e -> LocaleManager.getInstance().setLocale(cmbLanguage.getValue()));
 
         executor = Executors.newSingleThreadExecutor(r -> {
             Thread t = new Thread(r, "detection-loop");
@@ -102,7 +121,9 @@ public class MainController implements Initializable {
             return t;
         });
 
-        // Load repositories and services in background
+        registerHotkeys();
+
+        // Load repositories and services in background, then auto-start detection
         executor.submit(this::initialise);
     }
 
@@ -118,20 +139,9 @@ public class MainController implements Initializable {
     @FXML
     public void onStartStop(ActionEvent event) {
         if (detectionRunning) {
-            detectionRunning = false;
-            Platform.runLater(() -> {
-                btnStartStop.setText("Start Detection");
-                btnStartStop.setStyle("-fx-background-color: #238636; -fx-text-fill: white;");
-                setStatus("Detection stopped");
-            });
+            stopDetection();
         } else {
-            detectionRunning = true;
-            Platform.runLater(() -> {
-                btnStartStop.setText("Stop Detection");
-                btnStartStop.setStyle("-fx-background-color: #b62324; -fx-text-fill: white;");
-                setStatus("Detection running…");
-            });
-            executor.submit(this::runDetectionLoop);
+            startDetection();
         }
     }
 
@@ -142,7 +152,9 @@ public class MainController implements Initializable {
      */
     @FXML
     public void onPopPlay(ActionEvent event) {
-        if (loggerService == null) return;
+        if (loggerService == null) {
+            return;
+        }
         executor.submit(() -> {
             try {
                 OnePlayData removed = loggerService.popLastPlay();
@@ -160,59 +172,108 @@ public class MainController implements Initializable {
         });
     }
 
-    @FXML public void onSettings(ActionEvent event)     { setStatus("Settings (TODO)"); }
-    @FXML public void onObsControl(ActionEvent event)   { setStatus("OBS Control (TODO)"); }
+    /** F4: Save Volforce */
+    @FXML
+    public void onSaveVolforce(ActionEvent event) {
+        setStatus("F4: Save Volforce (TODO)");
+        log.info("Save Volforce triggered");
+    }
+
+    /** F5: Save Summary */
+    @FXML
+    public void onSaveSummary(ActionEvent event) {
+        setStatus("F5: Save Summary (TODO)");
+        log.info("Save Summary triggered");
+    }
+
+    /** F6: Save Result screenshot */
+    @FXML
+    public void onSaveResult(ActionEvent event) {
+        setStatus("F6: Save Result (TODO)");
+        log.info("Save Result triggered");
+    }
+
+    /** F7: Import score from select screen */
+    @FXML
+    public void onImportScore(ActionEvent event) {
+        setStatus("F7: Import Score (TODO)");
+        log.info("Import Score triggered");
+    }
+
+    /** F8: Update rival */
+    @FXML
+    public void onUpdateRival(ActionEvent event) {
+        setStatus("F8: Update Rival (TODO)");
+        log.info("Update Rival triggered");
+    }
+
+    /** F9: Start RTA mode */
+    @FXML
+    public void onStartRta(ActionEvent event) {
+        setStatus("F9: Start RTA Mode (TODO)");
+        log.info("Start RTA triggered");
+    }
+
+    /** Opens the Settings dialog. */
+    @FXML
+    public void onSettings(ActionEvent event) {
+        try {
+            URL fxmlUrl = getClass().getResource("/com/sdvxhelper/app/view/settings.fxml");
+            if (fxmlUrl == null) {
+                setStatus("settings.fxml not found");
+                return;
+            }
+            ResourceBundle bundle = LocaleManager.getInstance().getBundle();
+            FXMLLoader loader = new FXMLLoader(fxmlUrl, bundle);
+            Parent root = loader.load();
+            Dialog<ButtonType> dlg = new Dialog<>();
+            dlg.setTitle(bundle.getString("label.settings.title"));
+            dlg.getDialogPane().setContent(root);
+            dlg.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+            dlg.showAndWait()
+               .filter(bt -> bt == ButtonType.OK)
+               .ifPresent(bt -> ((SettingsController) loader.getController()).save());
+        } catch (IOException e) {
+            log.error("Failed to open Settings dialog", e);
+            setStatus("Error opening Settings: " + e.getMessage());
+        }
+    }
+
+    /** Opens the OBS Control dialog. */
+    @FXML
+    public void onObsControl(ActionEvent event) {
+        try {
+            URL fxmlUrl = getClass().getResource("/com/sdvxhelper/app/view/obs_control.fxml");
+            if (fxmlUrl == null) {
+                setStatus("obs_control.fxml not found");
+                return;
+            }
+            ResourceBundle bundle = LocaleManager.getInstance().getBundle();
+            FXMLLoader loader = new FXMLLoader(fxmlUrl, bundle);
+            Parent root = loader.load();
+            Dialog<ButtonType> dlg = new Dialog<>();
+            dlg.setTitle(bundle.getString("label.obs.control.title"));
+            dlg.getDialogPane().setContent(root);
+            dlg.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+            dlg.showAndWait()
+               .filter(bt -> bt == ButtonType.OK)
+               .ifPresent(bt -> ((ObsControlController) loader.getController()).save());
+        } catch (IOException e) {
+            log.error("Failed to open OBS Control dialog", e);
+            setStatus("Error opening OBS Control: " + e.getMessage());
+        }
+    }
+
     @FXML public void onGoogleDrive(ActionEvent event)  { setStatus("Google Drive (TODO)"); }
     @FXML public void onWebhooks(ActionEvent event)     { setStatus("Webhooks (TODO)"); }
     @FXML public void onExit(ActionEvent event)         { Platform.exit(); }
 
     // -------------------------------------------------------------------------
-    // Private helpers
+    // Public API (called from detection loop / app)
     // -------------------------------------------------------------------------
-
-    private void initialise() {
-        log.info("Initialising repositories and services…");
-        SettingsRepository settingsRepo = new SettingsRepository();
-        settings = settingsRepo.load();
-
-        PlayLogRepository playLogRepo = new PlayLogRepository();
-        MusicListRepository musicListRepo = new MusicListRepository();
-        loggerService = new SdvxLoggerService(playLogRepo, musicListRepo);
-
-        Platform.runLater(() -> {
-            refreshVfDisplay();
-            setStatus("Ready — " + loggerService.getPlayLog().getPlays().size() + " plays loaded");
-        });
-        log.info("Initialisation complete");
-    }
-
-    private void runDetectionLoop() {
-        log.info("Detection loop started");
-        while (detectionRunning) {
-            // TODO: Capture OBS frame, run ImageAnalysisService, push plays
-            try {
-                Thread.sleep(500);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                break;
-            }
-        }
-        log.info("Detection loop stopped");
-    }
-
-    private void refreshVfDisplay() {
-        if (loggerService == null) return;
-        lblTotalVf.setText(ScoreFormatter.formatTotalVf(loggerService.getTotalVfInt()));
-        lblPlayCount.setText(String.valueOf(loggerService.getPlayLog().getPlays().size()));
-    }
-
-    private void setStatus(String msg) {
-        lblStatus.setText(msg);
-    }
 
     /**
      * Called by the detection loop (on background thread) when a new song is detected.
-     * Marshals the UI update to the JavaFX application thread.
      *
      * @param info best-score info for the detected song/chart
      */
@@ -255,8 +316,123 @@ public class MainController implements Initializable {
      * @param line log line to append
      */
     public void appendOutput(String line) {
+        Platform.runLater(() -> txtOutput.appendText(line + "\n"));
+    }
+
+    /**
+     * Stops the detection loop and releases the JNativeHook global hotkey listener.
+     * Called by the app before a locale-triggered scene rebuild.
+     */
+    public void cleanup() {
+        detectionRunning = false;
+        if (executor != null) {
+            executor.shutdownNow();
+        }
+        unregisterHotkeys();
+    }
+
+    // -------------------------------------------------------------------------
+    // Private helpers
+    // -------------------------------------------------------------------------
+
+    private void initialise() {
+        log.info("Initialising repositories and services…");
+        PlayLogRepository playLogRepo = new PlayLogRepository();
+        MusicListRepository musicListRepo = new MusicListRepository();
+        loggerService = new SdvxLoggerService(playLogRepo, musicListRepo);
+
         Platform.runLater(() -> {
-            txtOutput.appendText(line + "\n");
+            refreshVfDisplay();
+            setStatus("Ready — " + loggerService.getPlayLog().getPlays().size() + " plays loaded");
+            startDetection();
         });
+        log.info("Initialisation complete");
+    }
+
+    private void startDetection() {
+        if (detectionRunning) {
+            return;
+        }
+        detectionRunning = true;
+        btnStartStop.setText("Stop Detection");
+        btnStartStop.getStyleClass().removeAll("button-success");
+        btnStartStop.getStyleClass().add("button-danger");
+        setStatus("Detection running…");
+        executor.submit(this::runDetectionLoop);
+    }
+
+    private void stopDetection() {
+        detectionRunning = false;
+        btnStartStop.setText("Start Detection");
+        btnStartStop.getStyleClass().removeAll("button-danger");
+        btnStartStop.getStyleClass().add("button-success");
+        setStatus("Detection stopped");
+    }
+
+    private void runDetectionLoop() {
+        log.info("Detection loop started");
+        while (detectionRunning) {
+            // TODO: Capture OBS frame, run ImageAnalysisService, push plays
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
+            }
+        }
+        log.info("Detection loop stopped");
+    }
+
+    private void refreshVfDisplay() {
+        if (loggerService == null) {
+            return;
+        }
+        lblTotalVf.setText(ScoreFormatter.formatTotalVf(loggerService.getTotalVfInt()));
+        lblPlayCount.setText(String.valueOf(loggerService.getPlayLog().getPlays().size()));
+    }
+
+    private void setStatus(String msg) {
+        lblStatus.setText(msg);
+    }
+
+    private void registerHotkeys() {
+        try {
+            GlobalScreen.registerNativeHook();
+            hotkeyListener = new NativeKeyListener() {
+                @Override
+                public void nativeKeyPressed(NativeKeyEvent e) {
+                    int code = e.getKeyCode();
+                    if (code == NativeKeyEvent.VC_F4) {
+                        Platform.runLater(() -> onSaveVolforce(null));
+                    } else if (code == NativeKeyEvent.VC_F5) {
+                        Platform.runLater(() -> onSaveSummary(null));
+                    } else if (code == NativeKeyEvent.VC_F6) {
+                        Platform.runLater(() -> onSaveResult(null));
+                    } else if (code == NativeKeyEvent.VC_F7) {
+                        Platform.runLater(() -> onImportScore(null));
+                    } else if (code == NativeKeyEvent.VC_F8) {
+                        Platform.runLater(() -> onUpdateRival(null));
+                    } else if (code == NativeKeyEvent.VC_F9) {
+                        Platform.runLater(() -> onStartRta(null));
+                    }
+                }
+            };
+            GlobalScreen.addNativeKeyListener(hotkeyListener);
+            log.info("Global hotkeys F4-F9 registered");
+        } catch (NativeHookException e) {
+            log.warn("Could not register global hotkeys (JNativeHook): {}", e.getMessage());
+        }
+    }
+
+    private void unregisterHotkeys() {
+        if (hotkeyListener != null) {
+            GlobalScreen.removeNativeKeyListener(hotkeyListener);
+            hotkeyListener = null;
+        }
+        try {
+            GlobalScreen.unregisterNativeHook();
+        } catch (NativeHookException e) {
+            log.debug("Error unregistering native hook", e);
+        }
     }
 }

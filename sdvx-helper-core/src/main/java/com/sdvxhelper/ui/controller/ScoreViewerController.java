@@ -1,5 +1,6 @@
 package com.sdvxhelper.ui.controller;
 
+import com.sdvxhelper.i18n.LocaleManager;
 import com.sdvxhelper.model.MusicInfo;
 import com.sdvxhelper.repository.MusicListRepository;
 import com.sdvxhelper.repository.PlayLogRepository;
@@ -46,6 +47,7 @@ public class ScoreViewerController implements Initializable {
     @FXML private ComboBox<String> cmbLevel;
     @FXML private ComboBox<String> cmbLamp;
     @FXML private Button btnExport;
+    @FXML private ComboBox<String> cmbLanguage;
     @FXML private TableView<MusicInfo> tblScores;
     @FXML private TableColumn<MusicInfo, String> colTitle;
     @FXML private TableColumn<MusicInfo, String> colDiff;
@@ -75,6 +77,11 @@ public class ScoreViewerController implements Initializable {
 
         filteredScores = new FilteredList<>(allScores, p -> true);
         tblScores.setItems(filteredScores);
+        tblScores.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+
+        cmbLanguage.setItems(LocaleManager.getInstance().getAvailableLocaleCodes());
+        cmbLanguage.setValue(LocaleManager.getInstance().getCurrentCode());
+        cmbLanguage.setOnAction(e -> LocaleManager.getInstance().setLocale(cmbLanguage.getValue()));
 
         // Filter listeners
         txtFilter.textProperty().addListener((obs, oldVal, newVal) -> applyFilter());

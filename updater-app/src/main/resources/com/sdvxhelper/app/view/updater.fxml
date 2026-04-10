@@ -1,51 +1,56 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.geometry.Insets?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
 <BorderPane xmlns="http://javafx.com/javafx"
             xmlns:fx="http://javafx.com/fxml"
             fx:controller="com.sdvxhelper.ui.controller.UpdaterController"
-            prefWidth="550" prefHeight="350">
+            prefWidth="550" prefHeight="380">
 
     <top>
-        <VBox style="-fx-padding: 16; -fx-background-color: #161b22; -fx-spacing: 8;">
-            <Label text="SDVX Helper Updater" style="-fx-text-fill: #58a6ff; -fx-font-size: 18; -fx-font-weight: bold;"/>
-            <HBox spacing="16">
+        <VBox styleClass="toolbar-bar" spacing="8">
+            <HBox alignment="CENTER_LEFT">
+                <Label text="%label.updater.app.title" styleClass="section-heading"/>
+                <Region HBox.hgrow="ALWAYS"/>
+                <Label text="%label.language" styleClass="muted"/>
+                <ComboBox fx:id="cmbLanguage" styleClass="lang-combo"/>
+            </HBox>
+            <HBox spacing="24">
                 <VBox spacing="4">
-                    <Label text="Current Version:" style="-fx-text-fill: #8b949e;"/>
-                    <Label fx:id="lblCurrentVersion" text="—" style="-fx-text-fill: #e6edf3;"/>
+                    <Label text="%label.updater.current.ver" styleClass="muted"/>
+                    <Label fx:id="lblCurrentVersion" text="—" styleClass="value-label"/>
                 </VBox>
                 <VBox spacing="4">
-                    <Label text="Latest Version:" style="-fx-text-fill: #8b949e;"/>
-                    <Label fx:id="lblLatestVersion" text="—" style="-fx-text-fill: #e6edf3;"/>
+                    <Label text="%label.updater.latest.ver" styleClass="muted"/>
+                    <Label fx:id="lblLatestVersion" text="—" styleClass="value-label"/>
                 </VBox>
                 <VBox spacing="4">
-                    <Label text="Status:" style="-fx-text-fill: #8b949e;"/>
-                    <Label fx:id="lblUpdateStatus" text="—" style="-fx-text-fill: #4ecdc4;"/>
+                    <Label text="%label.updater.status" styleClass="muted"/>
+                    <Label fx:id="lblUpdateStatus" text="—" styleClass="highlight-label"/>
                 </VBox>
             </HBox>
         </VBox>
     </top>
 
     <center>
-        <VBox spacing="12" style="-fx-padding: 16; -fx-background-color: #0d1117;">
+        <VBox spacing="12">
+                <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
             <ProgressBar fx:id="progressBar" prefWidth="500" progress="0"/>
-            <Label fx:id="lblProgress" text="" style="-fx-text-fill: #8b949e;"/>
+            <Label fx:id="lblProgress" text="" styleClass="muted"/>
             <TextArea fx:id="txtChangeLog" prefRowCount="8" editable="false" wrapText="true"
-                      promptText="Change log will appear here…"
-                      style="-fx-control-inner-background: #0d1117; -fx-text-fill: #e6edf3;"/>
+                      promptText="Change log will appear here…"/>
         </VBox>
     </center>
 
     <bottom>
-        <HBox spacing="12" style="-fx-padding: 12; -fx-background-color: #161b22;">
-            <Button text="Check for Updates" fx:id="btnCheck"  onAction="#onCheck"
-                    style="-fx-background-color: #1f6feb; -fx-text-fill: white;"/>
-            <Button text="Download &amp; Install" fx:id="btnUpdate" onAction="#onUpdate"
-                    disable="true"
-                    style="-fx-background-color: #238636; -fx-text-fill: white;"/>
-            <Button text="Close"             fx:id="btnClose"  onAction="#onClose"/>
+        <HBox spacing="12" styleClass="toolbar-bar">
+            <Button text="%button.updater.check"    fx:id="btnCheck"  onAction="#onCheck"
+                    styleClass="button-primary"/>
+            <Button text="%button.updater.download" fx:id="btnUpdate" onAction="#onUpdate"
+                    disable="true" styleClass="button-success"/>
+            <Button text="%button.updater.close"    fx:id="btnClose"  onAction="#onClose"/>
         </HBox>
     </bottom>
 </BorderPane>

@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox xmlns="http://javafx.com/javafx"
+      xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.sdvxhelper.ui.controller.ObsControlController"
+      prefWidth="560" prefHeight="460" spacing="8">
+
+    <padding><Insets top="12" right="12" bottom="12" left="12"/></padding>
+
+    <!-- Connection status -->
+    <HBox spacing="12" alignment="CENTER_LEFT">
+        <Label text="%label.obs.control.status" styleClass="muted"/>
+        <Label fx:id="lblConnStatus" text="%label.obs.control.disconnected" styleClass="obs-disconnected"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Button text="%button.obs.connect"    fx:id="btnConnect"    onAction="#onConnect"    styleClass="button-success"/>
+        <Button text="%button.obs.disconnect" fx:id="btnDisconnect" onAction="#onDisconnect" styleClass="button-danger" disable="true"/>
+    </HBox>
+
+    <Separator/>
+
+    <!-- Per-state scene/source tabs -->
+    <TabPane tabClosingPolicy="UNAVAILABLE" VBox.vgrow="ALWAYS">
+
+        <Tab text="%label.obs.boot">
+            <GridPane hgap="12" vgap="8">
+                <padding><Insets top="8" right="8" bottom="8" left="8"/></padding>
+                <Label text="%label.obs.scene"   GridPane.columnIndex="0" GridPane.rowIndex="0" styleClass="muted"/>
+                <TextField fx:id="txtBootScene"  GridPane.columnIndex="1" GridPane.rowIndex="0" GridPane.hgrow="ALWAYS"/>
+                <Label text="%label.obs.enable"  GridPane.columnIndex="0" GridPane.rowIndex="1" styleClass="muted"/>
+                <TextField fx:id="txtBootEnable" GridPane.columnIndex="1" GridPane.rowIndex="1" GridPane.hgrow="ALWAYS"
+                           promptText="source1, source2"/>
+                <Label text="%label.obs.disable" GridPane.columnIndex="0" GridPane.rowIndex="2" styleClass="muted"/>
+                <TextField fx:id="txtBootDisable" GridPane.columnIndex="1" GridPane.rowIndex="2" GridPane.hgrow="ALWAYS"
+                           promptText="source1, source2"/>
+            </GridPane>
+        </Tab>
+
+        <Tab text="%label.obs.select">
+            <GridPane hgap="12" vgap="8">
+                <padding><Insets top="8" right="8" bottom="8" left="8"/></padding>
+                <Label text="%label.obs.scene"     GridPane.columnIndex="0" GridPane.rowIndex="0" styleClass="muted"/>
+                <TextField fx:id="txtSelectScene"  GridPane.columnIndex="1" GridPane.rowIndex="0" GridPane.hgrow="ALWAYS"/>
+                <Label text="%label.obs.enable"    GridPane.columnIndex="0" GridPane.rowIndex="1" styleClass="muted"/>
+                <TextField fx:id="txtSelectEnable" GridPane.columnIndex="1" GridPane.rowIndex="1" GridPane.hgrow="ALWAYS"
+                           promptText="source1, source2"/>
+                <Label text="%label.obs.disable"   GridPane.columnIndex="0" GridPane.rowIndex="2" styleClass="muted"/>
+                <TextField fx:id="txtSelectDisable" GridPane.columnIndex="1" GridPane.rowIndex="2" GridPane.hgrow="ALWAYS"
+                           promptText="source1, source2"/>
+            </GridPane>
+        </Tab>
+
+        <Tab text="%label.obs.play">
+            <GridPane hgap="12" vgap="8">
+                <padding><Insets top="8" right="8" bottom="8" left="8"/></padding>
+                <Label text="%label.obs.scene"   GridPane.columnIndex="0" GridPane.rowIndex="0" styleClass="muted"/>
+                <TextField fx:id="txtPlayScene"  GridPane.columnIndex="1" GridPane.rowIndex="0" GridPane.hgrow="ALWAYS"/>
+                <Label text="%label.obs.enable"  GridPane.columnIndex="0" GridPane.rowIndex="1" styleClass="muted"/>
+                <TextField fx:id="txtPlayEnable" GridPane.columnIndex="1" GridPane.rowIndex="1" GridPane.hgrow="ALWAYS"
+                           promptText="source1, source2"/>
+                <Label text="%label.obs.disable" GridPane.columnIndex="0" GridPane.rowIndex="2" styleClass="muted"/>
+                <TextField fx:id="txtPlayDisable" GridPane.columnIndex="1" GridPane.rowIndex="2" GridPane.hgrow="ALWAYS"
+                           promptText="source1, source2"/>
+            </GridPane>
+        </Tab>
+
+        <Tab text="%label.obs.result">
+            <GridPane hgap="12" vgap="8">
+                <padding><Insets top="8" right="8" bottom="8" left="8"/></padding>
+                <Label text="%label.obs.scene"     GridPane.columnIndex="0" GridPane.rowIndex="0" styleClass="muted"/>
+                <TextField fx:id="txtResultScene"  GridPane.columnIndex="1" GridPane.rowIndex="0" GridPane.hgrow="ALWAYS"/>
+                <Label text="%label.obs.enable"    GridPane.columnIndex="0" GridPane.rowIndex="1" styleClass="muted"/>
+                <TextField fx:id="txtResultEnable" GridPane.columnIndex="1" GridPane.rowIndex="1" GridPane.hgrow="ALWAYS"
+                           promptText="source1, source2"/>
+                <Label text="%label.obs.disable"   GridPane.columnIndex="0" GridPane.rowIndex="2" styleClass="muted"/>
+                <TextField fx:id="txtResultDisable" GridPane.columnIndex="1" GridPane.rowIndex="2" GridPane.hgrow="ALWAYS"
+                           promptText="source1, source2"/>
+            </GridPane>
+        </Tab>
+
+        <Tab text="%label.obs.quit">
+            <GridPane hgap="12" vgap="8">
+                <padding><Insets top="8" right="8" bottom="8" left="8"/></padding>
+                <Label text="%label.obs.scene"   GridPane.columnIndex="0" GridPane.rowIndex="0" styleClass="muted"/>
+                <TextField fx:id="txtQuitScene"  GridPane.columnIndex="1" GridPane.rowIndex="0" GridPane.hgrow="ALWAYS"/>
+                <Label text="%label.obs.enable"  GridPane.columnIndex="0" GridPane.rowIndex="1" styleClass="muted"/>
+                <TextField fx:id="txtQuitEnable" GridPane.columnIndex="1" GridPane.rowIndex="1" GridPane.hgrow="ALWAYS"
+                           promptText="source1, source2"/>
+                <Label text="%label.obs.disable" GridPane.columnIndex="0" GridPane.rowIndex="2" styleClass="muted"/>
+                <TextField fx:id="txtQuitDisable" GridPane.columnIndex="1" GridPane.rowIndex="2" GridPane.hgrow="ALWAYS"
+                           promptText="source1, source2"/>
+            </GridPane>
+        </Tab>
+    </TabPane>
+</VBox>

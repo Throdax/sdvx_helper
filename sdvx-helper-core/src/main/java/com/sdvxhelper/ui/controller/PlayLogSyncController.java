@@ -1,5 +1,6 @@
 package com.sdvxhelper.ui.controller;
 
+import com.sdvxhelper.i18n.LocaleManager;
 import com.sdvxhelper.model.OnePlayData;
 import com.sdvxhelper.model.PlayLog;
 import com.sdvxhelper.repository.PlayLogRepository;
@@ -10,6 +11,7 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Button;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
@@ -54,6 +56,7 @@ public class PlayLogSyncController implements Initializable {
     @FXML private TableColumn<OnePlayData, String> colStatus;
     @FXML private TextArea txtLog;
     @FXML private Label lblStatus;
+    @FXML private ComboBox<String> cmbLanguage;
 
     private final ObservableList<OnePlayData> plays = FXCollections.observableArrayList();
     private PlayLog currentPlayLog;
@@ -66,6 +69,11 @@ public class PlayLogSyncController implements Initializable {
         colScore.setCellValueFactory(new PropertyValueFactory<>("curScore"));
         colLamp.setCellValueFactory(new PropertyValueFactory<>("lamp"));
         tblPlays.setItems(plays);
+        tblPlays.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+
+        cmbLanguage.setItems(LocaleManager.getInstance().getAvailableLocaleCodes());
+        cmbLanguage.setValue(LocaleManager.getInstance().getCurrentCode());
+        cmbLanguage.setOnAction(e -> LocaleManager.getInstance().setLocale(cmbLanguage.getValue()));
     }
 
     @FXML public void onBrowsePlayLog(ActionEvent event) {

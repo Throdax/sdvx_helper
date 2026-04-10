@@ -1,5 +1,6 @@
 package com.sdvxhelper.ui.controller;
 
+import com.sdvxhelper.i18n.LocaleManager;
 import com.sdvxhelper.ocr.PerceptualHasher;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -52,6 +53,7 @@ public class OcrReporterController implements Initializable {
     @FXML private Button btnRegister;
     @FXML private Button btnSkip;
     @FXML private TextArea txtLog;
+    @FXML private ComboBox<String> cmbLanguage;
 
     private final PerceptualHasher hasher = new PerceptualHasher();
     private final List<File> imageFiles = new ArrayList<>();
@@ -60,6 +62,9 @@ public class OcrReporterController implements Initializable {
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         cmbDifficulty.getSelectionModel().select("exh");
+        cmbLanguage.setItems(LocaleManager.getInstance().getAvailableLocaleCodes());
+        cmbLanguage.setValue(LocaleManager.getInstance().getCurrentCode());
+        cmbLanguage.setOnAction(e -> LocaleManager.getInstance().setLocale(cmbLanguage.getValue()));
     }
 
     /**

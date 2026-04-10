@@ -12,11 +12,12 @@
 
     <artifactId>sdvx-helper-core</artifactId>
     <packaging>jar</packaging>
+    
     <name>SDVX Helper Core</name>
     <description>Shared library: domain models, services, repositories, networking, OCR, config, i18n, and utilities</description>
 
     <dependencies>
-        <!-- JavaFX -->
+        <!-- JavaFX cross-platform JARs (module descriptors + Java classes) -->
         <dependency>
             <groupId>org.openjfx</groupId>
             <artifactId>javafx-controls</artifactId>
@@ -28,6 +29,38 @@
         <dependency>
             <groupId>org.openjfx</groupId>
             <artifactId>javafx-swing</artifactId>
+        </dependency>
+
+        <!--
+          Windows-specific JavaFX JARs with native DLLs (glass.dll, prism_d3d.dll, …).
+          Including these as regular dependencies causes the Shade plugin in each app
+          module to bundle the DLLs inside the fat JAR.  JavaFX's NativeLibLoader then
+          extracts and loads them at runtime — no module-path configuration needed.
+        -->
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-base</artifactId>
+            <classifier>win</classifier>
+        </dependency>
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-graphics</artifactId>
+            <classifier>win</classifier>
+        </dependency>
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-controls</artifactId>
+            <classifier>win</classifier>
+        </dependency>
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-fxml</artifactId>
+            <classifier>win</classifier>
+        </dependency>
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-swing</artifactId>
+            <classifier>win</classifier>
         </dependency>
 
         <!-- JAXB -->

@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox xmlns="http://javafx.com/javafx"
+      xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.sdvxhelper.ui.controller.SettingsController"
+      prefWidth="500" prefHeight="420" spacing="0">
+
+    <TabPane tabClosingPolicy="UNAVAILABLE" VBox.vgrow="ALWAYS">
+
+        <!-- General tab -->
+        <Tab text="%label.settings.general">
+            <ScrollPane fitToWidth="true">
+                <GridPane hgap="12" vgap="8">
+                    <padding><Insets top="12" right="12" bottom="12" left="12"/></padding>
+                    <Label text="%label.settings.player.name"  GridPane.columnIndex="0" GridPane.rowIndex="0" styleClass="muted"/>
+                    <TextField fx:id="txtPlayerName"           GridPane.columnIndex="1" GridPane.rowIndex="0" GridPane.hgrow="ALWAYS"/>
+                    <CheckBox fx:id="chkAutoUpdate" text="%label.settings.auto.update"
+                              GridPane.columnIndex="0" GridPane.rowIndex="1" GridPane.columnSpan="2"/>
+                    <CheckBox fx:id="chkIgnoreRankD" text="%label.settings.ignore.rankd"
+                              GridPane.columnIndex="0" GridPane.rowIndex="2" GridPane.columnSpan="2"/>
+                </GridPane>
+            </ScrollPane>
+        </Tab>
+
+        <!-- OBS tab -->
+        <Tab text="%label.settings.obs">
+            <GridPane hgap="12" vgap="8">
+                <padding><Insets top="12" right="12" bottom="12" left="12"/></padding>
+                <Label text="%label.settings.obs.host"     GridPane.columnIndex="0" GridPane.rowIndex="0" styleClass="muted"/>
+                <TextField fx:id="txtObsHost"              GridPane.columnIndex="1" GridPane.rowIndex="0" GridPane.hgrow="ALWAYS"/>
+                <Label text="%label.settings.obs.port"     GridPane.columnIndex="0" GridPane.rowIndex="1" styleClass="muted"/>
+                <TextField fx:id="txtObsPort"              GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+                <Label text="%label.settings.obs.password" GridPane.columnIndex="0" GridPane.rowIndex="2" styleClass="muted"/>
+                <PasswordField fx:id="txtObsPassword"      GridPane.columnIndex="1" GridPane.rowIndex="2" GridPane.hgrow="ALWAYS"/>
+                <Label text="%label.settings.obs.source"   GridPane.columnIndex="0" GridPane.rowIndex="3" styleClass="muted"/>
+                <TextField fx:id="txtObsSource"            GridPane.columnIndex="1" GridPane.rowIndex="3" GridPane.hgrow="ALWAYS"/>
+            </GridPane>
+        </Tab>
+
+        <!-- Detection tab -->
+        <Tab text="%label.settings.detection">
+            <GridPane hgap="12" vgap="8">
+                <padding><Insets top="12" right="12" bottom="12" left="12"/></padding>
+                <Label text="%label.settings.detect.wait"  GridPane.columnIndex="0" GridPane.rowIndex="0" styleClass="muted"/>
+                <TextField fx:id="txtDetectWait"           GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+                <Label text="%label.settings.autosave.dir" GridPane.columnIndex="0" GridPane.rowIndex="1" styleClass="muted"/>
+                <HBox spacing="4"                          GridPane.columnIndex="1" GridPane.rowIndex="1">
+                    <TextField fx:id="txtAutosaveDir" HBox.hgrow="ALWAYS"/>
+                    <Button text="%button.settings.browse" onAction="#onBrowseAutosaveDir"/>
+                </HBox>
+                <Label text="%label.settings.autosave.int" GridPane.columnIndex="0" GridPane.rowIndex="2" styleClass="muted"/>
+                <TextField fx:id="txtAutosaveInterval"     GridPane.columnIndex="1" GridPane.rowIndex="2"/>
+            </GridPane>
+        </Tab>
+
+        <!-- Webhooks tab -->
+        <Tab text="%label.settings.webhooks">
+            <VBox spacing="8">
+                <padding><Insets top="12" right="12" bottom="12" left="12"/></padding>
+                <GridPane hgap="12" vgap="8">
+                    <Label text="%label.settings.webhook.name" GridPane.columnIndex="0" GridPane.rowIndex="0" styleClass="muted"/>
+                    <TextField fx:id="txtWebhookName"          GridPane.columnIndex="1" GridPane.rowIndex="0" GridPane.hgrow="ALWAYS"/>
+                    <Label text="%label.settings.webhook.url"  GridPane.columnIndex="0" GridPane.rowIndex="1" styleClass="muted"/>
+                    <TextField fx:id="txtWebhookUrl"           GridPane.columnIndex="1" GridPane.rowIndex="1" GridPane.hgrow="ALWAYS"/>
+                </GridPane>
+                <Label text="(Multiple webhooks managed via the Webhooks menu)" styleClass="muted"/>
+            </VBox>
+        </Tab>
+    </TabPane>
+</VBox>

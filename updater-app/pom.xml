@@ -12,6 +12,7 @@
 
     <artifactId>updater-app</artifactId>
     <packaging>jar</packaging>
+    
     <name>Updater App</name>
     <description>Self-updater from GitHub releases (maps to update.py)</description>
 
@@ -31,7 +32,7 @@
                     <finalName>update</finalName>
                     <transformers>
                         <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                            <mainClass>com.sdvxhelper.app.UpdaterApp</mainClass>
+                            <mainClass>com.sdvxhelper.app.Launcher</mainClass>
                         </transformer>
                         <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
                     </transformers>
@@ -43,7 +44,6 @@
                 <configuration>
                     <name>update</name>
                     <mainJar>update.jar</mainJar>
-                    <mainClass>com.sdvxhelper.app.UpdaterApp</mainClass>
                 </configuration>
             </plugin>
         </plugins>

@@ -9,7 +9,7 @@
     <version>2.0.0</version>
     <packaging>pom</packaging>
 
-    <name>SDVX Helper Parent</name>
+    <name>SDVX Helper</name>
     <description>Sound Voltex Helper -- multi-module parent POM</description>
 
     <modules>
@@ -19,8 +19,11 @@
         <module>ocr-reporter-app</module>
         <module>play-log-sync-app</module>
         <module>updater-app</module>
-        <!-- must be last: depends on all 5 app modules to guarantee build order -->
-        <module>sdvx-helper-dist</module>
+        <!--
+          sdvx-helper-dist is intentionally NOT listed here.
+          It is only included when building with the "native" profile
+          (mvn package -Pnative) because it depends on JPackage output.
+        -->
     </modules>
 
     <properties>
@@ -62,7 +65,7 @@
                 <version>${project.version}</version>
             </dependency>
 
-            <!-- JavaFX -->
+            <!-- JavaFX cross-platform JARs (module descriptors + Java classes) -->
             <dependency>
                 <groupId>org.openjfx</groupId>
                 <artifactId>javafx-controls</artifactId>
@@ -77,6 +80,47 @@
                 <groupId>org.openjfx</groupId>
                 <artifactId>javafx-swing</artifactId>
                 <version>${javafx.version}</version>
+            </dependency>
+
+            <!--
+              Windows-specific JavaFX JARs that contain the native DLLs
+              (glass.dll, prism_d3d.dll, javafx_font.dll, …).
+              Declaring them as regular dependencies causes the Shade plugin
+              to bundle the DLLs inside the fat JAR.  At runtime JavaFX's
+              NativeLibLoader extracts and loads them from the classpath,
+              so neither the fat JAR nor the jpackage bundled JRE needs
+              JavaFX on the module path.
+              Change classifier to "linux" or "mac" for other platforms.
+            -->
+            <dependency>
+                <groupId>org.openjfx</groupId>
+                <artifactId>javafx-base</artifactId>
+                <version>${javafx.version}</version>
+                <classifier>win</classifier>
+            </dependency>
+            <dependency>
+                <groupId>org.openjfx</groupId>
+                <artifactId>javafx-graphics</artifactId>
+                <version>${javafx.version}</version>
+                <classifier>win</classifier>
+            </dependency>
+            <dependency>
+                <groupId>org.openjfx</groupId>
+                <artifactId>javafx-controls</artifactId>
+                <version>${javafx.version}</version>
+                <classifier>win</classifier>
+            </dependency>
+            <dependency>
+                <groupId>org.openjfx</groupId>
+                <artifactId>javafx-fxml</artifactId>
+                <version>${javafx.version}</version>
+                <classifier>win</classifier>
+            </dependency>
+            <dependency>
+                <groupId>org.openjfx</groupId>
+                <artifactId>javafx-swing</artifactId>
+                <version>${javafx.version}</version>
+                <classifier>win</classifier>
             </dependency>
 
             <!-- JAXB (Jakarta XML Binding) -->
@@ -245,14 +289,35 @@
                             <filter>
                                 <artifact>*:*</artifact>
                                 <excludes>
+                                    <!-- Drop JAR signatures that become invalid after repackaging -->
                                     <exclude>META-INF/*.SF</exclude>
                                     <exclude>META-INF/*.DSA</exclude>
                                     <exclude>META-INF/*.RSA</exclude>
+                                    <!--
+                                      Drop module descriptors from every dependency JAR.
+                                      JavaFX win-classifier JARs are proper Java modules; keeping
+                                      their module-info.class in the fat JAR triggers a split-package
+                                      conflict and the "JavaFX runtime components are missing" check
+                                      at JVM startup.  Removing them makes the fat JAR non-modular,
+                                      allowing JavaFX's NativeLibLoader to extract the embedded DLLs
+                                      at runtime without any module-path configuration.
+                                    -->
+                                    <exclude>module-info.class</exclude>
                                 </excludes>
                             </filter>
                         </filters>
                     </configuration>
                 </plugin>
+                <!--
+                  jpackage: creates a self-contained app-image (EXE + bundled JRE).
+                  No execution is declared here by default — the execution is only
+                  added in the "native" profile (see below).  Shared configuration
+                  (type, destination, input) is inherited by all 5 app modules.
+                  No module-path or add-modules flags for JavaFX: the fat JAR produced
+                  by Shade already contains the native DLLs (from the win-classifier
+                  dependencies), so JavaFX's NativeLibLoader extracts and loads them at
+                  runtime without any module-path configuration.
+                -->
                 <plugin>
                     <groupId>org.panteleyev</groupId>
                     <artifactId>jpackage-maven-plugin</artifactId>
@@ -262,16 +327,52 @@
                         <destination>${project.build.directory}/jpackage</destination>
                         <input>${project.build.directory}</input>
                     </configuration>
-                    <executions>
-                        <execution>
-                            <phase>package</phase>
-                            <goals>
-                                <goal>jpackage</goal>
-                            </goals>
-                        </execution>
-                    </executions>
                 </plugin>
             </plugins>
         </pluginManagement>
     </build>
+
+    <profiles>
+        <!--
+          native profile: runs JPackage for all 5 app modules and assembles
+          the distribution ZIP.
+
+          Usage:
+            mvn package -Pnative          (from the project root)
+            mvn package -Pnative -DskipTests
+
+          Default build (no profile) compiles, tests, and produces fat JARs only.
+        -->
+        <profile>
+            <id>native</id>
+            <modules>
+                <!-- must be last: depends on all 5 app modules JPackage output -->
+                <module>sdvx-helper-dist</module>
+            </modules>
+            <build>
+                <pluginManagement>
+                    <plugins>
+                        <!--
+                          Re-add the jpackage execution so it is bound to the
+                          package phase in all 5 app modules when this profile is active.
+                        -->
+                        <plugin>
+                            <groupId>org.panteleyev</groupId>
+                            <artifactId>jpackage-maven-plugin</artifactId>
+                            <version>${jpackage.plugin.version}</version>
+                            <executions>
+                                <execution>
+                                    <id>jpackage-app-image</id>
+                                    <phase>package</phase>
+                                    <goals>
+                                        <goal>jpackage</goal>
+                                    </goals>
+                                </execution>
+                            </executions>
+                        </plugin>
+                    </plugins>
+                </pluginManagement>
+            </build>
+        </profile>
+    </profiles>
 </project>

@@ -9,35 +9,38 @@
             prefWidth="1200" prefHeight="700">
 
     <top>
-        <HBox spacing="12" style="-fx-padding: 8; -fx-background-color: #161b22;">
-            <Label text="Filter:" style="-fx-text-fill: #8b949e;"/>
-            <TextField fx:id="txtFilter" promptText="Search title…" prefWidth="200"/>
-            <Label text="Level:" style="-fx-text-fill: #8b949e;"/>
+        <HBox spacing="12" styleClass="toolbar-bar" alignment="CENTER_LEFT">
+            <Label text="%label.score.filter" styleClass="muted"/>
+            <TextField fx:id="txtFilter" promptText="%text.score.search" prefWidth="200"/>
+            <Label text="%label.score.level" styleClass="muted"/>
             <ComboBox fx:id="cmbLevel" promptText="All"/>
-            <Label text="Lamp:" style="-fx-text-fill: #8b949e;"/>
+            <Label text="%label.score.lamp" styleClass="muted"/>
             <ComboBox fx:id="cmbLamp" promptText="All"/>
-            <Button text="Export CSV" fx:id="btnExport" onAction="#onExportCsv"/>
+            <Button text="%button.score.export.csv" fx:id="btnExport" onAction="#onExportCsv"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Label text="%label.language" styleClass="muted"/>
+            <ComboBox fx:id="cmbLanguage" styleClass="lang-combo"/>
         </HBox>
     </top>
 
     <center>
-        <TableView fx:id="tblScores" style="-fx-background-color: #0d1117;">
+        <TableView fx:id="tblScores">
             <columns>
-                <TableColumn fx:id="colTitle"  text="Title"      prefWidth="280"/>
-                <TableColumn fx:id="colDiff"   text="Difficulty" prefWidth="90"/>
-                <TableColumn fx:id="colLevel"  text="Level"      prefWidth="60"/>
-                <TableColumn fx:id="colScore"  text="Score"      prefWidth="100"/>
-                <TableColumn fx:id="colLamp"   text="Lamp"       prefWidth="70"/>
-                <TableColumn fx:id="colVf"     text="VF"         prefWidth="70"/>
-                <TableColumn fx:id="colDate"   text="Date"       prefWidth="120"/>
-                <TableColumn fx:id="colSTier"  text="S-Tier"     prefWidth="70"/>
+                <TableColumn fx:id="colTitle"  text="%table.header.title"      prefWidth="280"/>
+                <TableColumn fx:id="colDiff"   text="%table.header.difficulty" prefWidth="90"/>
+                <TableColumn fx:id="colLevel"  text="%table.header.level"      prefWidth="60"/>
+                <TableColumn fx:id="colScore"  text="%table.header.score"      prefWidth="100"/>
+                <TableColumn fx:id="colLamp"   text="%table.header.lamp"       prefWidth="70"/>
+                <TableColumn fx:id="colVf"     text="%table.header.volforce"   prefWidth="70"/>
+                <TableColumn fx:id="colDate"   text="%table.header.lastPlayed" prefWidth="120"/>
+                <TableColumn fx:id="colSTier"  text="%table.header.tier"       prefWidth="70"/>
             </columns>
         </TableView>
     </center>
 
     <bottom>
-        <HBox style="-fx-padding: 4 8; -fx-background-color: #161b22;">
-            <Label fx:id="lblCount" text="0 charts" style="-fx-text-fill: #8b949e;"/>
+        <HBox styleClass="toolbar-bar">
+            <Label fx:id="lblCount" text="0 charts" styleClass="status-label"/>
         </HBox>
     </bottom>
 </BorderPane>

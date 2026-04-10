@@ -1,0 +1,264 @@
+/*
+ * Light-mode stylesheet for SDVX Helper applications.
+ *
+ * This stylesheet replaces all inline dark-mode style attributes previously
+ * embedded in each FXML file.  Apply it to every scene via:
+ *
+ *   scene.getStylesheets().add(getClass().getResource("/styles/light.css").toExternalForm());
+ */
+
+/* ---- Root / scene background -------------------------------------------- */
+.root {
+    -fx-background-color: #f5f5f5;
+    -fx-font-family: "System";
+}
+
+/* ---- Generic containers -------------------------------------------------- */
+BorderPane, VBox, HBox, GridPane, StackPane, AnchorPane, SplitPane {
+    -fx-background-color: transparent;
+}
+
+/* Top / status bars */
+.toolbar-bar {
+    -fx-background-color: #e8e8e8;
+    -fx-padding: 4 8 4 8;
+}
+
+/* ---- Labels -------------------------------------------------------------- */
+Label {
+    -fx-text-fill: #222222;
+}
+
+.section-heading {
+    -fx-text-fill: #1565c0;
+    -fx-font-size: 14;
+    -fx-font-weight: bold;
+}
+
+.sub-heading {
+    -fx-text-fill: #1565c0;
+    -fx-font-size: 13;
+    -fx-font-weight: bold;
+}
+
+.muted {
+    -fx-text-fill: #666666;
+    -fx-font-size: 11;
+}
+
+.status-label {
+    -fx-text-fill: #444444;
+}
+
+.value-label {
+    -fx-text-fill: #222222;
+}
+
+.highlight-label {
+    -fx-text-fill: #1565c0;
+    -fx-font-weight: bold;
+}
+
+.obs-connected {
+    -fx-text-fill: #2e7d32;
+}
+
+.obs-disconnected {
+    -fx-text-fill: #c62828;
+}
+
+/* ---- Text fields / areas ------------------------------------------------- */
+TextField, TextArea {
+    -fx-background-color: #ffffff;
+    -fx-text-fill: #222222;
+    -fx-border-color: #cccccc;
+    -fx-border-radius: 3;
+    -fx-background-radius: 3;
+}
+
+TextField:focused, TextArea:focused {
+    -fx-border-color: #1565c0;
+}
+
+/* ---- Buttons ------------------------------------------------------------- */
+Button {
+    -fx-background-color: #e0e0e0;
+    -fx-text-fill: #222222;
+    -fx-border-color: #bbbbbb;
+    -fx-border-radius: 3;
+    -fx-background-radius: 3;
+    -fx-padding: 4 12 4 12;
+}
+
+Button:hover {
+    -fx-background-color: #d5d5d5;
+}
+
+Button:pressed {
+    -fx-background-color: #c0c0c0;
+}
+
+.button-primary {
+    -fx-background-color: #1976d2;
+    -fx-text-fill: white;
+    -fx-border-color: #1565c0;
+}
+
+.button-primary:hover {
+    -fx-background-color: #1565c0;
+}
+
+.button-danger {
+    -fx-background-color: #c62828;
+    -fx-text-fill: white;
+    -fx-border-color: #b71c1c;
+}
+
+.button-danger:hover {
+    -fx-background-color: #b71c1c;
+}
+
+.button-success {
+    -fx-background-color: #2e7d32;
+    -fx-text-fill: white;
+    -fx-border-color: #1b5e20;
+}
+
+.button-success:hover {
+    -fx-background-color: #1b5e20;
+}
+
+/* Flat icon button (function toolbar) */
+.icon-button {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-padding: 4;
+    -fx-cursor: hand;
+}
+
+.icon-button:hover {
+    -fx-background-color: #dddddd;
+    -fx-background-radius: 4;
+}
+
+/* ---- ComboBox ------------------------------------------------------------ */
+ComboBox {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #cccccc;
+    -fx-border-radius: 3;
+}
+
+ComboBox .list-cell {
+    -fx-text-fill: #222222;
+    -fx-background-color: #ffffff;
+}
+
+/* ---- TableView ----------------------------------------------------------- */
+TableView {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #cccccc;
+}
+
+TableView .column-header {
+    -fx-background-color: #eeeeee;
+}
+
+TableView .column-header-background {
+    -fx-background-color: #eeeeee;
+}
+
+TableView .column-header Label {
+    -fx-text-fill: #333333;
+    -fx-font-weight: bold;
+}
+
+TableRow:odd {
+    -fx-background-color: #fafafa;
+}
+
+TableRow:even {
+    -fx-background-color: #ffffff;
+}
+
+TableRow:selected {
+    -fx-background-color: #bbdefb;
+}
+
+TableCell {
+    -fx-text-fill: #222222;
+}
+
+/* ---- MenuBar ------------------------------------------------------------- */
+MenuBar {
+    -fx-background-color: #f0f0f0;
+    -fx-border-color: #dddddd;
+}
+
+Menu, MenuItem {
+    -fx-background-color: #f0f0f0;
+    -fx-text-fill: #222222;
+}
+
+MenuItem:focused {
+    -fx-background-color: #1976d2;
+    -fx-text-fill: white;
+}
+
+/* ---- ProgressBar --------------------------------------------------------- */
+ProgressBar {
+    -fx-accent: #1976d2;
+}
+
+/* ---- SplitPane ----------------------------------------------------------- */
+SplitPane > .split-pane-divider {
+    -fx-background-color: #cccccc;
+    -fx-padding: 0 1 0 1;
+}
+
+/* ---- ScrollPane ---------------------------------------------------------- */
+ScrollPane {
+    -fx-background-color: #ffffff;
+}
+
+/* ---- TabPane ------------------------------------------------------------- */
+TabPane {
+    -fx-background-color: #f5f5f5;
+}
+
+TabPane .tab {
+    -fx-background-color: #e0e0e0;
+}
+
+TabPane .tab:selected {
+    -fx-background-color: #ffffff;
+}
+
+TabPane .tab .tab-label {
+    -fx-text-fill: #222222;
+}
+
+/* ---- DialogPane ---------------------------------------------------------- */
+DialogPane {
+    -fx-background-color: #f5f5f5;
+}
+
+DialogPane .header-panel {
+    -fx-background-color: #e8e8e8;
+}
+
+/* ---- Shortcut hint bar (F1-F3 reserved keys) ----------------------------- */
+.shortcut-hint-bar {
+    -fx-background-color: #ececec;
+    -fx-padding: 2 8 2 8;
+}
+
+.shortcut-hint {
+    -fx-text-fill: #888888;
+    -fx-font-size: 11;
+}
+
+/* ---- Language combo in toolbar ------------------------------------------- */
+.lang-combo {
+    -fx-pref-width: 60;
+    -fx-font-size: 11;
+}

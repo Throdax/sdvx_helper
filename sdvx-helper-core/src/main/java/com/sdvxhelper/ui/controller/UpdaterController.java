@@ -1,5 +1,6 @@
 package com.sdvxhelper.ui.controller;
 
+import com.sdvxhelper.i18n.LocaleManager;
 import com.sdvxhelper.network.GitHubVersionClient;
 import com.sdvxhelper.util.VersionUtil;
 import javafx.application.Platform;
@@ -8,6 +9,7 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Button;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressBar;
 import javafx.scene.control.TextArea;
@@ -43,6 +45,7 @@ public class UpdaterController implements Initializable {
     @FXML private TextArea txtChangeLog;
     @FXML private Button btnCheck;
     @FXML private Button btnUpdate;
+    @FXML private ComboBox<String> cmbLanguage;
 
     private final GitHubVersionClient versionClient = new GitHubVersionClient(REPO_OWNER, REPO_NAME);
     private final ExecutorService executor = Executors.newSingleThreadExecutor(r -> {
@@ -56,6 +59,9 @@ public class UpdaterController implements Initializable {
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         lblCurrentVersion.setText(VersionUtil.getCurrentVersion());
+        cmbLanguage.setItems(LocaleManager.getInstance().getAvailableLocaleCodes());
+        cmbLanguage.setValue(LocaleManager.getInstance().getCurrentCode());
+        cmbLanguage.setOnAction(e -> LocaleManager.getInstance().setLocale(cmbLanguage.getValue()));
     }
 
     /**
