@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<BorderPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.sdvxhelper.ui.controller.MainController"
+            prefWidth="900" prefHeight="600">
+
+    <!-- Top: menu bar and status bar -->
+    <top>
+        <VBox>
+            <MenuBar>
+                <Menu text="File">
+                    <MenuItem text="Settings"    fx:id="menuSettings"    onAction="#onSettings"/>
+                    <MenuItem text="OBS Control" fx:id="menuObsControl"  onAction="#onObsControl"/>
+                    <SeparatorMenuItem/>
+                    <MenuItem text="Exit"        onAction="#onExit"/>
+                </Menu>
+                <Menu text="Tools">
+                    <MenuItem text="Google Drive" fx:id="menuGoogleDrive" onAction="#onGoogleDrive"/>
+                    <MenuItem text="Webhooks"      fx:id="menuWebhooks"    onAction="#onWebhooks"/>
+                </Menu>
+            </MenuBar>
+            <!-- OBS connection status bar -->
+            <HBox spacing="10" style="-fx-padding: 4 8 4 8; -fx-background-color: #1a1a2e;">
+                <Label text="OBS:" style="-fx-text-fill: #aaa;"/>
+                <Label fx:id="lblObsStatus" text="Disconnected" style="-fx-text-fill: #ff6b6b;"/>
+                <Label text="  |  " style="-fx-text-fill: #555;"/>
+                <Label text="VF:" style="-fx-text-fill: #aaa;"/>
+                <Label fx:id="lblTotalVf" text="0.000" style="-fx-text-fill: #4ecdc4; -fx-font-weight: bold;"/>
+                <Label text="  |  " style="-fx-text-fill: #555;"/>
+                <Label text="Plays:" style="-fx-text-fill: #aaa;"/>
+                <Label fx:id="lblPlayCount" text="0" style="-fx-text-fill: #ffd93d;"/>
+            </HBox>
+        </VBox>
+    </top>
+
+    <!-- Centre: split panel - current song info left, log right -->
+    <center>
+        <SplitPane dividerPositions="0.45">
+            <!-- Left: current song detection panel -->
+            <VBox spacing="8" style="-fx-padding: 12; -fx-background-color: #0d1117;">
+                <Label text="Current Song" style="-fx-text-fill: #58a6ff; -fx-font-size: 14; -fx-font-weight: bold;"/>
+                <GridPane hgap="8" vgap="6">
+                    <Label text="Title:"      GridPane.columnIndex="0" GridPane.rowIndex="0" style="-fx-text-fill: #8b949e;"/>
+                    <Label fx:id="lblTitle"   GridPane.columnIndex="1" GridPane.rowIndex="0" style="-fx-text-fill: #e6edf3;" text="-"/>
+                    <Label text="Diff:"       GridPane.columnIndex="0" GridPane.rowIndex="1" style="-fx-text-fill: #8b949e;"/>
+                    <Label fx:id="lblDiff"    GridPane.columnIndex="1" GridPane.rowIndex="1" style="-fx-text-fill: #e6edf3;" text="-"/>
+                    <Label text="Level:"      GridPane.columnIndex="0" GridPane.rowIndex="2" style="-fx-text-fill: #8b949e;"/>
+                    <Label fx:id="lblLevel"   GridPane.columnIndex="1" GridPane.rowIndex="2" style="-fx-text-fill: #e6edf3;" text="-"/>
+                    <Label text="Best Score:" GridPane.columnIndex="0" GridPane.rowIndex="3" style="-fx-text-fill: #8b949e;"/>
+                    <Label fx:id="lblBest"    GridPane.columnIndex="1" GridPane.rowIndex="3" style="-fx-text-fill: #e6edf3;" text="-"/>
+                    <Label text="Best Lamp:"  GridPane.columnIndex="0" GridPane.rowIndex="4" style="-fx-text-fill: #8b949e;"/>
+                    <Label fx:id="lblLamp"    GridPane.columnIndex="1" GridPane.rowIndex="4" style="-fx-text-fill: #e6edf3;" text="-"/>
+                    <Label text="Best VF:"    GridPane.columnIndex="0" GridPane.rowIndex="5" style="-fx-text-fill: #8b949e;"/>
+                    <Label fx:id="lblVf"      GridPane.columnIndex="1" GridPane.rowIndex="5" style="-fx-text-fill: #e6edf3;" text="-"/>
+                </GridPane>
+                <Separator/>
+                <Label text="Detection State" style="-fx-text-fill: #58a6ff; -fx-font-size: 13; -fx-font-weight: bold;"/>
+                <Label fx:id="lblDetectMode" text="INIT" style="-fx-text-fill: #8b949e;"/>
+                <HBox spacing="8">
+                    <Button fx:id="btnStartStop" text="Start Detection" onAction="#onStartStop"
+                            style="-fx-background-color: #238636; -fx-text-fill: white;"/>
+                    <Button fx:id="btnPopPlay" text="Undo Last Play" onAction="#onPopPlay"
+                            style="-fx-background-color: #b62324; -fx-text-fill: white;"/>
+                </HBox>
+            </VBox>
+
+            <!-- Right: session log -->
+            <VBox spacing="8" style="-fx-padding: 12; -fx-background-color: #0d1117;">
+                <Label text="Session Log" style="-fx-text-fill: #58a6ff; -fx-font-size: 14; -fx-font-weight: bold;"/>
+                <TableView fx:id="tblSessionLog" VBox.vgrow="ALWAYS" style="-fx-background-color: #161b22;">
+                    <columns>
+                        <TableColumn fx:id="colLogTitle" text="Title"  prefWidth="200"/>
+                        <TableColumn fx:id="colLogDiff"  text="Diff"   prefWidth="60"/>
+                        <TableColumn fx:id="colLogScore" text="Score"  prefWidth="90"/>
+                        <TableColumn fx:id="colLogLamp"  text="Lamp"   prefWidth="60"/>
+                        <TableColumn fx:id="colLogDate"  text="Date"   prefWidth="120"/>
+                    </columns>
+                </TableView>
+                <TextArea fx:id="txtOutput" prefRowCount="6" editable="false"
+                          style="-fx-control-inner-background: #0d1117; -fx-text-fill: #8b949e; -fx-font-family: monospace;"/>
+            </VBox>
+        </SplitPane>
+    </center>
+
+    <!-- Bottom: status bar -->
+    <bottom>
+        <HBox style="-fx-padding: 4 8 4 8; -fx-background-color: #161b22;">
+            <Label fx:id="lblStatus" text="Ready" style="-fx-text-fill: #8b949e;"/>
+        </HBox>
+    </bottom>
+</BorderPane>

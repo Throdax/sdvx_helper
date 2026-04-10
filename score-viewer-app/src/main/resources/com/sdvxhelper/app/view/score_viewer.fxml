@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.sdvxhelper.ui.controller.ScoreViewerController"
+            prefWidth="1200" prefHeight="700">
+
+    <top>
+        <HBox spacing="12" style="-fx-padding: 8; -fx-background-color: #161b22;">
+            <Label text="Filter:" style="-fx-text-fill: #8b949e;"/>
+            <TextField fx:id="txtFilter" promptText="Search title…" prefWidth="200"/>
+            <Label text="Level:" style="-fx-text-fill: #8b949e;"/>
+            <ComboBox fx:id="cmbLevel" promptText="All"/>
+            <Label text="Lamp:" style="-fx-text-fill: #8b949e;"/>
+            <ComboBox fx:id="cmbLamp" promptText="All"/>
+            <Button text="Export CSV" fx:id="btnExport" onAction="#onExportCsv"/>
+        </HBox>
+    </top>
+
+    <center>
+        <TableView fx:id="tblScores" style="-fx-background-color: #0d1117;">
+            <columns>
+                <TableColumn fx:id="colTitle"  text="Title"      prefWidth="280"/>
+                <TableColumn fx:id="colDiff"   text="Difficulty" prefWidth="90"/>
+                <TableColumn fx:id="colLevel"  text="Level"      prefWidth="60"/>
+                <TableColumn fx:id="colScore"  text="Score"      prefWidth="100"/>
+                <TableColumn fx:id="colLamp"   text="Lamp"       prefWidth="70"/>
+                <TableColumn fx:id="colVf"     text="VF"         prefWidth="70"/>
+                <TableColumn fx:id="colDate"   text="Date"       prefWidth="120"/>
+                <TableColumn fx:id="colSTier"  text="S-Tier"     prefWidth="70"/>
+            </columns>
+        </TableView>
+    </center>
+
+    <bottom>
+        <HBox style="-fx-padding: 4 8; -fx-background-color: #161b22;">
+            <Label fx:id="lblCount" text="0 charts" style="-fx-text-fill: #8b949e;"/>
+        </HBox>
+    </bottom>
+</BorderPane>

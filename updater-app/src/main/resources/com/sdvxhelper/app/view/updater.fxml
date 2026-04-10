@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.sdvxhelper.ui.controller.UpdaterController"
+            prefWidth="550" prefHeight="350">
+
+    <top>
+        <VBox style="-fx-padding: 16; -fx-background-color: #161b22; -fx-spacing: 8;">
+            <Label text="SDVX Helper Updater" style="-fx-text-fill: #58a6ff; -fx-font-size: 18; -fx-font-weight: bold;"/>
+            <HBox spacing="16">
+                <VBox spacing="4">
+                    <Label text="Current Version:" style="-fx-text-fill: #8b949e;"/>
+                    <Label fx:id="lblCurrentVersion" text="—" style="-fx-text-fill: #e6edf3;"/>
+                </VBox>
+                <VBox spacing="4">
+                    <Label text="Latest Version:" style="-fx-text-fill: #8b949e;"/>
+                    <Label fx:id="lblLatestVersion" text="—" style="-fx-text-fill: #e6edf3;"/>
+                </VBox>
+                <VBox spacing="4">
+                    <Label text="Status:" style="-fx-text-fill: #8b949e;"/>
+                    <Label fx:id="lblUpdateStatus" text="—" style="-fx-text-fill: #4ecdc4;"/>
+                </VBox>
+            </HBox>
+        </VBox>
+    </top>
+
+    <center>
+        <VBox spacing="12" style="-fx-padding: 16; -fx-background-color: #0d1117;">
+            <ProgressBar fx:id="progressBar" prefWidth="500" progress="0"/>
+            <Label fx:id="lblProgress" text="" style="-fx-text-fill: #8b949e;"/>
+            <TextArea fx:id="txtChangeLog" prefRowCount="8" editable="false" wrapText="true"
+                      promptText="Change log will appear here…"
+                      style="-fx-control-inner-background: #0d1117; -fx-text-fill: #e6edf3;"/>
+        </VBox>
+    </center>
+
+    <bottom>
+        <HBox spacing="12" style="-fx-padding: 12; -fx-background-color: #161b22;">
+            <Button text="Check for Updates" fx:id="btnCheck"  onAction="#onCheck"
+                    style="-fx-background-color: #1f6feb; -fx-text-fill: white;"/>
+            <Button text="Download &amp; Install" fx:id="btnUpdate" onAction="#onUpdate"
+                    disable="true"
+                    style="-fx-background-color: #238636; -fx-text-fill: white;"/>
+            <Button text="Close"             fx:id="btnClose"  onAction="#onClose"/>
+        </HBox>
+    </bottom>
+</BorderPane>

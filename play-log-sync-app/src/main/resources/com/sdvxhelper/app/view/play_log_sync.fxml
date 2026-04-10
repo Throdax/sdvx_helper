@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.sdvxhelper.ui.controller.PlayLogSyncController"
+            prefWidth="1000" prefHeight="600">
+
+    <top>
+        <VBox style="-fx-padding: 8; -fx-background-color: #161b22; -fx-spacing: 6;">
+            <Label text="Play Log Sync" style="-fx-text-fill: #58a6ff; -fx-font-size: 16; -fx-font-weight: bold;"/>
+            <GridPane hgap="8" vgap="4">
+                <Label text="Play Log (alllog.xml):"       GridPane.columnIndex="0" GridPane.rowIndex="0" style="-fx-text-fill: #8b949e;"/>
+                <TextField fx:id="txtPlayLogPath"  prefWidth="400" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+                <Button text="Browse" onAction="#onBrowsePlayLog"    GridPane.columnIndex="2" GridPane.rowIndex="0"/>
+
+                <Label text="Results Folder:"              GridPane.columnIndex="0" GridPane.rowIndex="1" style="-fx-text-fill: #8b949e;"/>
+                <TextField fx:id="txtResultsFolder" prefWidth="400" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+                <Button text="Browse" onAction="#onBrowseResults"    GridPane.columnIndex="2" GridPane.rowIndex="1"/>
+
+                <Label text="Output Folder:"               GridPane.columnIndex="0" GridPane.rowIndex="2" style="-fx-text-fill: #8b949e;"/>
+                <TextField fx:id="txtOutputFolder"  prefWidth="400" GridPane.columnIndex="1" GridPane.rowIndex="2"/>
+                <Button text="Browse" onAction="#onBrowseOutput"     GridPane.columnIndex="2" GridPane.rowIndex="2"/>
+            </GridPane>
+            <HBox spacing="8">
+                <Button text="Start Sync" fx:id="btnSync" onAction="#onSync"
+                        style="-fx-background-color: #238636; -fx-text-fill: white;"/>
+                <Button text="Export XML" fx:id="btnExport" onAction="#onExportXml"
+                        style="-fx-background-color: #1f6feb; -fx-text-fill: white;"/>
+            </HBox>
+        </VBox>
+    </top>
+
+    <center>
+        <SplitPane dividerPositions="0.6">
+            <TableView fx:id="tblPlays" style="-fx-background-color: #0d1117;">
+                <columns>
+                    <TableColumn fx:id="colDate"    text="Date"       prefWidth="120"/>
+                    <TableColumn fx:id="colTitle"   text="Title"      prefWidth="250"/>
+                    <TableColumn fx:id="colDiff"    text="Diff"       prefWidth="60"/>
+                    <TableColumn fx:id="colScore"   text="Score"      prefWidth="100"/>
+                    <TableColumn fx:id="colLamp"    text="Lamp"       prefWidth="70"/>
+                    <TableColumn fx:id="colStatus"  text="Status"     prefWidth="80"/>
+                </columns>
+            </TableView>
+            <TextArea fx:id="txtLog" editable="false"
+                      style="-fx-control-inner-background: #0d1117; -fx-text-fill: #8b949e; -fx-font-family: monospace;"/>
+        </SplitPane>
+    </center>
+
+    <bottom>
+        <HBox style="-fx-padding: 4 8; -fx-background-color: #161b22;">
+            <Label fx:id="lblStatus" text="Ready" style="-fx-text-fill: #8b949e;"/>
+        </HBox>
+    </bottom>
+</BorderPane>

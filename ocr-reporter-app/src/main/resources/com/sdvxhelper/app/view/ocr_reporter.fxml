@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.image.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.sdvxhelper.ui.controller.OcrReporterController"
+            prefWidth="900" prefHeight="600">
+
+    <top>
+        <HBox spacing="12" style="-fx-padding: 8; -fx-background-color: #161b22;">
+            <Button text="Open Image Folder" fx:id="btnOpenFolder" onAction="#onOpenFolder"/>
+            <Button text="Previous"          fx:id="btnPrev"       onAction="#onPrev" disable="true"/>
+            <Button text="Next"              fx:id="btnNext"       onAction="#onNext" disable="true"/>
+            <Label fx:id="lblImageCount" text="0 / 0" style="-fx-text-fill: #8b949e;"/>
+        </HBox>
+    </top>
+
+    <center>
+        <SplitPane dividerPositions="0.55">
+            <!-- Left: image preview -->
+            <VBox spacing="8" style="-fx-padding: 12; -fx-background-color: #0d1117;">
+                <Label text="Screenshot Preview" style="-fx-text-fill: #58a6ff; -fx-font-size: 13;"/>
+                <ImageView fx:id="imgPreview" fitWidth="480" fitHeight="360" preserveRatio="true"/>
+                <Label text="Detected Hash:" style="-fx-text-fill: #8b949e;"/>
+                <TextField fx:id="txtHash" editable="false" style="-fx-control-inner-background: #161b22; -fx-text-fill: #4ecdc4;"/>
+            </VBox>
+
+            <!-- Right: song matching and registration -->
+            <VBox spacing="8" style="-fx-padding: 12; -fx-background-color: #0d1117;">
+                <Label text="OCR / Song Match" style="-fx-text-fill: #58a6ff; -fx-font-size: 13;"/>
+                <Label text="OCR Title:" style="-fx-text-fill: #8b949e;"/>
+                <TextField fx:id="txtOcrTitle" style="-fx-control-inner-background: #161b22; -fx-text-fill: #e6edf3;"/>
+                <Label text="Song Title (confirmed):" style="-fx-text-fill: #8b949e;"/>
+                <TextField fx:id="txtTitle" style="-fx-control-inner-background: #161b22; -fx-text-fill: #e6edf3;"/>
+                <Label text="Difficulty:" style="-fx-text-fill: #8b949e;"/>
+                <ComboBox fx:id="cmbDifficulty">
+                    <items>
+                        <javafx.collections.FXCollections fx:factory="observableArrayList">
+                            <String fx:value="nov"/>
+                            <String fx:value="adv"/>
+                            <String fx:value="exh"/>
+                            <String fx:value="mxm"/>
+                            <String fx:value="inf"/>
+                            <String fx:value="grv"/>
+                            <String fx:value="hvn"/>
+                            <String fx:value="vvd"/>
+                            <String fx:value="xcd"/>
+                        </javafx.collections.FXCollections>
+                    </items>
+                </ComboBox>
+                <Separator/>
+                <Button text="Register Hash" fx:id="btnRegister" onAction="#onRegister"
+                        style="-fx-background-color: #238636; -fx-text-fill: white;"/>
+                <Button text="Skip (Unknown)" fx:id="btnSkip" onAction="#onSkip"
+                        style="-fx-background-color: #6e7681; -fx-text-fill: white;"/>
+                <Separator/>
+                <Label text="Log:" style="-fx-text-fill: #8b949e;"/>
+                <TextArea fx:id="txtLog" prefRowCount="8" editable="false"
+                          style="-fx-control-inner-background: #0d1117; -fx-text-fill: #8b949e; -fx-font-family: monospace;"/>
+            </VBox>
+        </SplitPane>
+    </center>
+</BorderPane>

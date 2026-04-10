@@ -1,22 +1,33 @@
-.settings/
-sdvx_*er/*
-dist/*
-build*
-to_bin/*
-*.spec
-*.log
-*.pyc
-__pycache__/*
-sdvx_helper/*
-tmp/*
-jackets/*
-*.zip
-log/*
-params_secret.py
-out/*
-alllog.pkl
-settings.json
+# Python build artifacts (under python/)
+python/dist/*
+python/build*/
+python/to_bin/*
+python/*.spec
+python/*.pyc
+python/__pycache__/*
+python/sdvx_helper/*
+python/sdvx_*er/*
+python/tmp/*
+python/jackets/*
+python/*.zip
+python/log/*
+python/params_secret.py
+python/out/*
+python/alllog.pkl
+python/settings.json
+python/.settings/
 
-# PyClipse project files
+# General
+*.log
 .project
 .pydevproject
+
+# Java / Maven build artifacts
+target/
+*/target/
+
+# IDE
+.idea/
+*.iml
+.classpath
+.factorypath
