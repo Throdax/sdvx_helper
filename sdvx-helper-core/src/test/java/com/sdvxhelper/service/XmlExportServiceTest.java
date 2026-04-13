@@ -1,6 +1,7 @@
 package com.sdvxhelper.service;
 
 import com.sdvxhelper.model.MusicInfo;
+import com.sdvxhelper.model.MusicInfoBuilder;
 import com.sdvxhelper.model.OnePlayData;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -61,7 +62,7 @@ class XmlExportServiceTest {
 
     @Test
     void writeVfOnSelectWithInfo() throws IOException {
-        MusicInfo info = new MusicInfo("冥", "A", "180", "exh", "20", 9_900_000, "puc", "", "", "");
+        MusicInfo info = new MusicInfoBuilder("冥").artist("A").bpm("180").difficulty("exh").lv("20").bestScore(9_900_000).bestLamp("puc").build();
         info.setVf(456);
         File out = tempDir.resolve("vf_onselect.xml").toFile();
         service.writeVfOnSelect(info, out);
@@ -84,7 +85,7 @@ class XmlExportServiceTest {
 
     @Test
     void writeTotalVfProducesValidXml() throws IOException {
-        MusicInfo m = new MusicInfo("Song X", "A", "180", "exh", "18", 9_900_000, "puc", "", "", "");
+        MusicInfo m = new MusicInfoBuilder("Song X").artist("A").bpm("180").difficulty("exh").lv("18").bestScore(9_900_000).bestLamp("puc").build();
         m.setVf(369);
         File out = tempDir.resolve("total_vf.xml").toFile();
         service.writeTotalVf(List.of(m), 3690, out);

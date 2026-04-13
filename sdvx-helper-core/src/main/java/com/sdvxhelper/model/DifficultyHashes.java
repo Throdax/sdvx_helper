@@ -1,13 +1,13 @@
 package com.sdvxhelper.model;
 
-import jakarta.xml.bind.annotation.XmlAccessType;
-import jakarta.xml.bind.annotation.XmlAccessorType;
-import jakarta.xml.bind.annotation.XmlElement;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import jakarta.xml.bind.annotation.XmlAccessType;
+import jakarta.xml.bind.annotation.XmlAccessorType;
+import jakarta.xml.bind.annotation.XmlElement;
 
 /**
  * Maps song titles to their perceptual-hash (or SHA) strings for one difficulty tier.
@@ -26,8 +26,11 @@ public class DifficultyHashes {
     @XmlElement(name = "entry")
     private List<HashEntry> entries = new ArrayList<>();
 
-    /** No-argument constructor required by JAXB. */
+    /** 
+     * No-argument constructor required by JAXB. 
+     */
     public DifficultyHashes() {
+        // Required by JAXB
     }
 
     /**
@@ -72,4 +75,6 @@ public class DifficultyHashes {
             entries.add(new HashEntry(e.getKey(), e.getValue()));
         }
     }
+    
+    
 }

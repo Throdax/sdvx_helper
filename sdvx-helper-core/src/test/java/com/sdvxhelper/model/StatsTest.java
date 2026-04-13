@@ -11,7 +11,14 @@ import org.junit.jupiter.api.Assertions;
 class StatsTest {
 
     private MusicInfo makeInfo(String lv, int score, String lamp) {
-        MusicInfo m = new MusicInfo("T", "A", "180", "exh", lv, score, lamp, "", "", "");
+        MusicInfo m = new MusicInfoBuilder("T")
+                .artist("A")
+                .bpm("180")
+                .difficulty("exh")
+                .lv(lv)
+                .bestScore(score)
+                .bestLamp(lamp)
+                .build();
         m.setRank(ScoreRank.fromScore(score));
         return m;
     }
@@ -48,10 +55,23 @@ class StatsTest {
     @Test
     void averageScoreComputedCorrectly() {
         OneLevelStat lvStat = new OneLevelStat(20);
-        // Use distinct titles so each read() produces a different scores-map key.
-        MusicInfo m1 = new MusicInfo("SongA", "A", "180", "exh", "20", 9_000_000, "clear", "", "", "");
+        MusicInfo m1 = new MusicInfoBuilder("SongA")
+                .artist("A")
+                .bpm("180")
+                .difficulty("exh")
+                .lv("20")
+                .bestScore(9_000_000)
+                .bestLamp("clear")
+                .build();
         m1.setRank(ScoreRank.fromScore(9_000_000));
-        MusicInfo m2 = new MusicInfo("SongB", "A", "180", "exh", "20", 8_000_000, "clear", "", "", "");
+        MusicInfo m2 = new MusicInfoBuilder("SongB")
+                .artist("A")
+                .bpm("180")
+                .difficulty("exh")
+                .lv("20")
+                .bestScore(8_000_000)
+                .bestLamp("clear")
+                .build();
         m2.setRank(ScoreRank.fromScore(8_000_000));
         lvStat.read(m1);
         lvStat.read(m2);

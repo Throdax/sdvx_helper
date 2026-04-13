@@ -6,9 +6,10 @@ import java.util.Map;
 /**
  * Aggregated statistics for a single chart level (1–20).
  *
- * <p>Tracks rank and lamp distribution counts plus scores for average
- * computation.  Maps to the Python {@code OneLevelStat} class in
- * {@code sdvxh_classes.py}.</p>
+ * <p>
+ * Tracks rank and lamp distribution counts plus scores for average computation.
+ * Maps to the Python {@code OneLevelStat} class in {@code sdvxh_classes.py}.
+ * </p>
  *
  * @author Throdax
  * @since 2.0.0
@@ -19,22 +20,22 @@ public class OneLevelStat {
     private final int lv;
 
     /**
-     * Count of plays per score rank.
-     * Keys: {@code "s"}, {@code "aaa_plus"}, {@code "aaa"}, {@code "aa_plus"},
-     * {@code "aa"}, {@code "a_plus"}, {@code "a"}, {@code "b"}, {@code "c"}, {@code "d"}.
+     * Count of plays per score rank. Keys: {@code "s"}, {@code "aaa_plus"},
+     * {@code "aaa"}, {@code "aa_plus"}, {@code "aa"}, {@code "a_plus"},
+     * {@code "a"}, {@code "b"}, {@code "c"}, {@code "d"}.
      */
     private Map<String, Integer> rank;
 
     /**
-     * Count of plays per clear lamp.
-     * Keys: {@code "puc"}, {@code "uc"}, {@code "exh"}, {@code "hard"},
-     * {@code "clear"}, {@code "failed"}, {@code "noplay"}.
+     * Count of plays per clear lamp. Keys: {@code "puc"}, {@code "uc"},
+     * {@code "exh"}, {@code "hard"}, {@code "clear"}, {@code "failed"},
+     * {@code "noplay"}.
      */
     private Map<String, Integer> lamp;
 
     /**
-     * Best scores indexed by {@code "title___difficulty"}.
-     * Used to compute the level average score.
+     * Best scores indexed by {@code "title___difficulty"}. Used to compute the
+     * level average score.
      */
     private Map<String, Integer> scores;
 
@@ -52,8 +53,8 @@ public class OneLevelStat {
     }
 
     /**
-     * Resets all rank/lamp counts, clears the score map and sets the average to zero.
-     * Called before each full statistics recomputation.
+     * Resets all rank/lamp counts, clears the score map and sets the average to
+     * zero. Called before each full statistics recomputation.
      */
     public void reset() {
         rank = new HashMap<>();
@@ -61,17 +62,17 @@ public class OneLevelStat {
         scores = new HashMap<>();
         averageScore = 0.0;
 
-        for (String r : new String[]{"s", "aaa_plus", "aaa", "aa_plus", "aa", "a_plus", "a", "b", "c", "d"}) {
+        for (String r : new String[] { "s", "aaa_plus", "aaa", "aa_plus", "aa", "a_plus", "a", "b", "c", "d" }) {
             rank.put(r, 0);
         }
-        for (String l : new String[]{"puc", "uc", "exh", "hard", "clear", "failed", "noplay"}) {
+        for (String l : new String[] { "puc", "uc", "exh", "hard", "clear", "failed", "noplay" }) {
             lamp.put(l, 0);
         }
     }
 
     /**
-     * Reads one {@link MusicInfo} entry and increments the relevant rank/lamp counters.
-     * Also records the best score for average computation.
+     * Reads one {@link MusicInfo} entry and increments the relevant rank/lamp
+     * counters. Also records the best score for average computation.
      *
      * @param minfo chart data to incorporate
      */
@@ -105,28 +106,36 @@ public class OneLevelStat {
      *
      * @return level (1–20)
      */
-    public int getLv() { return lv; }
+    public int getLv() {
+        return lv;
+    }
 
     /**
      * Returns the rank count map.
      *
      * @return mutable rank count map
      */
-    public Map<String, Integer> getRank() { return rank; }
+    public Map<String, Integer> getRank() {
+        return rank;
+    }
 
     /**
      * Returns the lamp count map.
      *
      * @return mutable lamp count map
      */
-    public Map<String, Integer> getLamp() { return lamp; }
+    public Map<String, Integer> getLamp() {
+        return lamp;
+    }
 
     /**
      * Returns the scores map ({@code "title___difficulty"} → best score).
      *
      * @return mutable scores map
      */
-    public Map<String, Integer> getScores() { return scores; }
+    public Map<String, Integer> getScores() {
+        return scores;
+    }
 
     /**
      * Returns the last-computed average score (may be stale until
@@ -134,5 +143,7 @@ public class OneLevelStat {
      *
      * @return cached average score
      */
-    public double getCachedAverageScore() { return averageScore; }
+    public double getCachedAverageScore() {
+        return averageScore;
+    }
 }

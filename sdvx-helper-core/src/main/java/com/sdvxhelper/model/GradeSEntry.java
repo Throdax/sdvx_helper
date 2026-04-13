@@ -1,20 +1,23 @@
 package com.sdvxhelper.model;
 
-import jakarta.xml.bind.annotation.XmlAccessType;
-import jakarta.xml.bind.annotation.XmlAccessorType;
-import jakarta.xml.bind.annotation.XmlAttribute;
-import jakarta.xml.bind.annotation.XmlElement;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import jakarta.xml.bind.annotation.XmlAccessType;
+import jakarta.xml.bind.annotation.XmlAccessorType;
+import jakarta.xml.bind.annotation.XmlAttribute;
+import jakarta.xml.bind.annotation.XmlElement;
+
 /**
- * Grade-S tier data for one level bucket (e.g. {@code "lv17"}, {@code "lv18"}, {@code "lv19"}).
+ * Grade-S tier data for one level bucket (e.g. {@code "lv17"}, {@code "lv18"},
+ * {@code "lv19"}).
  *
- * <p>Maps to one entry in the Python {@code musiclist['gradeS_lv17']} / {@code gradeS_lv18}
- * / {@code gradeS_lv19} dictionaries.</p>
+ * <p>
+ * Maps to one entry in the Python {@code musiclist['gradeS_lv17']} /
+ * {@code gradeS_lv18} / {@code gradeS_lv19} dictionaries.
+ * </p>
  *
  * @author Throdax
  * @since 2.0.0
@@ -30,35 +33,63 @@ public class GradeSEntry {
     @XmlElement(name = "tier")
     private List<TierEntry> tiers = new ArrayList<>();
 
-    /** No-argument constructor required by JAXB. */
+    /** 
+     * No-argument constructor required by JAXB. 
+     */
     public GradeSEntry() {
+        // Required by JAXB
     }
 
     /**
-     * Constructs an entry.
+     * Constructs an entry with the given level bucket key.
      *
-     * @param levelKey level bucket key
+     * @param levelKey the level bucket key (e.g. {@code "lv17"}, {@code "lv18"})
      */
     public GradeSEntry(String levelKey) {
         this.levelKey = levelKey;
     }
 
-    /** @return level bucket key */
-    public String getLevelKey() { return levelKey; }
-
-    /** @param levelKey level bucket key */
-    public void setLevelKey(String levelKey) { this.levelKey = levelKey; }
-
-    /** @return mutable list of tier mappings */
-    public List<TierEntry> getTiers() { return tiers; }
-
-    /** @param tiers tier mappings */
-    public void setTiers(List<TierEntry> tiers) { this.tiers = tiers != null ? tiers : new ArrayList<>(); }
+    /**
+     * Returns the level bucket key (e.g. {@code "lv17"}, {@code "lv18"}).
+     *
+     * @return the level bucket key
+     */
+    public String getLevelKey() {
+        return levelKey;
+    }
 
     /**
-     * Converts the tiers list to a {@link Map} for O(1) lookups.
+     * Sets the level bucket key (e.g. {@code "lv17"}, {@code "lv18"}).
      *
-     * @return title → tier map
+     * @param levelKey the level bucket key to set
+     */
+    public void setLevelKey(String levelKey) {
+        this.levelKey = levelKey;
+    }
+
+    /**
+     * Returns the mutable list of tier mappings for this level bucket.
+     *
+     * @return the list of {@link TierEntry} tier mappings
+     */
+    public List<TierEntry> getTiers() {
+        return tiers;
+    }
+
+    /**
+     * Sets the tier mappings for this level bucket.
+     * If {@code null} is supplied an empty list is used instead.
+     *
+     * @param tiers the list of {@link TierEntry} tier mappings to set
+     */
+    public void setTiers(List<TierEntry> tiers) {
+        this.tiers = tiers != null ? tiers : new ArrayList<>();
+    }
+
+    /**
+     * Converts the tiers list to a {@link Map} for O(1) lookups by title.
+     *
+     * @return a map of song title to tier string for all entries in this level bucket
      */
     public Map<String, String> toMap() {
         Map<String, String> map = new HashMap<>(tiers.size() * 2);
@@ -69,9 +100,9 @@ public class GradeSEntry {
     }
 
     /**
-     * Populates tiers from a {@link Map}.
+     * Populates the tiers list from a title-to-tier {@link Map}.
      *
-     * @param map title → tier map
+     * @param map a map of song title to tier string to convert into {@link TierEntry} elements
      */
     public void fromMap(Map<String, String> map) {
         tiers = new ArrayList<>(map.size());
@@ -80,43 +111,29 @@ public class GradeSEntry {
         }
     }
 
-    /**
-     * Pair of song title and its tier classification for Grade-S tables.
-     */
-    @XmlAccessorType(XmlAccessType.FIELD)
-    public static class TierEntry {
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        return prime * result + ((levelKey == null) ? 0 : levelKey.hashCode());
+    }
 
-        @XmlAttribute
-        private String title;
-
-        @XmlAttribute
-        private String tier;
-
-        /** No-argument constructor required by JAXB. */
-        public TierEntry() {
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
         }
-
-        /**
-         * Constructs a tier entry.
-         *
-         * @param title song title
-         * @param tier  tier string (e.g. {@code "SSS"}, {@code "SS"})
-         */
-        public TierEntry(String title, String tier) {
-            this.title = title;
-            this.tier = tier;
+        if (!(obj instanceof GradeSEntry)) {
+            return false;
         }
-
-        /** @return song title */
-        public String getTitle() { return title; }
-
-        /** @param title song title */
-        public void setTitle(String title) { this.title = title; }
-
-        /** @return tier string */
-        public String getTier() { return tier; }
-
-        /** @param tier tier string */
-        public void setTier(String tier) { this.tier = tier; }
+        GradeSEntry other = (GradeSEntry) obj;
+        if (levelKey == null) {
+            if (other.levelKey != null) {
+                return false;
+            }
+        } else if (!levelKey.equals(other.levelKey)) {
+            return false;
+        }
+        return true;
     }
 }

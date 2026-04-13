@@ -1,14 +1,14 @@
 package com.sdvxhelper.ocr;
 
-import org.junit.jupiter.api.Test;
-
-import javax.imageio.ImageIO;
 import java.awt.Color;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
 
+import javax.imageio.ImageIO;
+
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 /**
  * Unit tests for {@link PerceptualHasher}.
@@ -21,7 +21,7 @@ class PerceptualHasherTest {
     void hashReturnsSixteenCharHexString() {
         BufferedImage img = solidImage(100, 100, Color.WHITE);
         String hash = hasher.hash(img);
-        Assertions.assertEquals(16, hash.length());
+        Assertions.assertEquals(25, hash.length());
         Assertions.assertTrue(hash.matches("[0-9a-f]+"), "Expected lowercase hex: " + hash);
     }
 
@@ -77,9 +77,9 @@ class PerceptualHasherTest {
     void realJacketHashIsValidHex() throws IOException {
         BufferedImage jacket = loadTestResource("4fd1e379df6e0ec7e3a049d03.png");
         String hash = hasher.hash(jacket);
-        Assertions.assertEquals(16, hash.length(),
-                "Hash must be exactly 16 hex characters for HASH_SIZE=8");
-        Assertions.assertTrue(hash.matches("[0-9a-f]{16}"),
+        Assertions.assertEquals(25, hash.length(),
+                "Hash must be exactly 25 hex characters for HASH_SIZE=10");
+        Assertions.assertTrue(hash.matches("[0-9a-f]{25}"),
                 "Hash must be lowercase hex: " + hash);
     }
 

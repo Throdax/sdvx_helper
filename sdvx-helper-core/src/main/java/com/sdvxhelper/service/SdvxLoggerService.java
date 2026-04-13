@@ -1,18 +1,21 @@
 package com.sdvxhelper.service;
 
-import com.sdvxhelper.model.MusicInfo;
-import com.sdvxhelper.model.OnePlayData;
-import com.sdvxhelper.model.PlayLog;
-import com.sdvxhelper.model.Stats;
-import com.sdvxhelper.repository.MusicListRepository;
-import com.sdvxhelper.repository.PlayLogRepository;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.sdvxhelper.model.MusicInfo;
+import com.sdvxhelper.model.MusicInfoBuilder;
+import com.sdvxhelper.model.OnePlayData;
+import com.sdvxhelper.model.PlayLog;
+import com.sdvxhelper.model.SongInfo;
+import com.sdvxhelper.model.Stats;
+import com.sdvxhelper.repository.MusicListRepository;
+import com.sdvxhelper.repository.PlayLogRepository;
 
 /**
  * Central orchestrator for recording and analysing SDVX play history.
@@ -230,30 +233,62 @@ public class SdvxLoggerService {
     // Private helpers
     // -------------------------------------------------------------------------
 
+    /**
+     * Converts a best play record to a {@link MusicInfo} with metadata from the music list.
+     * @param best best play record to convert
+     * @param repo music list repository for metadata lookup
+     * @return converted MusicInfo with metadata and VF unset (caller should compute VF after conversion)
+     */
     private static MusicInfo toMusicInfo(OnePlayData best, MusicListRepository repo) {
-        com.sdvxhelper.model.SongInfo si = repo.findSongInfo(best.getTitle());
-        String lv = resolveLv(best.getDifficulty(), si);
-        return new MusicInfo(best.getTitle(),
-                si.getArtist(), si.getBpm(),
-                best.getDifficulty(), lv,
-                best.getCurScore(), best.getLamp(),
-                best.getDate(), "", "");
+        SongInfo songInfo = repo.findSongInfo(best.getTitle());
+        if (songInfo == null) {
+            throw new IllegalArgumentException(
+                    "No SongInfo found for title '" + best.getTitle() + "' — use toMusicInfoUnknown() instead");
+        }
+
+        String level = resolveLevel(best.getDifficulty(), songInfo);
+        return new MusicInfoBuilder(best.getTitle())
+                .artist(songInfo.getArtist())
+                .bpm(songInfo.getBpm())
+                .difficulty(best.getDifficulty())
+                .lv(level)
+                .bestScore(best.getCurScore())
+                .bestLamp(best.getLamp())
+                .date(best.getDate())
+                .build();
     }
 
+    /**
+     * Converts a best play record to a {@link MusicInfo} without metadata (for titles not found in the music list).
+     * @param best best play record to convert
+     * @return converted MusicInfo with only title, difficulty, score, lamp, and date set; VF unset (caller should compute VF after conversion)
+     */
     private static MusicInfo toMusicInfoUnknown(OnePlayData best) {
-        return new MusicInfo(best.getTitle(), "", "",
-                best.getDifficulty(), "??",
-                best.getCurScore(), best.getLamp(),
-                best.getDate(), "", "");
+        return new MusicInfoBuilder(best.getTitle())
+                .difficulty(best.getDifficulty())
+                .bestScore(best.getCurScore())
+                .bestLamp(best.getLamp())
+                .date(best.getDate())
+                .build();
     }
 
-    private static String resolveLv(String difficulty, com.sdvxhelper.model.SongInfo si) {
-        if (si == null) return "??";
+    /**
+     * Resolves the chart level string for the given difficulty from the song info.
+     * @param difficulty chart difficulty string
+     * @param songInfo song info to resolve from
+     * @return level string or "??" if not found
+     */
+    private static String resolveLevel(String difficulty, SongInfo songInfo) {
+        
+        if (songInfo == null) {
+            return "??";
+        }
+        
         return switch (difficulty.toLowerCase()) {
-            case "nov" -> si.getLvNov();
-            case "adv" -> si.getLvAdv();
-            case "exh" -> si.getLvExh();
-            default    -> si.getLvAppend() != null ? si.getLvAppend() : "??";
+            case "nov" -> songInfo.getLvNov();
+            case "adv" -> songInfo.getLvAdv();
+            case "exh" -> songInfo.getLvExh();
+            default    -> songInfo.getLvAppend() != null ? songInfo.getLvAppend() : "??";
         };
     }
 }

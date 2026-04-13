@@ -1,20 +1,25 @@
 package com.sdvxhelper.model;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import jakarta.xml.bind.annotation.XmlAccessType;
 import jakarta.xml.bind.annotation.XmlAccessorType;
 import jakarta.xml.bind.annotation.XmlElement;
 import jakarta.xml.bind.annotation.XmlRootElement;
 
-import java.util.ArrayList;
-import java.util.List;
-
 /**
  * JAXB root element wrapping the complete play history.
  *
- * <p>Serialised to / deserialised from {@code alllog.xml}.
- * Replaces the Python {@code alllog.pkl} pickle file.</p>
+ * <p>
+ * Serialised to / deserialised from {@code alllog.xml}. Replaces the Python
+ * {@code alllog.pkl} pickle file.
+ * </p>
  *
- * <p>Example XML structure:</p>
+ * <p>
+ * Example XML structure:
+ * </p>
+ * 
  * <pre>{@code
  * <PlayLog>
  *     <play title="冥" curScore="9950000" ... />

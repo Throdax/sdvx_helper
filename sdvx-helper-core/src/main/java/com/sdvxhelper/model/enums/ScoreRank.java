@@ -48,7 +48,7 @@ public enum ScoreRank {
     private final int minScore;
     private final double gradeCoefficient;
 
-    ScoreRank(int minScore, double gradeCoefficient) {
+    private ScoreRank(int minScore, double gradeCoefficient) {
         this.minScore = minScore;
         this.gradeCoefficient = gradeCoefficient;
     }

@@ -1,17 +1,18 @@
 package com.sdvxhelper.service;
 
-import com.sdvxhelper.model.MusicInfo;
-import com.sdvxhelper.model.OnePlayData;
-import com.sdvxhelper.util.ScoreFormatter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.sdvxhelper.model.MusicInfo;
+import com.sdvxhelper.model.OnePlayData;
+import com.sdvxhelper.util.ScoreFormatter;
 
 /**
  * Generates CSV export files for play history and best-score data.
@@ -29,12 +30,6 @@ public class CsvExportService {
 
     private static final Logger log = LoggerFactory.getLogger(CsvExportService.class);
     private static final Charset SHIFT_JIS = Charset.forName("Shift_JIS");
-
-    /**
-     * Constructs the export service.
-     */
-    public CsvExportService() {
-    }
 
     // -------------------------------------------------------------------------
     // Best CSV
@@ -91,7 +86,7 @@ public class CsvExportService {
                         p.getCurScore(),
                         csvEsc(p.getLamp()),
                         p.getDiff(),
-                        csvEsc(p.getDate()));
+                        csvEsc(MusicInfo.marshalDate(p.getDate())));
             }
         }
         log.info("Wrote alllog CSV to {} ({} records)", outFile.getAbsolutePath(), plays.size());
@@ -115,8 +110,8 @@ public class CsvExportService {
         // Count plays per date prefix (first 10 chars = YYYY-MM-DD)
         java.util.Map<String, Long> countByDate = new java.util.LinkedHashMap<>();
         for (OnePlayData p : plays) {
-            String date = p.getDate() != null && p.getDate().length() >= 10
-                    ? p.getDate().substring(0, 10) : "unknown";
+            String date = p.getDate() != null
+                    ? p.getDate().toLocalDate().toString() : "unknown";
             countByDate.merge(date, 1L, Long::sum);
         }
         try (PrintWriter pw = new PrintWriter(outFile, StandardCharsets.UTF_8)) {
@@ -132,12 +127,16 @@ public class CsvExportService {
     // Helpers
     // -------------------------------------------------------------------------
 
+    /** Ensures the parent directory of the given file exists, creating it if necessary.
+     *
+     * @param file the file whose parent directory should be checked
+     * @throws IOException if the parent directory cannot be created
+     */
     private static void ensureParent(File file) throws IOException {
         File parent = file.getParentFile();
-        if (parent != null && !parent.exists()) {
-            if (!parent.mkdirs()) {
-                throw new IOException("Could not create directory: " + parent.getAbsolutePath());
-            }
+        
+        if (parent != null && !parent.exists() && !parent.mkdirs()) {
+            throw new IOException("Could not create directory: " + parent.getAbsolutePath());
         }
     }
 
@@ -149,10 +148,14 @@ public class CsvExportService {
      * @return CSV-safe string
      */
     private static String csvEsc(String value) {
-        if (value == null) return "";
+        if (value == null) {
+            return "";
+        }
+        
         if (value.contains(",") || value.contains("\"") || value.contains("\n")) {
             return "\"" + value.replace("\"", "\"\"") + "\"";
         }
+        
         return value;
     }
 }

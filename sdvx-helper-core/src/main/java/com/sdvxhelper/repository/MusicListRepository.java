@@ -1,5 +1,15 @@
 package com.sdvxhelper.repository;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+
+import jakarta.xml.bind.JAXBException;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.sdvxhelper.model.DifficultyHashGroup;
 import com.sdvxhelper.model.DifficultyHashes;
 import com.sdvxhelper.model.GradeSEntry;
@@ -7,14 +17,7 @@ import com.sdvxhelper.model.HashEntry;
 import com.sdvxhelper.model.MusicList;
 import com.sdvxhelper.model.SongInfo;
 import com.sdvxhelper.model.SongInfoEntry;
-import jakarta.xml.bind.JAXBException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
+import com.sdvxhelper.model.TierEntry;
 
 /**
  * Persists and loads the song/jacket database as {@code musiclist.xml}.
@@ -53,7 +56,7 @@ public class MusicListRepository extends JaxbRepository<MusicList> {
     public MusicListRepository(File file) {
         super(MusicList.class,
               DifficultyHashGroup.class, DifficultyHashes.class, HashEntry.class,
-              SongInfoEntry.class, SongInfo.class, GradeSEntry.class, GradeSEntry.TierEntry.class);
+              SongInfoEntry.class, SongInfo.class, GradeSEntry.class, TierEntry.class);
         this.file = file;
     }
 
@@ -71,10 +74,10 @@ public class MusicListRepository extends JaxbRepository<MusicList> {
             return null;
         }
         try {
-            MusicList ml = super.load(file);
-            buildIndices(ml);
-            log.info("Loaded musiclist.xml ({} songs)", ml.getTitles().size());
-            return ml;
+            MusicList musiclist = super.load(file);
+            buildIndices(musiclist);
+            log.info("Loaded musiclist.xml ({} songs)", musiclist.getTitles().size());
+            return musiclist;
         } catch (JAXBException e) {
             log.error("Failed to load musiclist.xml", e);
             return null;
@@ -125,12 +128,17 @@ public class MusicListRepository extends JaxbRepository<MusicList> {
         return java.util.Collections.unmodifiableMap(titleIndex);
     }
 
-    private void buildIndices(MusicList ml) {
+    /**
+     * Builds in-memory indices for O(1) lookups by jacket hash and title.
+     *
+     * @param musicList the music list to index
+     */
+    private void buildIndices(MusicList musicList) {
         jacketHashIndex = new HashMap<>();
         titleIndex = new HashMap<>();
 
         // Build jacket hash index
-        for (DifficultyHashGroup group : ml.getJacket()) {
+        for (DifficultyHashGroup group : musicList.getJacket()) {
             String diff = group.getDifficulty();
             for (HashEntry entry : group.getHashes().getEntries()) {
                 jacketHashIndex.put(entry.getHash(), new String[]{entry.getTitle(), diff});
@@ -138,7 +146,7 @@ public class MusicListRepository extends JaxbRepository<MusicList> {
         }
 
         // Build title index
-        for (SongInfoEntry sie : ml.getTitles()) {
+        for (SongInfoEntry sie : musicList.getTitles()) {
             titleIndex.put(sie.getTitle(), sie.getSongInfo());
         }
 

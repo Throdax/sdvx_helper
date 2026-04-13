@@ -1,12 +1,5 @@
 package com.sdvxhelper.repository;
 
-import com.sdvxhelper.config.DefaultSettings;
-import jakarta.json.bind.Jsonb;
-import jakarta.json.bind.JsonbBuilder;
-import jakarta.json.bind.JsonbConfig;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
@@ -14,6 +7,15 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.Map;
+
+import jakarta.json.bind.Jsonb;
+import jakarta.json.bind.JsonbBuilder;
+import jakarta.json.bind.JsonbConfig;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.sdvxhelper.config.DefaultSettings;
 
 /**
  * Reads and writes user settings to/from {@code settings.json} using JSON-B with
@@ -60,12 +62,12 @@ public class SettingsRepository {
      * @return settings map; never {@code null}
      */
     @SuppressWarnings("unchecked")
-    public Map<String, Object> load() {
-        Map<String, Object> settings = new LinkedHashMap<>();
+    public Map<String, String> load() {
+        Map<String, String> settings = new LinkedHashMap<>();
 
         if (file.exists()) {
             try (FileReader reader = new FileReader(file, StandardCharsets.UTF_8)) {
-                Map<String, Object> loaded = jsonb.fromJson(reader, LinkedHashMap.class);
+                Map<String, String> loaded = jsonb.fromJson(reader, LinkedHashMap.class);
                 if (loaded != null) {
                     settings.putAll(loaded);
                 }
@@ -78,9 +80,9 @@ public class SettingsRepository {
         }
 
         // Merge missing keys from defaults
-        Map<String, Object> defaults = DefaultSettings.getDefaults();
+        Map<String, String> defaults = DefaultSettings.getDefaults();
         int added = 0;
-        for (Map.Entry<String, Object> entry : defaults.entrySet()) {
+        for (Map.Entry<String, String> entry : defaults.entrySet()) {
             if (!settings.containsKey(entry.getKey())) {
                 settings.put(entry.getKey(), entry.getValue());
                 added++;
@@ -99,7 +101,7 @@ public class SettingsRepository {
      * @param settings settings map to persist
      * @throws IOException if the file cannot be written
      */
-    public void save(Map<String, Object> settings) throws IOException {
+    public void save(Map<String, String> settings) throws IOException {
         File parent = file.getParentFile();
         if (parent != null) {
             parent.mkdirs();

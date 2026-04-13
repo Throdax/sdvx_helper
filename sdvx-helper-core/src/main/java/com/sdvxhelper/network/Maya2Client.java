@@ -1,20 +1,20 @@
 package com.sdvxhelper.network;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
 import java.io.IOException;
 import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.util.HexFormat;
+import java.util.Map;
+
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * HTTP client for the Maya2 score-upload server.
@@ -35,7 +35,7 @@ public class Maya2Client {
 
     private final String baseUrl;
     private final String hmacKey;
-    private final HttpClient http;
+    private final HttpService http;
 
     /**
      * Constructs a Maya2 client.
@@ -46,9 +46,7 @@ public class Maya2Client {
     public Maya2Client(String baseUrl, String hmacKey) {
         this.baseUrl = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
         this.hmacKey = hmacKey;
-        this.http = HttpClient.newBuilder()
-                .connectTimeout(TIMEOUT)
-                .build();
+        this.http    = new HttpService(TIMEOUT);
     }
 
     /**
@@ -58,16 +56,13 @@ public class Maya2Client {
      */
     public boolean isAlive() {
         try {
-            HttpRequest req = HttpRequest.newBuilder()
-                    .uri(URI.create(baseUrl + "/health"))
-                    .timeout(TIMEOUT)
-                    .GET()
-                    .build();
-            HttpResponse<Void> resp = http.send(req, HttpResponse.BodyHandlers.discarding());
+            HttpResponse<Void> resp = http.get(
+                    URI.create(baseUrl + "/health"), Map.of(),
+                    HttpResponse.BodyHandlers.discarding());
             boolean alive = resp.statusCode() == 200;
             log.debug("Maya2 health check: {}", alive ? "alive" : "unreachable (status=" + resp.statusCode() + ")");
             return alive;
-        } catch (Exception e) {
+        } catch (IOException e) {
             log.debug("Maya2 not reachable: {}", e.getMessage());
             return false;
         }
@@ -81,19 +76,15 @@ public class Maya2Client {
      */
     public String downloadMusicList(String endpoint) {
         try {
-            HttpRequest req = HttpRequest.newBuilder()
-                    .uri(URI.create(baseUrl + endpoint))
-                    .timeout(TIMEOUT)
-                    .GET()
-                    .build();
-            HttpResponse<String> resp = http.send(req, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+            HttpResponse<String> resp = http.get(
+                    URI.create(baseUrl + endpoint), Map.of());
             if (resp.statusCode() == 200) {
                 log.info("Downloaded music list from Maya2 ({} bytes)", resp.body().length());
                 return resp.body();
             }
             log.warn("Maya2 music list download failed: HTTP {}", resp.statusCode());
             return null;
-        } catch (Exception e) {
+        } catch (IOException e) {
             log.error("Maya2 music list download error", e);
             return null;
         }
@@ -111,21 +102,13 @@ public class Maya2Client {
      */
     public boolean upload(String endpoint, String csvPayload) throws IOException {
         String signed = sign(csvPayload);
-        try {
-            HttpRequest req = HttpRequest.newBuilder()
-                    .uri(URI.create(baseUrl + endpoint))
-                    .timeout(TIMEOUT)
-                    .header("Content-Type", "text/csv; charset=UTF-8")
-                    .POST(HttpRequest.BodyPublishers.ofString(signed, StandardCharsets.UTF_8))
-                    .build();
-            HttpResponse<String> resp = http.send(req, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
-            boolean ok = resp.statusCode() == 200 || resp.statusCode() == 201;
-            log.info("Maya2 upload: HTTP {}", resp.statusCode());
-            return ok;
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new IOException("Upload interrupted", e);
-        }
+        HttpResponse<String> resp = http.postString(
+                URI.create(baseUrl + endpoint),
+                signed,
+                "text/csv; charset=UTF-8");
+        boolean ok = resp.statusCode() == 200 || resp.statusCode() == 201;
+        log.info("Maya2 upload: HTTP {}", resp.statusCode());
+        return ok;
     }
 
     /**

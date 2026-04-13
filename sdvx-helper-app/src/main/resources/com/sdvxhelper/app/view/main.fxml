@@ -146,7 +146,7 @@
                         <TableColumn fx:id="colLogDate"  text="%table.header.date"       prefWidth="120"/>
                     </columns>
                 </TableView>
-                <TextArea fx:id="txtOutput" prefRowCount="5" editable="false"
+                <TextArea fx:id="txtOutput" prefRowCount="10" editable="false"
                           style="-fx-font-family: monospace;"/>
             </VBox>
         </SplitPane>

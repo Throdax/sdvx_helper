@@ -1,21 +1,26 @@
 package com.sdvxhelper.network;
 
-import com.sdvxhelper.util.VersionUtil;
+import java.io.IOException;
+import java.io.StringReader;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.http.HttpResponse;
+import java.time.Duration;
+import java.util.Map;
+import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import jakarta.json.Json;
+import jakarta.json.JsonObject;
+import jakarta.json.JsonReader;
+
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.nio.charset.StandardCharsets;
-import java.time.Duration;
-import java.util.Optional;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import com.sdvxhelper.util.VersionUtil;
 
 /**
  * Checks for new application versions by querying the GitHub releases API.
@@ -29,12 +34,13 @@ import java.util.regex.Pattern;
 public class GitHubVersionClient {
 
     private static final Logger log = LoggerFactory.getLogger(GitHubVersionClient.class);
+
     private static final Duration TIMEOUT = Duration.ofSeconds(10);
-    private static final Pattern VERSION_PATTERN = Pattern.compile("v?([0-9]+\\.[0-9]+(\\.[0-9]+)?)");
+    private static final Pattern  VERSION_PATTERN = Pattern.compile("v?(\\d+\\.\\d+(\\.\\d+)?)");
 
     private final String repoOwner;
     private final String repoName;
-    private final HttpClient http;
+    private final HttpService http;
 
     /**
      * Constructs a GitHub version client.
@@ -45,10 +51,7 @@ public class GitHubVersionClient {
     public GitHubVersionClient(String repoOwner, String repoName) {
         this.repoOwner = repoOwner;
         this.repoName  = repoName;
-        this.http = HttpClient.newBuilder()
-                .connectTimeout(TIMEOUT)
-                .followRedirects(HttpClient.Redirect.NORMAL)
-                .build();
+        this.http      = new HttpService(TIMEOUT);
     }
 
     /**
@@ -84,32 +87,33 @@ public class GitHubVersionClient {
     }
 
     private Optional<String> queryApi() {
-        String url = "https://api.github.com/repos/" + repoOwner + "/" + repoName + "/releases/latest";
         try {
-            HttpRequest req = HttpRequest.newBuilder()
-                    .uri(URI.create(url))
-                    .timeout(TIMEOUT)
-                    .header("Accept", "application/vnd.github+json")
-                    .GET()
-                    .build();
-            HttpResponse<String> resp = http.send(req, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+            URI uri = new URI("https", "api.github.com",
+                    "/repos/" + repoOwner + "/" + repoName + "/releases/latest",
+                    null, null);
+            HttpResponse<String> resp = http.get(uri,
+                    Map.of("Accept", "application/vnd.github+json"));
             if (resp.statusCode() == 200) {
-                // Extract "tag_name" from the JSON response without a JSON library dependency
-                Matcher m = Pattern.compile("\"tag_name\"\\s*:\\s*\"([^\"]+)\"").matcher(resp.body());
-                if (m.find()) {
-                    return Optional.of(normalizeVersion(m.group(1)));
+                try (JsonReader reader = Json.createReader(new StringReader(resp.body()))) {
+                    JsonObject json = reader.readObject();
+                    if (json.containsKey("tag_name")) {
+                        return Optional.of(normalizeVersion(json.getString("tag_name")));
+                    }
                 }
             }
-        } catch (Exception e) {
+        } catch (URISyntaxException | IOException e) {
             log.debug("GitHub API query failed: {}", e.getMessage());
         }
         return Optional.empty();
     }
 
     private Optional<String> scrapeLatestTag() {
-        String url = "https://github.com/" + repoOwner + "/" + repoName + "/releases";
         try {
-            Document doc = Jsoup.connect(url).timeout((int) TIMEOUT.toMillis()).get();
+            URI uri = new URI("https", "github.com",
+                    "/" + repoOwner + "/" + repoName + "/releases",
+                    null, null);
+            
+            Document doc = Jsoup.connect(uri.toString()).timeout((int) TIMEOUT.toMillis()).get();
             String firstTag = doc.select("a[href*=/releases/tag/]").stream()
                     .map(el -> el.attr("href"))
                     .filter(href -> href.contains("/releases/tag/"))
@@ -119,7 +123,7 @@ public class GitHubVersionClient {
             if (firstTag != null) {
                 return Optional.of(normalizeVersion(firstTag));
             }
-        } catch (IOException e) {
+        } catch (URISyntaxException | IOException e) {
             log.debug("GitHub tag scraping failed: {}", e.getMessage());
         }
         return Optional.empty();

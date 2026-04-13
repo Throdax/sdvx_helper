@@ -1,6 +1,7 @@
 package com.sdvxhelper.service;
 
 import com.sdvxhelper.model.MusicInfo;
+import com.sdvxhelper.model.MusicInfoBuilder;
 import com.sdvxhelper.model.OnePlayData;
 import com.sdvxhelper.model.enums.ScoreRank;
 import org.junit.jupiter.api.Test;
@@ -63,7 +64,7 @@ class VolforceCalculatorTest {
 
     @Test
     void computeAndSetMusicInfoUpdatesRankAndVf() {
-        MusicInfo m = new MusicInfo("X", "A", "180", "exh", "20", 9_900_000, "puc", "", "", "");
+        MusicInfo m = new MusicInfoBuilder("X").artist("A").bpm("180").difficulty("exh").lv("20").bestScore(9_900_000).bestLamp("puc").build();
         int vf = VolforceCalculator.computeAndSet(m);
         Assertions.assertEquals(vf, m.getVf());
         Assertions.assertEquals(ScoreRank.S, m.getRank());

@@ -1,7 +1,22 @@
 package com.sdvxhelper.ui.controller;
 
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.ResourceBundle;
+
+import javax.imageio.ImageIO;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.sdvxhelper.i18n.LocaleManager;
 import com.sdvxhelper.ocr.PerceptualHasher;
+
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -13,26 +28,16 @@ import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.stage.DirectoryChooser;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.IOException;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.ResourceBundle;
 
 /**
  * Controller for the OCR Reporter maintainer tool ({@code ocr_reporter.fxml}).
  *
- * <p>Allows maintainers to step through unknown jacket screenshots, view the
+ * <p>
+ * Allows maintainers to step through unknown jacket screenshots, view the
  * auto-OCR result, confirm or correct the title, and register the perceptual
- * hash in the music list.  Replaces the Python {@code Reporter} class in
- * {@code ocr_reporter.py}.</p>
+ * hash in the music list. Replaces the Python {@code Reporter} class in
+ * {@code ocr_reporter.py}.
+ * </p>
  *
  * @author Throdax
  * @since 2.0.0
@@ -41,19 +46,32 @@ public class OcrReporterController implements Initializable {
 
     private static final Logger log = LoggerFactory.getLogger(OcrReporterController.class);
 
-    @FXML private Button btnOpenFolder;
-    @FXML private Button btnPrev;
-    @FXML private Button btnNext;
-    @FXML private Label lblImageCount;
-    @FXML private ImageView imgPreview;
-    @FXML private TextField txtHash;
-    @FXML private TextField txtOcrTitle;
-    @FXML private TextField txtTitle;
-    @FXML private ComboBox<String> cmbDifficulty;
-    @FXML private Button btnRegister;
-    @FXML private Button btnSkip;
-    @FXML private TextArea txtLog;
-    @FXML private ComboBox<String> cmbLanguage;
+    @FXML
+    private Button btnOpenFolder;
+    @FXML
+    private Button btnPrev;
+    @FXML
+    private Button btnNext;
+    @FXML
+    private Label lblImageCount;
+    @FXML
+    private ImageView imgPreview;
+    @FXML
+    private TextField txtHash;
+    @FXML
+    private TextField txtOcrTitle;
+    @FXML
+    private TextField txtTitle;
+    @FXML
+    private ComboBox<String> cmbDifficulty;
+    @FXML
+    private Button btnRegister;
+    @FXML
+    private Button btnSkip;
+    @FXML
+    private TextArea txtLog;
+    @FXML
+    private ComboBox<String> cmbLanguage;
 
     private final PerceptualHasher hasher = new PerceptualHasher();
     private final List<File> imageFiles = new ArrayList<>();
@@ -64,11 +82,12 @@ public class OcrReporterController implements Initializable {
         cmbDifficulty.getSelectionModel().select("exh");
         cmbLanguage.setItems(LocaleManager.getInstance().getAvailableLocaleCodes());
         cmbLanguage.setValue(LocaleManager.getInstance().getCurrentCode());
-        cmbLanguage.setOnAction(e -> LocaleManager.getInstance().setLocale(cmbLanguage.getValue()));
+        cmbLanguage.setOnAction(_ -> LocaleManager.getInstance().setLocale(cmbLanguage.getValue()));
     }
 
     /**
-     * Opens a folder chooser and loads all PNG/JPEG files from the selected directory.
+     * Opens a folder chooser and loads all PNG/JPEG files from the selected
+     * directory.
      *
      * @param event action event
      */
@@ -77,7 +96,8 @@ public class OcrReporterController implements Initializable {
         DirectoryChooser chooser = new DirectoryChooser();
         chooser.setTitle("Select Screenshot Folder");
         File dir = chooser.showDialog(btnOpenFolder.getScene().getWindow());
-        if (dir == null || !dir.isDirectory()) return;
+        if (dir == null || !dir.isDirectory())
+            return;
 
         File[] files = dir.listFiles(f -> {
             String name = f.getName().toLowerCase();
@@ -100,13 +120,19 @@ public class OcrReporterController implements Initializable {
 
     @FXML
     public void onPrev(ActionEvent event) {
-        if (currentIndex > 0) { currentIndex--; showCurrentImage(); }
+        if (currentIndex > 0) {
+            currentIndex--;
+            showCurrentImage();
+        }
         updateNavButtons();
     }
 
     @FXML
     public void onNext(ActionEvent event) {
-        if (currentIndex < imageFiles.size() - 1) { currentIndex++; showCurrentImage(); }
+        if (currentIndex < imageFiles.size() - 1) {
+            currentIndex++;
+            showCurrentImage();
+        }
         updateNavButtons();
     }
 
@@ -117,9 +143,9 @@ public class OcrReporterController implements Initializable {
      */
     @FXML
     public void onRegister(ActionEvent event) {
-        String hash  = txtHash.getText();
+        String hash = txtHash.getText();
         String title = txtTitle.getText().trim();
-        String diff  = cmbDifficulty.getValue();
+        String diff = cmbDifficulty.getValue();
         if (hash.isBlank() || title.isBlank()) {
             appendLog("ERROR: hash or title is empty");
             return;
@@ -127,19 +153,26 @@ public class OcrReporterController implements Initializable {
         // TODO: Call MusicListRepository to register hash -> title mapping
         appendLog("Registered: [" + diff + "] " + title + " = " + hash);
         // Auto-advance
-        if (currentIndex < imageFiles.size() - 1) { currentIndex++; showCurrentImage(); }
+        if (currentIndex < imageFiles.size() - 1) {
+            currentIndex++;
+            showCurrentImage();
+        }
         updateNavButtons();
     }
 
     @FXML
     public void onSkip(ActionEvent event) {
         appendLog("Skipped: " + (currentIndex < imageFiles.size() ? imageFiles.get(currentIndex).getName() : "?"));
-        if (currentIndex < imageFiles.size() - 1) { currentIndex++; showCurrentImage(); }
+        if (currentIndex < imageFiles.size() - 1) {
+            currentIndex++;
+            showCurrentImage();
+        }
         updateNavButtons();
     }
 
     private void showCurrentImage() {
-        if (currentIndex < 0 || currentIndex >= imageFiles.size()) return;
+        if (currentIndex < 0 || currentIndex >= imageFiles.size())
+            return;
         File f = imageFiles.get(currentIndex);
         lblImageCount.setText((currentIndex + 1) + " / " + imageFiles.size());
         try {

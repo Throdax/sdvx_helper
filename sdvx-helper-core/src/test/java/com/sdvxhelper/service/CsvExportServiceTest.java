@@ -1,6 +1,7 @@
 package com.sdvxhelper.service;
 
 import com.sdvxhelper.model.MusicInfo;
+import com.sdvxhelper.model.MusicInfoBuilder;
 import com.sdvxhelper.model.OnePlayData;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -25,7 +26,7 @@ class CsvExportServiceTest {
 
     @Test
     void writeBestCsvContainsHeader() throws IOException {
-        MusicInfo m = new MusicInfo("Song A", "Artist", "180", "exh", "18", 9_000_000, "clear", "", "", "");
+        MusicInfo m = new MusicInfoBuilder("Song A").artist("Artist").bpm("180").difficulty("exh").lv("18").bestScore(9_000_000).bestLamp("clear").build();
         m.setVf(300);
         File out = tempDir.resolve("best.csv").toFile();
         service.writeBestCsv(List.of(m), out);
@@ -64,7 +65,7 @@ class CsvExportServiceTest {
 
     @Test
     void csvEscapesCommasInTitle() throws IOException {
-        MusicInfo m = new MusicInfo("Song, Part 2", "A", "180", "exh", "18", 9_000_000, "clear", "", "", "");
+        MusicInfo m = new MusicInfoBuilder("Song, Part 2").artist("A").bpm("180").difficulty("exh").lv("18").bestScore(9_000_000).bestLamp("clear").build();
         m.setVf(300);
         File out = tempDir.resolve("best_escape.csv").toFile();
         service.writeBestCsv(List.of(m), out);

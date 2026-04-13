@@ -2,7 +2,6 @@ package com.sdvxhelper.config;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -29,129 +28,129 @@ public final class DefaultSettings {
      *
      * @return default settings map
      */
-    public static Map<String, Object> getDefaults() {
-        Map<String, Object> d = new LinkedHashMap<>();
+    public static Map<String, String> getDefaults() {
+        Map<String, String> defaults = new LinkedHashMap<>();
 
         // Window position
-        d.put("lx", 0);
-        d.put("ly", 0);
+        defaults.put("lx", "0");
+        defaults.put("ly", "0");
 
         // OBS WebSocket connection
-        d.put("host", "localhost");
-        d.put("port", "4444");
-        d.put("passwd", "");
+        defaults.put("host", "localhost");
+        defaults.put("port", "4444");
+        defaults.put("passwd", "");
 
         // Auto-save
-        d.put("autosave_dir", "");
-        d.put("autosave_always", false);
-        d.put("autosave_interval", 60);
-        d.put("play0_interval", 10);
-        d.put("autosave_prewait", "0.0");
-        d.put("detect_wait", 2.7);
-        d.put("obs_source", "");
-        d.put("orientation_top", "left");
+        defaults.put("autosave_dir", "");
+        defaults.put("autosave_always", "false");
+        defaults.put("autosave_interval", "60");
+        defaults.put("play0_interval", "10");
+        defaults.put("autosave_prewait", "0.0");
+        defaults.put("detect_wait", "2.7");
+        defaults.put("obs_source", "");
+        defaults.put("orientation_top", "left");
 
         // Language
-        d.put("ui_language", "jp");
+        defaults.put("ui_language", "jp");
 
         // OBS scene/source control – boot
-        d.put("obs_enable_boot", Collections.emptyList());
-        d.put("obs_disable_boot", Collections.emptyList());
-        d.put("obs_scene_boot", "");
+        defaults.put("obs_enable_boot", Collections.emptyList().toString());
+        defaults.put("obs_disable_boot", Collections.emptyList().toString());
+        defaults.put("obs_scene_boot", "");
 
         // OBS scene/source control – select (0=start, 1=end)
-        d.put("obs_enable_select0", Collections.emptyList());
-        d.put("obs_disable_select0", Collections.emptyList());
-        d.put("obs_scene_select", "");
-        d.put("obs_enable_select1", Collections.emptyList());
-        d.put("obs_disable_select1", Collections.emptyList());
+        defaults.put("obs_enable_select0", Collections.emptyList().toString());
+        defaults.put("obs_disable_select0", Collections.emptyList().toString());
+        defaults.put("obs_scene_select", "");
+        defaults.put("obs_enable_select1", Collections.emptyList().toString());
+        defaults.put("obs_disable_select1", Collections.emptyList().toString());
 
         // OBS scene/source control – play
-        d.put("obs_enable_play0", Collections.emptyList());
-        d.put("obs_disable_play0", Collections.emptyList());
-        d.put("obs_scene_play", "");
-        d.put("obs_enable_play1", Collections.emptyList());
-        d.put("obs_disable_play1", Collections.emptyList());
+        defaults.put("obs_enable_play0", Collections.emptyList().toString());
+        defaults.put("obs_disable_play0", Collections.emptyList().toString());
+        defaults.put("obs_scene_play", "");
+        defaults.put("obs_enable_play1", Collections.emptyList().toString());
+        defaults.put("obs_disable_play1", Collections.emptyList().toString());
 
         // OBS scene/source control – result
-        d.put("obs_enable_result0", Collections.emptyList());
-        d.put("obs_disable_result0", Collections.emptyList());
-        d.put("obs_scene_result", "");
-        d.put("obs_enable_result1", Collections.emptyList());
-        d.put("obs_disable_result1", Collections.emptyList());
+        defaults.put("obs_enable_result0", Collections.emptyList().toString());
+        defaults.put("obs_disable_result0", Collections.emptyList().toString());
+        defaults.put("obs_scene_result", "");
+        defaults.put("obs_enable_result1", Collections.emptyList().toString());
+        defaults.put("obs_disable_result1", Collections.emptyList().toString());
 
         // OBS scene/source control – quit
-        d.put("obs_enable_quit", Collections.emptyList());
-        d.put("obs_disable_quit", Collections.emptyList());
-        d.put("obs_scene_quit", "");
+        defaults.put("obs_enable_quit", Collections.emptyList().toString());
+        defaults.put("obs_disable_quit", Collections.emptyList().toString());
+        defaults.put("obs_scene_quit", "");
 
         // OBS text source names
-        d.put("obs_txt_plays", "sdvx_helper_playcount");
-        d.put("obs_txt_plays_header", "plays: ");
-        d.put("obs_txt_plays_footer", "");
-        d.put("obs_txt_vf_with_diff", "sdvx_helper_vf_with_diff");
-        d.put("obs_txt_vf_header", "VF: ");
-        d.put("obs_txt_vf_footer", "");
-        d.put("obs_txt_playtime", "sdvx_helper_playtime");
-        d.put("obs_txt_playtime_header", "playtime: ");
-        d.put("obs_txt_playtime_footer", "");
-        d.put("obs_txt_blastermax", "sdvx_helper_blastermax");
-        d.put("alert_blastermax", false);
-        d.put("obs_scene_collection", "");
+        defaults.put("obs_txt_plays", "sdvx_helper_playcount");
+        defaults.put("obs_txt_plays_header", "plays: ");
+        defaults.put("obs_txt_plays_footer", "");
+        defaults.put("obs_txt_vf_with_diff", "sdvx_helper_vf_with_diff");
+        defaults.put("obs_txt_vf_header", "VF: ");
+        defaults.put("obs_txt_vf_footer", "");
+        defaults.put("obs_txt_playtime", "sdvx_helper_playtime");
+        defaults.put("obs_txt_playtime_header", "playtime: ");
+        defaults.put("obs_txt_playtime_footer", "");
+        defaults.put("obs_txt_blastermax", "sdvx_helper_blastermax");
+        defaults.put("alert_blastermax", "false");
+        defaults.put("obs_scene_collection", "");
 
-        d.put("clip_lxly", false);
+        defaults.put("clip_lxly", "false");
 
         // Webhooks
-        d.put("webhook_player_name", "");
-        d.put("webhook_names", Collections.emptyList());
-        d.put("webhook_urls", Collections.emptyList());
-        d.put("webhook_enable_pics", Collections.emptyList());
-        d.put("webhook_playlist", Collections.emptyList());
-        d.put("webhook_enable_lvs", Collections.emptyList());
-        d.put("webhook_enable_lamps", Collections.emptyList());
+        defaults.put("webhook_player_name", "");
+        defaults.put("webhook_names", Collections.emptyList().toString());
+        defaults.put("webhook_urls", Collections.emptyList().toString());
+        defaults.put("webhook_enable_pics", Collections.emptyList().toString());
+        defaults.put("webhook_playlist", Collections.emptyList().toString());
+        defaults.put("webhook_enable_lvs", Collections.emptyList().toString());
+        defaults.put("webhook_enable_lamps", Collections.emptyList().toString());
 
         // Google Drive / rival
-        d.put("get_rival_score", false);
-        d.put("my_googledrive", "");
-        d.put("rival_names", Collections.emptyList());
-        d.put("rival_googledrive", Collections.emptyList());
+        defaults.put("get_rival_score", "false");
+        defaults.put("my_googledrive", "");
+        defaults.put("rival_names", Collections.emptyList().toString());
+        defaults.put("rival_googledrive", Collections.emptyList().toString());
 
         // Score import from select screen
-        d.put("import_from_select", false);
-        d.put("import_arcade_score", false);
+        defaults.put("import_from_select", "false");
+        defaults.put("import_arcade_score", "false");
 
         // RTA
-        d.put("rta_target_vf", "20.000");
+        defaults.put("rta_target_vf", "20.000");
 
         // Misc
-        d.put("ignore_rankD", true);
-        d.put("auto_update", true);
-        d.put("params_json", "resources/params.json");
-        d.put("logpic_offset_time", 2);
-        d.put("logpic_bg_alpha", 255);
-        d.put("autoload_musiclist", true);
-        d.put("player_name", "");
-        d.put("save_on_capture", false);
-        d.put("save_jacketimg", true);
-        d.put("update_rival_on_result", false);
-        d.put("always_update_vf", false);
+        defaults.put("ignore_rankD", "true");
+        defaults.put("auto_update", "true");
+        defaults.put("params_json", "resources/params.json");
+        defaults.put("logpic_offset_time", "2");
+        defaults.put("logpic_bg_alpha", "255");
+        defaults.put("autoload_musiclist", "true");
+        defaults.put("player_name", "");
+        defaults.put("save_on_capture", "false");
+        defaults.put("save_jacketimg", "true");
+        defaults.put("update_rival_on_result", "false");
+        defaults.put("always_update_vf", "false");
 
         // Play-log sync sub-settings
-        Map<String, String> pls = new LinkedHashMap<>();
-        pls.put("play_log_path", "");
-        pls.put("results_folder", "");
-        pls.put("song_list", "");
-        pls.put("dump_output_folder", "");
-        d.put("play_log_sync", pls);
+        Map<String, String> playLogSyncDefaults = new LinkedHashMap<>();
+        playLogSyncDefaults.put("play_log_path", "");
+        playLogSyncDefaults.put("results_folder", "");
+        playLogSyncDefaults.put("song_list", "");
+        playLogSyncDefaults.put("dump_output_folder", "");
+        defaults.put("play_log_sync", playLogSyncDefaults.toString());
 
         // Debug / feature flags
-        d.put("send_webhook", true);
-        d.put("dbg_enable_output", true);
-        d.put("discord_presence_enable", false);
-        d.put("discord_presence_song_as_title", false);
-        d.put("discord_presence_upload_jacket", false);
-        d.put("discord_presence_ocr_titles", false);
+        defaults.put("send_webhook", "true");
+        defaults.put("dbg_enable_output", "true");
+        defaults.put("discord_presence_enable", "false");
+        defaults.put("discord_presence_song_as_title", "false");
+        defaults.put("discord_presence_upload_jacket", "false");
+        defaults.put("discord_presence_ocr_titles", "false");
 
-        return Collections.unmodifiableMap(d);
+        return Collections.unmodifiableMap(defaults);
     }
 }

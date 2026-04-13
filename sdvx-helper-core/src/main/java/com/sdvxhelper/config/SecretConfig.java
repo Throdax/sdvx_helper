@@ -1,5 +1,13 @@
 package com.sdvxhelper.config;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.util.Properties;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * Provides access to sensitive configuration values that must not be committed to
  * version control.
@@ -17,6 +25,8 @@ package com.sdvxhelper.config;
  * @since 2.0.0
  */
 public final class SecretConfig {
+    
+    private static final Logger log = LoggerFactory.getLogger(SecretConfig.class);
 
     private static final String ENV_MAYA2_KEY = "MAYA2_KEY";
     private static final String PROP_FILE = "secrets.properties";
@@ -65,17 +75,18 @@ public final class SecretConfig {
         }
 
         // 3. secrets.properties file
-        java.io.File propFile = new java.io.File(PROP_FILE);
+        File propFile = new File(PROP_FILE);
+
         if (propFile.exists()) {
-            java.util.Properties props = new java.util.Properties();
-            try (java.io.FileInputStream fis = new java.io.FileInputStream(propFile)) {
+            Properties props = new Properties();
+            try (FileInputStream fis = new FileInputStream(propFile)) {
                 props.load(fis);
                 value = props.getProperty(key);
                 if (value != null && !value.isBlank()) {
                     return value.trim();
                 }
-            } catch (java.io.IOException ignored) {
-                // fall through to return null
+            } catch (IOException e) {
+                log.warn("Secret resolution: Failed to read {} file", PROP_FILE, e);
             }
         }
 

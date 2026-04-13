@@ -1,20 +1,23 @@
 package com.sdvxhelper.model;
 
-import jakarta.xml.bind.annotation.XmlAccessType;
-import jakarta.xml.bind.annotation.XmlAccessorType;
-import jakarta.xml.bind.annotation.XmlElement;
-import jakarta.xml.bind.annotation.XmlRootElement;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import jakarta.xml.bind.annotation.XmlAccessType;
+import jakarta.xml.bind.annotation.XmlAccessorType;
+import jakarta.xml.bind.annotation.XmlElement;
+import jakarta.xml.bind.annotation.XmlRootElement;
+
 /**
- * JAXB root element wrapping the title-conversion table for Maya2 name normalisation.
+ * JAXB root element wrapping the title-conversion table for Maya2 name
+ * normalisation.
  *
- * <p>Serialised to / deserialised from {@code title_conv_table.xml}.
- * Replaces the Python {@code resources/title_conv_table.pkl} pickle file.</p>
+ * <p>
+ * Serialised to / deserialised from {@code title_conv_table.xml}. Replaces the
+ * Python {@code resources/title_conv_table.pkl} pickle file.
+ * </p>
  *
  * @author Throdax
  * @since 2.0.0
@@ -27,16 +30,30 @@ public class TitleConvTable {
     @XmlElement(name = "entry")
     private List<TitleMapping> entries = new ArrayList<>();
 
-    /** @return mutable list of title mappings */
-    public List<TitleMapping> getEntries() { return entries; }
-
-    /** @param entries title mappings */
-    public void setEntries(List<TitleMapping> entries) { this.entries = entries != null ? entries : new ArrayList<>(); }
+    /**
+     * Returns the mutable list of local-to-Maya2 title mappings.
+     *
+     * @return the list of {@link TitleMapping} entries
+     */
+    public List<TitleMapping> getEntries() {
+        return entries;
+    }
 
     /**
-     * Converts the entries list to a {@link Map} keyed by local title for O(1) lookups.
+     * Sets the list of local-to-Maya2 title mappings.
+     * If {@code null} is supplied an empty list is used instead.
      *
-     * @return local title → Maya2 title map
+     * @param entries the list of {@link TitleMapping} entries to set
+     */
+    public void setEntries(List<TitleMapping> entries) {
+        this.entries = entries != null ? entries : new ArrayList<>();
+    }
+
+    /**
+     * Converts the entries list to a {@link Map} keyed by local title for O(1)
+     * lookups.
+     *
+     * @return a map of local title to Maya2 title for all entries in this table
      */
     public Map<String, String> toMap() {
         Map<String, String> map = new HashMap<>(entries.size() * 2);
@@ -47,9 +64,10 @@ public class TitleConvTable {
     }
 
     /**
-     * Populates entries from a {@link Map}.
+     * Populates the entries list from a local-title-to-Maya2-title {@link Map}.
      *
-     * @param map local title → Maya2 title map
+     * @param map a map of local title to Maya2 title to convert into
+     *            {@link TitleMapping} elements
      */
     public void fromMap(Map<String, String> map) {
         entries = new ArrayList<>(map.size());

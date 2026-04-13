@@ -7,8 +7,11 @@ import jakarta.xml.bind.annotation.XmlAttribute;
 /**
  * Static metadata for a song entry in the music database.
  *
- * <p>Corresponds to one row in the Python {@code musiclist['titles']} dictionary,
- * which stores {@code [artist, bpm, lv_nov, lv_adv, lv_exh, lv_append]} per title.</p>
+ * <p>
+ * Corresponds to one row in the Python {@code musiclist['titles']} dictionary,
+ * which stores {@code [artist, bpm, lv_nov, lv_adv, lv_exh, lv_append]} per
+ * title.
+ * </p>
  *
  * @author Throdax
  * @since 2.0.0
@@ -47,15 +50,14 @@ public class SongInfo {
     /**
      * Constructs a fully populated {@code SongInfo}.
      *
-     * @param artist   artist name
-     * @param bpm      BPM string
-     * @param lvNov    novice level
-     * @param lvAdv    advanced level
-     * @param lvExh    exhaust level
-     * @param lvAppend maximum/append level (nullable)
+     * @param artist   the artist or composer name
+     * @param bpm      the BPM string (may be a range, e.g. {@code "90-180"})
+     * @param lvNov    the novice chart level string
+     * @param lvAdv    the advanced chart level string
+     * @param lvExh    the exhaust chart level string
+     * @param lvAppend the maximum/append chart level string, or {@code null} if absent
      */
-    public SongInfo(String artist, String bpm, String lvNov, String lvAdv,
-                    String lvExh, String lvAppend) {
+    public SongInfo(String artist, String bpm, String lvNov, String lvAdv, String lvExh, String lvAppend) {
         this.artist = artist;
         this.bpm = bpm;
         this.lvNov = lvNov;
@@ -64,39 +66,177 @@ public class SongInfo {
         this.lvAppend = lvAppend;
     }
 
-    /** @return artist name */
-    public String getArtist() { return artist; }
+    /**
+     * Returns the artist or composer name.
+     *
+     * @return the artist name
+     */
+    public String getArtist() {
+        return artist;
+    }
 
-    /** @param artist artist name */
-    public void setArtist(String artist) { this.artist = artist; }
+    /**
+     * Sets the artist or composer name.
+     *
+     * @param artist the artist name to set
+     */
+    public void setArtist(String artist) {
+        this.artist = artist;
+    }
 
-    /** @return BPM string */
-    public String getBpm() { return bpm; }
+    /**
+     * Returns the BPM string (may be a range, e.g. {@code "90-180"}).
+     *
+     * @return the BPM string
+     */
+    public String getBpm() {
+        return bpm;
+    }
 
-    /** @param bpm BPM string */
-    public void setBpm(String bpm) { this.bpm = bpm; }
+    /**
+     * Sets the BPM string.
+     *
+     * @param bpm the BPM string to set
+     */
+    public void setBpm(String bpm) {
+        this.bpm = bpm;
+    }
 
-    /** @return novice chart level string */
-    public String getLvNov() { return lvNov; }
+    /**
+     * Returns the novice chart level string (may be {@code "??"} if unknown).
+     *
+     * @return the novice chart level string
+     */
+    public String getLvNov() {
+        return lvNov;
+    }
 
-    /** @param lvNov novice level string */
-    public void setLvNov(String lvNov) { this.lvNov = lvNov; }
+    /**
+     * Sets the novice chart level string.
+     *
+     * @param lvNov the novice chart level string to set
+     */
+    public void setLvNov(String lvNov) {
+        this.lvNov = lvNov;
+    }
 
-    /** @return advanced chart level string */
-    public String getLvAdv() { return lvAdv; }
+    /**
+     * Returns the advanced chart level string.
+     *
+     * @return the advanced chart level string
+     */
+    public String getLvAdv() {
+        return lvAdv;
+    }
 
-    /** @param lvAdv advanced level string */
-    public void setLvAdv(String lvAdv) { this.lvAdv = lvAdv; }
+    /**
+     * Sets the advanced chart level string.
+     *
+     * @param lvAdv the advanced chart level string to set
+     */
+    public void setLvAdv(String lvAdv) {
+        this.lvAdv = lvAdv;
+    }
 
-    /** @return exhaust chart level string */
-    public String getLvExh() { return lvExh; }
+    /**
+     * Returns the exhaust chart level string.
+     *
+     * @return the exhaust chart level string
+     */
+    public String getLvExh() {
+        return lvExh;
+    }
 
-    /** @param lvExh exhaust level string */
-    public void setLvExh(String lvExh) { this.lvExh = lvExh; }
+    /**
+     * Sets the exhaust chart level string.
+     *
+     * @param lvExh the exhaust chart level string to set
+     */
+    public void setLvExh(String lvExh) {
+        this.lvExh = lvExh;
+    }
 
-    /** @return maximum/append chart level string, or {@code null} */
-    public String getLvAppend() { return lvAppend; }
+    /**
+     * Returns the maximum/append chart level string.
+     *
+     * @return the maximum/append chart level string, or {@code null} if absent
+     */
+    public String getLvAppend() {
+        return lvAppend;
+    }
 
-    /** @param lvAppend maximum/append level string */
-    public void setLvAppend(String lvAppend) { this.lvAppend = lvAppend; }
+    /**
+     * Sets the maximum/append chart level string.
+     *
+     * @param lvAppend the maximum/append chart level string to set, or {@code null} if absent
+     */
+    public void setLvAppend(String lvAppend) {
+        this.lvAppend = lvAppend;
+    }
+
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((artist == null) ? 0 : artist.hashCode());
+        result = prime * result + ((bpm == null) ? 0 : bpm.hashCode());
+        result = prime * result + ((lvAdv == null) ? 0 : lvAdv.hashCode());
+        result = prime * result + ((lvAppend == null) ? 0 : lvAppend.hashCode());
+        result = prime * result + ((lvExh == null) ? 0 : lvExh.hashCode());
+        return prime * result + ((lvNov == null) ? 0 : lvNov.hashCode());
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (!(obj instanceof SongInfo)) {
+            return false;
+        }
+        SongInfo other = (SongInfo) obj;
+        if (artist == null) {
+            if (other.artist != null) {
+                return false;
+            }
+        } else if (!artist.equals(other.artist)) {
+            return false;
+        }
+        if (bpm == null) {
+            if (other.bpm != null) {
+                return false;
+            }
+        } else if (!bpm.equals(other.bpm)) {
+            return false;
+        }
+        if (lvAdv == null) {
+            if (other.lvAdv != null) {
+                return false;
+            }
+        } else if (!lvAdv.equals(other.lvAdv)) {
+            return false;
+        }
+        if (lvAppend == null) {
+            if (other.lvAppend != null) {
+                return false;
+            }
+        } else if (!lvAppend.equals(other.lvAppend)) {
+            return false;
+        }
+        if (lvExh == null) {
+            if (other.lvExh != null) {
+                return false;
+            }
+        } else if (!lvExh.equals(other.lvExh)) {
+            return false;
+        }
+        if (lvNov == null) {
+            if (other.lvNov != null) {
+                return false;
+            }
+        } else if (!lvNov.equals(other.lvNov)) {
+            return false;
+        }
+        return true;
+    }
 }

@@ -1,10 +1,11 @@
 package com.sdvxhelper.service;
 
-import com.sdvxhelper.model.MusicInfo;
+import java.util.List;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
+import com.sdvxhelper.model.MusicInfo;
 
 /**
  * Provides Volforce breakdown analysis used by the analysis / tweet-generation feature.
@@ -18,12 +19,6 @@ import java.util.List;
 public class AnalysisService {
 
     private static final Logger log = LoggerFactory.getLogger(AnalysisService.class);
-
-    /**
-     * Constructs the analysis service.
-     */
-    public AnalysisService() {
-    }
 
     /**
      * Analyses the top-N best charts and identifies the minimum VF improvement
@@ -65,7 +60,11 @@ public class AnalysisService {
         int bestGain = 0;
         for (MusicInfo m : top50) {
             int lvInt = m.getLvAsInt();
-            if (lvInt <= 0) continue;
+
+            if (lvInt <= 0) {
+                continue;
+            }
+            
             int maxVf = VolforceCalculator.computeSingleVf(9_900_000, "puc", lvInt);
             int gain = maxVf - m.getVf();
             if (gain > bestGain) {

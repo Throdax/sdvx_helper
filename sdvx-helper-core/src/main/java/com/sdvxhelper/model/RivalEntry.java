@@ -1,18 +1,20 @@
 package com.sdvxhelper.model;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import jakarta.xml.bind.annotation.XmlAccessType;
 import jakarta.xml.bind.annotation.XmlAccessorType;
 import jakarta.xml.bind.annotation.XmlAttribute;
 import jakarta.xml.bind.annotation.XmlElement;
 
-import java.util.ArrayList;
-import java.util.List;
-
 /**
  * Score records for a single rival player.
  *
- * <p>Used within {@link RivalLog} to represent the Python
- * {@code rival_log.pkl} dict entry for one rival name.</p>
+ * <p>
+ * Used within {@link RivalLog} to represent the Python {@code rival_log.pkl}
+ * dict entry for one rival name.
+ * </p>
  *
  * @author Throdax
  * @since 2.0.0
@@ -35,21 +37,46 @@ public class RivalEntry {
     /**
      * Constructs an entry for the given rival.
      *
-     * @param name rival player name
+     * @param name the rival player's in-game name
      */
     public RivalEntry(String name) {
         this.name = name;
     }
 
-    /** @return rival player name */
-    public String getName() { return name; }
+    /**
+     * Returns the rival player's in-game name.
+     *
+     * @return the rival player name
+     */
+    public String getName() {
+        return name;
+    }
 
-    /** @param name rival player name */
-    public void setName(String name) { this.name = name; }
+    /**
+     * Sets the rival player's in-game name.
+     *
+     * @param name the rival player name to set
+     */
+    public void setName(String name) {
+        this.name = name;
+    }
 
-    /** @return mutable list of rival score records */
-    public List<MusicInfo> getScores() { return scores; }
+    /**
+     * Returns the mutable list of per-chart best scores for this rival.
+     *
+     * @return the list of rival {@link MusicInfo} score records
+     */
+    public List<MusicInfo> getScores() {
+        return scores;
+    }
 
-    /** @param scores rival score records */
-    public void setScores(List<MusicInfo> scores) { this.scores = scores != null ? scores : new ArrayList<>(); }
+    /**
+     * Sets the per-chart best scores for this rival.
+     * If {@code null} is supplied an empty list is used instead.
+     *
+     * @param scores the list of rival {@link MusicInfo} score records to set
+     */
+    public void setScores(List<MusicInfo> scores) {
+        this.scores = scores != null ? scores : new ArrayList<>();
+    }
 }

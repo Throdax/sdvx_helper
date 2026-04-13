@@ -21,30 +21,83 @@ public class HashEntry {
     @XmlAttribute
     private String hash;
 
-    /** No-argument constructor required by JAXB. */
+    /**
+     * No-argument constructor required by JAXB.
+     */
     public HashEntry() {
+        // Required by JAXB
     }
 
     /**
-     * Constructs a new mapping.
+     * Constructs a new title-to-hash mapping.
      *
-     * @param title song title
-     * @param hash  hash string
+     * @param title the song title key
+     * @param hash  the perceptual hash or SHA hex string
      */
     public HashEntry(String title, String hash) {
         this.title = title;
         this.hash = hash;
     }
 
-    /** @return song title */
-    public String getTitle() { return title; }
+    /**
+     * Returns the song title key.
+     *
+     * @return the song title
+     */
+    public String getTitle() {
+        return title;
+    }
 
-    /** @param title song title */
-    public void setTitle(String title) { this.title = title; }
+    /**
+     * Sets the song title key.
+     *
+     * @param title the song title to set
+     */
+    public void setTitle(String title) {
+        this.title = title;
+    }
 
-    /** @return hash string */
-    public String getHash() { return hash; }
+    /**
+     * Returns the perceptual hash or SHA hex string.
+     *
+     * @return the hash string
+     */
+    public String getHash() {
+        return hash;
+    }
 
-    /** @param hash hash string */
-    public void setHash(String hash) { this.hash = hash; }
+    /**
+     * Sets the perceptual hash or SHA hex string.
+     *
+     * @param hash the hash string to set
+     */
+    public void setHash(String hash) {
+        this.hash = hash;
+    }
+
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        return prime * result + ((title == null) ? 0 : title.hashCode());
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (!(obj instanceof HashEntry)) {
+            return false;
+        }
+        HashEntry other = (HashEntry) obj;
+        if (title == null) {
+            if (other.title != null) {
+                return false;
+            }
+        } else if (!title.equals(other.title)) {
+            return false;
+        }
+        return true;
+    }
 }

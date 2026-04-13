@@ -27,6 +27,12 @@ import com.sdvxhelper.model.enums.ScoreRank;
  */
 public final class VolforceCalculator {
 
+    /** The maximum chart level, used to normalise the VF formula. */
+    private static final long MAX_LEVEL = 20L;
+
+    /** The maximum possible score for a single play, used to normalise the VF formula. */
+    private static final long MAX_SCORE = 10_000_000L;
+    
     /** Number of top charts counted toward the total Volforce. */
     public static final int TOP_N = 50;
 
@@ -41,7 +47,10 @@ public final class VolforceCalculator {
      * @return lamp coefficient
      */
     public static double lampCoefficient(String lamp) {
-        if (lamp == null) return 0.5;
+        if (lamp == null) {
+            return 0.5;
+        }
+        
         return switch (lamp) {
             case "puc"   -> 1.10;
             case "uc"    -> 1.05;
@@ -66,10 +75,11 @@ public final class VolforceCalculator {
         if (levelInt <= 0) {
             return 0;
         }
+        
         ScoreRank rank = ScoreRank.fromScore(score);
         double coefGrade = rank.getGradeCoefficient();
         double coefLamp  = lampCoefficient(lamp);
-        return (int) (levelInt * score * coefGrade * coefLamp * 20L / 10_000_000L);
+        return (int) (levelInt * score * coefGrade * coefLamp * MAX_LEVEL / MAX_SCORE);
     }
 
     /**
@@ -98,6 +108,7 @@ public final class VolforceCalculator {
     public static int computeAndSet(MusicInfo info) {
         ScoreRank rank = ScoreRank.fromScore(info.getBestScore());
         info.setRank(rank);
+        
         int vf = computeSingleVf(info.getBestScore(), info.getBestLamp(), info.getLvAsInt());
         info.setVf(vf);
         return vf;
