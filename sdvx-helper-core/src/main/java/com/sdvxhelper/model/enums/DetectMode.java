@@ -3,8 +3,11 @@ package com.sdvxhelper.model.enums;
 /**
  * Represents the current game-state detected from the OBS capture feed.
  *
- * <p>Maps to the Python {@code detect_mode} enum defined in {@code sdvxh_classes.py}.
- * The detection loop transitions through these states as images are analysed.</p>
+ * <p>
+ * Maps to the Python {@code detect_mode} enum defined in
+ * {@code sdvxh_classes.py}. The detection loop transitions through these states
+ * as images are analysed.
+ * </p>
  *
  * @author Throdax
  * @since 2.0.0

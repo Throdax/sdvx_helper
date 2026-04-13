@@ -10,23 +10,23 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonReader;
 
+import com.sdvxhelper.util.VersionUtil;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.sdvxhelper.util.VersionUtil;
-
 /**
  * Checks for new application versions by querying the GitHub releases API.
  *
- * <p>Replaces the GitHub version-check logic in the Python {@code sdvx_utils.py} file.
- * Falls back to HTML tag scraping if the API rate limit is reached.</p>
+ * <p>
+ * Replaces the GitHub version-check logic in the Python {@code sdvx_utils.py}
+ * file. Falls back to HTML tag scraping if the API rate limit is reached.
+ * </p>
  *
  * @author Throdax
  * @since 2.0.0
@@ -36,7 +36,7 @@ public class GitHubVersionClient {
     private static final Logger log = LoggerFactory.getLogger(GitHubVersionClient.class);
 
     private static final Duration TIMEOUT = Duration.ofSeconds(10);
-    private static final Pattern  VERSION_PATTERN = Pattern.compile("v?(\\d+\\.\\d+(\\.\\d+)?)");
+    private static final Pattern VERSION_PATTERN = Pattern.compile("v?(\\d+\\.\\d+(\\.\\d+)?)");
 
     private final String repoOwner;
     private final String repoName;
@@ -45,13 +45,15 @@ public class GitHubVersionClient {
     /**
      * Constructs a GitHub version client.
      *
-     * @param repoOwner GitHub repository owner (e.g. {@code "ksmdvx"})
-     * @param repoName  GitHub repository name (e.g. {@code "sdvx_helper"})
+     * @param repoOwner
+     *            GitHub repository owner (e.g. {@code "ksmdvx"})
+     * @param repoName
+     *            GitHub repository name (e.g. {@code "sdvx_helper"})
      */
     public GitHubVersionClient(String repoOwner, String repoName) {
         this.repoOwner = repoOwner;
-        this.repoName  = repoName;
-        this.http      = new HttpService(TIMEOUT);
+        this.repoName = repoName;
+        this.http = new HttpService(TIMEOUT);
     }
 
     /**
@@ -62,17 +64,19 @@ public class GitHubVersionClient {
     public String getLatestVersion() {
         // Try the GitHub releases API first
         Optional<String> apiVersion = queryApi();
-        if (apiVersion.isPresent()) return apiVersion.get();
+        if (apiVersion.isPresent())
+            return apiVersion.get();
 
         // Fall back to HTML scraping
         return scrapeLatestTag().orElse(null);
     }
 
     /**
-     * Returns {@code true} if a newer version is available on GitHub than the
-     * given current version.
+     * Returns {@code true} if a newer version is available on GitHub than the given
+     * current version.
      *
-     * @param currentVersion the version string of the running application
+     * @param currentVersion
+     *            the version string of the running application
      * @return {@code true} if an update is available
      */
     public boolean isUpdateAvailable(String currentVersion) {
@@ -88,11 +92,9 @@ public class GitHubVersionClient {
 
     private Optional<String> queryApi() {
         try {
-            URI uri = new URI("https", "api.github.com",
-                    "/repos/" + repoOwner + "/" + repoName + "/releases/latest",
+            URI uri = new URI("https", "api.github.com", "/repos/" + repoOwner + "/" + repoName + "/releases/latest",
                     null, null);
-            HttpResponse<String> resp = http.get(uri,
-                    Map.of("Accept", "application/vnd.github+json"));
+            HttpResponse<String> resp = http.get(uri, Map.of("Accept", "application/vnd.github+json"));
             if (resp.statusCode() == 200) {
                 try (JsonReader reader = Json.createReader(new StringReader(resp.body()))) {
                     JsonObject json = reader.readObject();
@@ -109,17 +111,12 @@ public class GitHubVersionClient {
 
     private Optional<String> scrapeLatestTag() {
         try {
-            URI uri = new URI("https", "github.com",
-                    "/" + repoOwner + "/" + repoName + "/releases",
-                    null, null);
-            
+            URI uri = new URI("https", "github.com", "/" + repoOwner + "/" + repoName + "/releases", null, null);
+
             Document doc = Jsoup.connect(uri.toString()).timeout((int) TIMEOUT.toMillis()).get();
-            String firstTag = doc.select("a[href*=/releases/tag/]").stream()
-                    .map(el -> el.attr("href"))
-                    .filter(href -> href.contains("/releases/tag/"))
-                    .findFirst()
-                    .map(href -> href.substring(href.lastIndexOf('/') + 1))
-                    .orElse(null);
+            String firstTag = doc.select("a[href*=/releases/tag/]").stream().map(el -> el.attr("href"))
+                    .filter(href -> href.contains("/releases/tag/")).findFirst()
+                    .map(href -> href.substring(href.lastIndexOf('/') + 1)).orElse(null);
             if (firstTag != null) {
                 return Optional.of(normalizeVersion(firstTag));
             }

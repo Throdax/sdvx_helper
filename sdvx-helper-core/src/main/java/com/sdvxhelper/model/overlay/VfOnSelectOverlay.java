@@ -8,10 +8,16 @@ import jakarta.xml.bind.annotation.XmlRootElement;
 /**
  * JAXB root element for the VF-on-select overlay ({@code vf_onselect.xml}).
  *
- * <p>Serialises to either an empty element when no chart is selected:</p>
+ * <p>
+ * Serialises to either an empty element when no chart is selected:
+ * </p>
+ * 
  * <pre>{@code <vf_onselect/>}</pre>
  *
- * <p>or a populated element when a chart is selected:</p>
+ * <p>
+ * or a populated element when a chart is selected:
+ * </p>
+ * 
  * <pre>{@code
  * <vf_onselect title="…" diff="…" lv="…" score="…" lamp="…" vf="…"/>
  * }</pre>
@@ -65,7 +71,8 @@ public class VfOnSelectOverlay {
     /**
      * Sets the song title.
      *
-     * @param title the song title to set
+     * @param title
+     *            the song title to set
      */
     public void setTitle(String title) {
         this.title = title;
@@ -83,7 +90,8 @@ public class VfOnSelectOverlay {
     /**
      * Sets the chart difficulty string.
      *
-     * @param diff the difficulty string to set
+     * @param diff
+     *            the difficulty string to set
      */
     public void setDiff(String diff) {
         this.diff = diff;
@@ -101,7 +109,8 @@ public class VfOnSelectOverlay {
     /**
      * Sets the chart level string.
      *
-     * @param lv the chart level string to set
+     * @param lv
+     *            the chart level string to set
      */
     public void setLv(String lv) {
         this.lv = lv;
@@ -119,7 +128,8 @@ public class VfOnSelectOverlay {
     /**
      * Sets the personal-best score.
      *
-     * @param score the personal-best score to set
+     * @param score
+     *            the personal-best score to set
      */
     public void setScore(Integer score) {
         this.score = score;
@@ -137,7 +147,8 @@ public class VfOnSelectOverlay {
     /**
      * Sets the personal-best clear lamp string.
      *
-     * @param lamp the lamp string to set
+     * @param lamp
+     *            the lamp string to set
      */
     public void setLamp(String lamp) {
         this.lamp = lamp;
@@ -155,7 +166,8 @@ public class VfOnSelectOverlay {
     /**
      * Sets the single-chart Volforce string.
      *
-     * @param vf the Volforce string to set
+     * @param vf
+     *            the Volforce string to set
      */
     public void setVf(String vf) {
         this.vf = vf;

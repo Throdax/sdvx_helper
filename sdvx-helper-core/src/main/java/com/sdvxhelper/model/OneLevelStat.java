@@ -45,7 +45,8 @@ public class OneLevelStat {
     /**
      * Constructs a new instance for the given level and resets all counters.
      *
-     * @param lv chart level (1–20)
+     * @param lv
+     *            chart level (1–20)
      */
     public OneLevelStat(int lv) {
         this.lv = lv;
@@ -62,10 +63,10 @@ public class OneLevelStat {
         scores = new HashMap<>();
         averageScore = 0.0;
 
-        for (String r : new String[] { "s", "aaa_plus", "aaa", "aa_plus", "aa", "a_plus", "a", "b", "c", "d" }) {
+        for (String r : new String[]{"s", "aaa_plus", "aaa", "aa_plus", "aa", "a_plus", "a", "b", "c", "d"}) {
             rank.put(r, 0);
         }
-        for (String l : new String[] { "puc", "uc", "exh", "hard", "clear", "failed", "noplay" }) {
+        for (String l : new String[]{"puc", "uc", "exh", "hard", "clear", "failed", "noplay"}) {
             lamp.put(l, 0);
         }
     }
@@ -74,7 +75,8 @@ public class OneLevelStat {
      * Reads one {@link MusicInfo} entry and increments the relevant rank/lamp
      * counters. Also records the best score for average computation.
      *
-     * @param minfo chart data to incorporate
+     * @param minfo
+     *            chart data to incorporate
      */
     public void read(MusicInfo minfo) {
         String rankKey = minfo.getRank().name().toLowerCase();

@@ -41,7 +41,8 @@ public class PerceptualHasher {
     /**
      * Computes the average perceptual hash of the given image.
      *
-     * @param image input image (any size or colour model)
+     * @param image
+     *            input image (any size or colour model)
      * @return lowercase hex hash string of length {@code HASH_SIZE * HASH_SIZE / 4}
      *         (e.g. 16 chars for HASH_SIZE=8)
      */
@@ -90,11 +91,14 @@ public class PerceptualHasher {
      * Hashes must be of equal length. Lower distances indicate more similar images.
      * </p>
      *
-     * @param h1 first hex hash string
-     * @param h2 second hex hash string
+     * @param h1
+     *            first hex hash string
+     * @param h2
+     *            second hex hash string
      * @return number of differing bits (0 = identical, max =
      *         {@code h1.length() * 4})
-     * @throws IllegalArgumentException if the hashes have different lengths
+     * @throws IllegalArgumentException
+     *             if the hashes have different lengths
      */
     public int hammingDistance(String h1, String h2) {
         if (h1.length() != h2.length()) {
@@ -112,9 +116,12 @@ public class PerceptualHasher {
      * Returns {@code true} if two images are considered perceptually similar
      * (Hamming distance ≤ threshold).
      *
-     * @param h1        first hash
-     * @param h2        second hash
-     * @param threshold maximum allowed Hamming distance (typically 5–10)
+     * @param h1
+     *            first hash
+     * @param h2
+     *            second hash
+     * @param threshold
+     *            maximum allowed Hamming distance (typically 5–10)
      * @return {@code true} if similar
      */
     public boolean isSimilar(String h1, String h2, int threshold) {
@@ -129,9 +136,12 @@ public class PerceptualHasher {
      * Resizes the given image to the specified width and height using bilinear
      * interpolation.
      *
-     * @param src source image
-     * @param w   target width
-     * @param h   target height
+     * @param src
+     *            source image
+     * @param w
+     *            target width
+     * @param h
+     *            target height
      * @return resized image
      */
     private static BufferedImage resize(BufferedImage src, int w, int h) {

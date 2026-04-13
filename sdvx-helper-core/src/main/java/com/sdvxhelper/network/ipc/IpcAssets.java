@@ -6,7 +6,10 @@ import jakarta.json.bind.annotation.JsonbProperty;
  * Represents the image-asset block inside a Discord Rich Presence
  * {@link IpcActivity}.
  *
- * <p>Serialises to:</p>
+ * <p>
+ * Serialises to:
+ * </p>
+ * 
  * <pre>{@code {"large_image":"<url-or-key>","large_text":"<tooltip>"}}</pre>
  *
  * @author Throdax
@@ -29,12 +32,14 @@ public class IpcAssets {
     /**
      * Constructs an assets block with the given image key and tooltip.
      *
-     * @param largeImage the key or URL of the large image asset
-     * @param largeText  the tooltip text for the large image
+     * @param largeImage
+     *            the key or URL of the large image asset
+     * @param largeText
+     *            the tooltip text for the large image
      */
     public IpcAssets(String largeImage, String largeText) {
         this.largeImage = largeImage;
-        this.largeText  = largeText;
+        this.largeText = largeText;
     }
 
     /**
@@ -49,7 +54,8 @@ public class IpcAssets {
     /**
      * Sets the key or URL of the large image asset.
      *
-     * @param largeImage the large image key or URL to set
+     * @param largeImage
+     *            the large image key or URL to set
      */
     public void setLargeImage(String largeImage) {
         this.largeImage = largeImage;
@@ -67,7 +73,8 @@ public class IpcAssets {
     /**
      * Sets the tooltip text shown when hovering over the large image.
      *
-     * @param largeText the large image tooltip text to set
+     * @param largeText
+     *            the large image tooltip text to set
      */
     public void setLargeText(String largeText) {
         this.largeText = largeText;

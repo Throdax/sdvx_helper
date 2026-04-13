@@ -9,23 +9,27 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Provides access to sensitive configuration values that must not be committed to
- * version control.
+ * Provides access to sensitive configuration values that must not be committed
+ * to version control.
  *
- * <p>Secrets are loaded from environment variables first, then from a
+ * <p>
+ * Secrets are loaded from environment variables first, then from a
  * {@code secrets.properties} file in the working directory (excluded via
- * {@code .gitignore}).  This replaces the Python {@code params_secret.py} file.</p>
+ * {@code .gitignore}). This replaces the Python {@code params_secret.py} file.
+ * </p>
  *
- * <p>Required keys:</p>
+ * <p>
+ * Required keys:
+ * </p>
  * <ul>
- *   <li>{@code MAYA2_KEY} – HMAC key used to sign Maya2 upload payloads.</li>
+ * <li>{@code MAYA2_KEY} – HMAC key used to sign Maya2 upload payloads.</li>
  * </ul>
  *
  * @author Throdax
  * @since 2.0.0
  */
 public final class SecretConfig {
-    
+
     private static final Logger log = LoggerFactory.getLogger(SecretConfig.class);
 
     private static final String ENV_MAYA2_KEY = "MAYA2_KEY";
@@ -53,12 +57,13 @@ public final class SecretConfig {
     /**
      * Resolves a secret value by checking (in order):
      * <ol>
-     *   <li>JVM system property ({@code -Dkey=value})</li>
-     *   <li>OS environment variable</li>
-     *   <li>{@code secrets.properties} file in the working directory</li>
+     * <li>JVM system property ({@code -Dkey=value})</li>
+     * <li>OS environment variable</li>
+     * <li>{@code secrets.properties} file in the working directory</li>
      * </ol>
      *
-     * @param key property/environment variable name
+     * @param key
+     *            property/environment variable name
      * @return resolved value, or {@code null} if not found anywhere
      */
     private static String resolve(String key) {

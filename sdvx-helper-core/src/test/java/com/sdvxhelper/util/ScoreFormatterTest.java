@@ -1,8 +1,7 @@
 package com.sdvxhelper.util;
 
-import org.junit.jupiter.api.Test;
-
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 /**
  * Unit tests for {@link ScoreFormatter}.

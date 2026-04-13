@@ -4,13 +4,9 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
-
 import jakarta.xml.bind.JAXBContext;
 import jakarta.xml.bind.JAXBException;
 import jakarta.xml.bind.Marshaller;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.sdvxhelper.model.MusicInfo;
 import com.sdvxhelper.model.OnePlayData;
@@ -20,14 +16,19 @@ import com.sdvxhelper.model.overlay.OverlayChartEntry;
 import com.sdvxhelper.model.overlay.OverlayPlayEntry;
 import com.sdvxhelper.model.overlay.TotalVfOverlay;
 import com.sdvxhelper.model.overlay.VfOnSelectOverlay;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Generates the OBS overlay XML files consumed by OBS browser sources.
  *
- * <p>Extracts and replaces the manual XML string concatenation scattered across
+ * <p>
+ * Extracts and replaces the manual XML string concatenation scattered across
  * {@code SDVXLogger.gen_history_cursong()}, {@code gen_sdvx_battle()},
- * {@code gen_vf_onselect()}, {@code gen_rival_xml()}, and related methods in the
- * Python code. All output files are written UTF-8 encoded via JAXB marshalling.</p>
+ * {@code gen_vf_onselect()}, {@code gen_rival_xml()}, and related methods in
+ * the Python code. All output files are written UTF-8 encoded via JAXB
+ * marshalling.
+ * </p>
  *
  * @author Throdax
  * @since 2.0.0
@@ -42,15 +43,13 @@ public class XmlExportService {
      * Constructs an {@code XmlExportService} and initialises the shared JAXB
      * {@link Marshaller} for all overlay POJO types.
      *
-     * @throws IOException if the JAXB context cannot be created
+     * @throws IOException
+     *             if the JAXB context cannot be created
      */
     public XmlExportService() {
         try {
-            JAXBContext ctx = JAXBContext.newInstance(
-                    HistoryOverlay.class,
-                    BattleOverlay.class,
-                    VfOnSelectOverlay.class,
-                    TotalVfOverlay.class);
+            JAXBContext ctx = JAXBContext.newInstance(HistoryOverlay.class, BattleOverlay.class,
+                    VfOnSelectOverlay.class, TotalVfOverlay.class);
             marshaller = ctx.createMarshaller();
             marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
             marshaller.setProperty(Marshaller.JAXB_ENCODING, "UTF-8");
@@ -64,13 +63,17 @@ public class XmlExportService {
     // -------------------------------------------------------------------------
 
     /**
-     * Writes the play-history overlay for the currently selected song.
-     * Output: {@code out/history_cursong.xml}
+     * Writes the play-history overlay for the currently selected song. Output:
+     * {@code out/history_cursong.xml}
      *
-     * @param plays   all plays for the current song, most-recent first
-     * @param lv      chart level integer (-1 if unknown)
-     * @param outFile destination file
-     * @throws IOException if the file cannot be written
+     * @param plays
+     *            all plays for the current song, most-recent first
+     * @param lv
+     *            chart level integer (-1 if unknown)
+     * @param outFile
+     *            destination file
+     * @throws IOException
+     *             if the file cannot be written
      */
     public void writeHistoryCurSong(List<OnePlayData> plays, int lv, File outFile) throws IOException {
         HistoryOverlay overlay = new HistoryOverlay();
@@ -94,12 +97,15 @@ public class XmlExportService {
     // -------------------------------------------------------------------------
 
     /**
-     * Writes today's plays for the battle overlay.
-     * Output: {@code out/sdvx_battle.xml}
+     * Writes today's plays for the battle overlay. Output:
+     * {@code out/sdvx_battle.xml}
      *
-     * @param todayPlays plays recorded since the session started
-     * @param outFile    destination file
-     * @throws IOException if the file cannot be written
+     * @param todayPlays
+     *            plays recorded since the session started
+     * @param outFile
+     *            destination file
+     * @throws IOException
+     *             if the file cannot be written
      */
     public void writeSdvxBattle(List<OnePlayData> todayPlays, File outFile) throws IOException {
         BattleOverlay overlay = new BattleOverlay();
@@ -124,9 +130,13 @@ public class XmlExportService {
      * Writes Volforce information for the song currently on the select screen.
      * Output: {@code out/vf_onselect.xml}
      *
-     * @param info    personal-best info for the selected chart (may be {@code null} if unknown)
-     * @param outFile destination file
-     * @throws IOException if the file cannot be written
+     * @param info
+     *            personal-best info for the selected chart (may be {@code null} if
+     *            unknown)
+     * @param outFile
+     *            destination file
+     * @throws IOException
+     *             if the file cannot be written
      */
     public void writeVfOnSelect(MusicInfo info, File outFile) throws IOException {
         VfOnSelectOverlay overlay = new VfOnSelectOverlay();
@@ -149,10 +159,14 @@ public class XmlExportService {
     /**
      * Writes the total-Volforce overlay showing the top-N chart breakdown.
      *
-     * @param top50      list of top-50 {@link MusicInfo} entries (sorted by VF desc)
-     * @param totalVfInt sum of top-50 VF values (integer representation)
-     * @param outFile    destination file
-     * @throws IOException if the file cannot be written
+     * @param top50
+     *            list of top-50 {@link MusicInfo} entries (sorted by VF desc)
+     * @param totalVfInt
+     *            sum of top-50 VF values (integer representation)
+     * @param outFile
+     *            destination file
+     * @throws IOException
+     *             if the file cannot be written
      */
     public void writeTotalVf(List<MusicInfo> top50, int totalVfInt, File outFile) throws IOException {
         TotalVfOverlay overlay = new TotalVfOverlay();
@@ -181,9 +195,12 @@ public class XmlExportService {
      * Marshals the given JAXB object to the specified file, creating parent
      * directories as needed.
      *
-     * @param object  the JAXB-annotated object to serialise
-     * @param outFile the destination file
-     * @throws IOException if the directory cannot be created or marshalling fails
+     * @param object
+     *            the JAXB-annotated object to serialise
+     * @param outFile
+     *            the destination file
+     * @throws IOException
+     *             if the directory cannot be created or marshalling fails
      */
     private void marshal(Object object, File outFile) throws IOException {
         ensureParent(outFile);
@@ -195,10 +212,11 @@ public class XmlExportService {
     }
 
     /**
-     * Formats an integer VF value (e.g. {@code 173}) as a one-decimal-place
-     * string (e.g. {@code "17.3"}).
+     * Formats an integer VF value (e.g. {@code 173}) as a one-decimal-place string
+     * (e.g. {@code "17.3"}).
      *
-     * @param vfInt the VF integer (value × 10)
+     * @param vfInt
+     *            the VF integer (value × 10)
      * @return the formatted VF string
      */
     private static String formatVf(int vfInt) {
@@ -206,11 +224,12 @@ public class XmlExportService {
     }
 
     /**
-     * Creates the parent directory of the given file if it does not already
-     * exist.
+     * Creates the parent directory of the given file if it does not already exist.
      *
-     * @param file the file whose parent directory must exist
-     * @throws IOException if the directory cannot be created
+     * @param file
+     *            the file whose parent directory must exist
+     * @throws IOException
+     *             if the directory cannot be created
      */
     private static void ensureParent(File file) throws IOException {
         File parent = file.getParentFile();

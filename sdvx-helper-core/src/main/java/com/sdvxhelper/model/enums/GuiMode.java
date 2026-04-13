@@ -3,7 +3,9 @@ package com.sdvxhelper.model.enums;
 /**
  * Represents the active screen / panel shown in the main application window.
  *
- * <p>Maps to the Python {@code gui_mode} enum defined in {@code sdvxh_classes.py}.</p>
+ * <p>
+ * Maps to the Python {@code gui_mode} enum defined in {@code sdvxh_classes.py}.
+ * </p>
  *
  * @author Throdax
  * @since 2.0.0

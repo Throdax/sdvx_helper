@@ -5,7 +5,10 @@ import jakarta.json.bind.annotation.JsonbProperty;
 /**
  * Represents a Discord IPC FRAME command ({@code opcode = 1}).
  *
- * <p>Serialises to:</p>
+ * <p>
+ * Serialises to:
+ * </p>
+ * 
  * <pre>{@code
  * {
  *   "cmd":   "SET_ACTIVITY",
@@ -27,7 +30,9 @@ public class IpcFrame {
     @JsonbProperty("args")
     private IpcSetActivityArgs args;
 
-    /** A unique identifier for this frame used by Discord to correlate responses. */
+    /**
+     * A unique identifier for this frame used by Discord to correlate responses.
+     */
     @JsonbProperty("nonce")
     private String nonce;
 
@@ -38,13 +43,16 @@ public class IpcFrame {
     /**
      * Constructs a command frame.
      *
-     * @param cmd   the IPC command name (e.g. {@code "SET_ACTIVITY"})
-     * @param args  the {@link IpcSetActivityArgs} arguments block
-     * @param nonce a unique string to correlate the Discord response
+     * @param cmd
+     *            the IPC command name (e.g. {@code "SET_ACTIVITY"})
+     * @param args
+     *            the {@link IpcSetActivityArgs} arguments block
+     * @param nonce
+     *            a unique string to correlate the Discord response
      */
     public IpcFrame(String cmd, IpcSetActivityArgs args, String nonce) {
-        this.cmd   = cmd;
-        this.args  = args;
+        this.cmd = cmd;
+        this.args = args;
         this.nonce = nonce;
     }
 
@@ -60,7 +68,8 @@ public class IpcFrame {
     /**
      * Sets the IPC command name.
      *
-     * @param cmd the command name string to set
+     * @param cmd
+     *            the command name string to set
      */
     public void setCmd(String cmd) {
         this.cmd = cmd;
@@ -78,7 +87,8 @@ public class IpcFrame {
     /**
      * Sets the command arguments block.
      *
-     * @param args the {@link IpcSetActivityArgs} block to set
+     * @param args
+     *            the {@link IpcSetActivityArgs} block to set
      */
     public void setArgs(IpcSetActivityArgs args) {
         this.args = args;
@@ -96,7 +106,8 @@ public class IpcFrame {
     /**
      * Sets the unique nonce string for this frame.
      *
-     * @param nonce the nonce string to set
+     * @param nonce
+     *            the nonce string to set
      */
     public void setNonce(String nonce) {
         this.nonce = nonce;

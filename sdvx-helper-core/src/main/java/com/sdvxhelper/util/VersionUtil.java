@@ -1,20 +1,23 @@
 package com.sdvxhelper.util;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * Utilities for reading and comparing application version strings.
  *
- * <p>The current version is read from {@code version.properties} on the classpath
- * (key: {@code version}).  Version strings must follow the {@code MAJOR.MINOR.PATCH}
- * format (e.g. {@code "2.0.0"}).
+ * <p>
+ * The current version is read from {@code version.properties} on the classpath
+ * (key: {@code version}). Version strings must follow the
+ * {@code MAJOR.MINOR.PATCH} format (e.g. {@code "2.0.0"}).
  *
- * <p>Maps to the version-related helpers in the Python {@code sdvx_utils.py} file.</p>
+ * <p>
+ * Maps to the version-related helpers in the Python {@code sdvx_utils.py} file.
+ * </p>
  *
  * @author Throdax
  * @since 2.0.0
@@ -30,9 +33,11 @@ public final class VersionUtil {
     }
 
     /**
-     * Reads the application version from {@code version.properties} on the classpath.
+     * Reads the application version from {@code version.properties} on the
+     * classpath.
      *
-     * @return version string (e.g. {@code "2.0.0"}), or {@code "unknown"} on failure
+     * @return version string (e.g. {@code "2.0.0"}), or {@code "unknown"} on
+     *         failure
      */
     public static String getCurrentVersion() {
         try (InputStream is = VersionUtil.class.getClassLoader().getResourceAsStream(VERSION_RESOURCE)) {
@@ -53,10 +58,13 @@ public final class VersionUtil {
     /**
      * Compares two version strings.
      *
-     * @param v1 first version string (e.g. {@code "2.0.0"})
-     * @param v2 second version string
+     * @param v1
+     *            first version string (e.g. {@code "2.0.0"})
+     * @param v2
+     *            second version string
      * @return negative if v1 &lt; v2, zero if equal, positive if v1 &gt; v2
-     * @throws IllegalArgumentException if either string cannot be parsed
+     * @throws IllegalArgumentException
+     *             if either string cannot be parsed
      */
     public static int compare(String v1, String v2) {
         int[] parts1 = parseParts(v1);
@@ -74,8 +82,10 @@ public final class VersionUtil {
     /**
      * Returns {@code true} if {@code candidate} is newer than {@code current}.
      *
-     * @param current   current version string
-     * @param candidate candidate version string to compare against
+     * @param current
+     *            current version string
+     * @param candidate
+     *            candidate version string to compare against
      * @return {@code true} if an update is available
      */
     public static boolean isNewerVersion(String current, String candidate) {

@@ -9,12 +9,8 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.time.Instant;
 import java.util.UUID;
-
 import jakarta.json.bind.Jsonb;
 import jakarta.json.bind.JsonbBuilder;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.sdvxhelper.model.enums.PlayState;
 import com.sdvxhelper.network.ipc.IpcActivity;
@@ -23,6 +19,8 @@ import com.sdvxhelper.network.ipc.IpcFrame;
 import com.sdvxhelper.network.ipc.IpcHandshake;
 import com.sdvxhelper.network.ipc.IpcSetActivityArgs;
 import com.sdvxhelper.network.ipc.IpcTimestamps;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Manages Discord Rich Presence state for the SDVX session via the Discord IPC
@@ -103,7 +101,8 @@ public class DiscordPresenceClient implements Closeable {
     /**
      * Constructs a Discord Presence client for the given Discord application.
      *
-     * @param applicationId the Discord application client ID (numeric string)
+     * @param applicationId
+     *            the Discord application client ID (numeric string)
      */
     public DiscordPresenceClient(String applicationId) {
         this.applicationId = applicationId;
@@ -122,7 +121,8 @@ public class DiscordPresenceClient implements Closeable {
      * Discord.
      * </p>
      *
-     * @throws IOException if no Discord pipe is found or the handshake fails
+     * @throws IOException
+     *             if no Discord pipe is found or the handshake fails
      */
     public void connect() throws IOException {
         pipe = openPipe();
@@ -156,15 +156,20 @@ public class DiscordPresenceClient implements Closeable {
      * last update, or if the client is not connected.
      * </p>
      *
-     * @param state      the current play state
-     * @param songTitle  the currently selected/playing song title (may be
-     *                   {@code null})
-     * @param difficulty the chart difficulty string (may be {@code null})
-     * @param vfDisplay  the formatted Volforce string (e.g. {@code "17.255"})
-     * @param jacketUrl  the URL of the jacket image for the large image asset (may
-     *                   be {@code null})
+     * @param state
+     *            the current play state
+     * @param songTitle
+     *            the currently selected/playing song title (may be {@code null})
+     * @param difficulty
+     *            the chart difficulty string (may be {@code null})
+     * @param vfDisplay
+     *            the formatted Volforce string (e.g. {@code "17.255"})
+     * @param jacketUrl
+     *            the URL of the jacket image for the large image asset (may be
+     *            {@code null})
      */
-    public void updatePresence(PlayState state, String songTitle, String difficulty, String vfDisplay, String jacketUrl) {
+    public void updatePresence(PlayState state, String songTitle, String difficulty, String vfDisplay,
+            String jacketUrl) {
         if (!connected) {
             log.debug("updatePresence: not connected, skipping");
             return;
@@ -177,9 +182,9 @@ public class DiscordPresenceClient implements Closeable {
         }
         lastUpdateMs = now;
 
-        String details  = buildDetails(state, songTitle, difficulty);
-        String status   = "VF: " + vfDisplay;
-        long startTime  = Instant.now().getEpochSecond();
+        String details = buildDetails(state, songTitle, difficulty);
+        String status = "VF: " + vfDisplay;
+        long startTime = Instant.now().getEpochSecond();
 
         log.debug("updatePresence: state={}, details='{}', status='{}'", state, details, status);
 
@@ -187,16 +192,10 @@ public class DiscordPresenceClient implements Closeable {
                 ? new IpcAssets(jacketUrl, songTitle != null ? songTitle : "")
                 : new IpcAssets("sdvx_logo", "SOUND VOLTEX");
 
-        IpcActivity activity = new IpcActivity(
-                details,
-                status,
-                new IpcTimestamps(startTime),
-                assets);
+        IpcActivity activity = new IpcActivity(details, status, new IpcTimestamps(startTime), assets);
 
-        String payload = jsonb.toJson(new IpcFrame(
-                "SET_ACTIVITY",
-                new IpcSetActivityArgs(ProcessHandle.current().pid(), activity),
-                UUID.randomUUID().toString()));
+        String payload = jsonb.toJson(new IpcFrame("SET_ACTIVITY",
+                new IpcSetActivityArgs(ProcessHandle.current().pid(), activity), UUID.randomUUID().toString()));
 
         try {
             sendFrame(OP_FRAME, payload);
@@ -215,10 +214,8 @@ public class DiscordPresenceClient implements Closeable {
             return;
         }
         log.debug("clearPresence");
-        String payload = jsonb.toJson(new IpcFrame(
-                "SET_ACTIVITY",
-                new IpcSetActivityArgs(ProcessHandle.current().pid(), null),
-                UUID.randomUUID().toString()));
+        String payload = jsonb.toJson(new IpcFrame("SET_ACTIVITY",
+                new IpcSetActivityArgs(ProcessHandle.current().pid(), null), UUID.randomUUID().toString()));
         try {
             sendFrame(OP_FRAME, payload);
             readFrame();
@@ -256,7 +253,8 @@ public class DiscordPresenceClient implements Closeable {
      * that Discord has created.
      *
      * @return an open {@link RandomAccessFile} handle to the pipe
-     * @throws IOException if no Discord IPC pipe is available
+     * @throws IOException
+     *             if no Discord IPC pipe is available
      */
     private RandomAccessFile openPipe() throws IOException {
         for (int i = 0; i <= PIPE_MAX_INDEX; i++) {
@@ -293,7 +291,8 @@ public class DiscordPresenceClient implements Closeable {
     /**
      * Sends the protocol HANDSHAKE frame ({@code opcode = 0}).
      *
-     * @throws IOException if the frame cannot be written to the pipe
+     * @throws IOException
+     *             if the frame cannot be written to the pipe
      */
     private void sendHandshake() throws IOException {
         String json = jsonb.toJson(new IpcHandshake(IPC_VERSION, applicationId));
@@ -313,13 +312,17 @@ public class DiscordPresenceClient implements Closeable {
      *   [N bytes] UTF-8 JSON payload
      * </pre>
      *
-     * @param opcode  the IPC opcode
-     * @param payload the JSON string payload
-     * @throws IOException if the write fails
+     * @param opcode
+     *            the IPC opcode
+     * @param payload
+     *            the JSON string payload
+     * @throws IOException
+     *             if the write fails
      */
     private void sendFrame(int opcode, String payload) throws IOException {
         byte[] data = payload.getBytes(java.nio.charset.StandardCharsets.UTF_8);
-        byte[] header = ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN).putInt(opcode).putInt(data.length).array();
+        byte[] header = ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN).putInt(opcode).putInt(data.length)
+                .array();
         pipeOut.write(header);
         pipeOut.write(data);
         pipeOut.flush();
@@ -330,7 +333,8 @@ public class DiscordPresenceClient implements Closeable {
      * Reads and returns one IPC frame from the pipe, discarding the payload.
      *
      * @return the JSON payload string of the received frame
-     * @throws IOException if the read fails or the pipe is closed
+     * @throws IOException
+     *             if the read fails or the pipe is closed
      */
     private String readFrame() throws IOException {
         byte[] header = pipeIn.readNBytes(8);
@@ -353,17 +357,21 @@ public class DiscordPresenceClient implements Closeable {
     /**
      * Builds the Rich Presence details line from the current play state.
      *
-     * @param state      the current play state
-     * @param title      the song title (may be {@code null})
-     * @param difficulty the chart difficulty string (may be {@code null})
+     * @param state
+     *            the current play state
+     * @param title
+     *            the song title (may be {@code null})
+     * @param difficulty
+     *            the chart difficulty string (may be {@code null})
      * @return the formatted details string
      */
     private static String buildDetails(PlayState state, String title, String difficulty) {
         return switch (state) {
-        case SELECTING -> "Selecting" + (title != null ? ": " + truncate(title, 50) : "");
-        case PLAYING -> "Playing" + (title != null ? ": " + truncate(title, 50) : "") + (difficulty != null ? " [" + difficulty.toUpperCase() + "]" : "");
-        case RESULT -> "Viewing results";
-        case IDLE -> "Idle";
+            case SELECTING -> "Selecting" + (title != null ? ": " + truncate(title, 50) : "");
+            case PLAYING -> "Playing" + (title != null ? ": " + truncate(title, 50) : "")
+                    + (difficulty != null ? " [" + difficulty.toUpperCase() + "]" : "");
+            case RESULT -> "Viewing results";
+            case IDLE -> "Idle";
         };
     }
 
@@ -371,8 +379,10 @@ public class DiscordPresenceClient implements Closeable {
      * Truncates a string to at most {@code maxLen} characters, appending {@code …}
      * if truncated.
      *
-     * @param s      the string to truncate
-     * @param maxLen the maximum allowed length
+     * @param s
+     *            the string to truncate
+     * @param maxLen
+     *            the maximum allowed length
      * @return the (possibly truncated) string
      */
     private static String truncate(String s, int maxLen) {

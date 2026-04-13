@@ -7,7 +7,10 @@ import jakarta.xml.bind.annotation.XmlAttribute;
 /**
  * JAXB element representing one chart entry inside the total-VF overlay.
  *
- * <p>Serialises to:</p>
+ * <p>
+ * Serialises to:
+ * </p>
+ * 
  * <pre>{@code
  * <chart rank="…" title="…" diff="…" lv="…" score="…" lamp="…" vf="…"/>
  * }</pre>
@@ -64,7 +67,8 @@ public class OverlayChartEntry {
     /**
      * Sets the 1-based rank of this chart in the top-50 list.
      *
-     * @param rank the rank to set
+     * @param rank
+     *            the rank to set
      */
     public void setRank(int rank) {
         this.rank = rank;
@@ -82,7 +86,8 @@ public class OverlayChartEntry {
     /**
      * Sets the song title.
      *
-     * @param title the song title to set
+     * @param title
+     *            the song title to set
      */
     public void setTitle(String title) {
         this.title = title;
@@ -100,7 +105,8 @@ public class OverlayChartEntry {
     /**
      * Sets the chart difficulty string.
      *
-     * @param diff the difficulty string to set
+     * @param diff
+     *            the difficulty string to set
      */
     public void setDiff(String diff) {
         this.diff = diff;
@@ -118,7 +124,8 @@ public class OverlayChartEntry {
     /**
      * Sets the chart level string.
      *
-     * @param lv the chart level string to set
+     * @param lv
+     *            the chart level string to set
      */
     public void setLv(String lv) {
         this.lv = lv;
@@ -136,7 +143,8 @@ public class OverlayChartEntry {
     /**
      * Sets the personal-best score.
      *
-     * @param score the personal-best score to set
+     * @param score
+     *            the personal-best score to set
      */
     public void setScore(int score) {
         this.score = score;
@@ -154,7 +162,8 @@ public class OverlayChartEntry {
     /**
      * Sets the personal-best clear lamp string.
      *
-     * @param lamp the lamp string to set
+     * @param lamp
+     *            the lamp string to set
      */
     public void setLamp(String lamp) {
         this.lamp = lamp;
@@ -172,7 +181,8 @@ public class OverlayChartEntry {
     /**
      * Sets the single-chart Volforce string.
      *
-     * @param vf the Volforce string to set
+     * @param vf
+     *            the Volforce string to set
      */
     public void setVf(String vf) {
         this.vf = vf;

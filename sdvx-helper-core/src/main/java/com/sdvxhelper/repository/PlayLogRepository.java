@@ -1,22 +1,24 @@
 package com.sdvxhelper.repository;
 
-import com.sdvxhelper.model.OnePlayData;
-import com.sdvxhelper.model.PlayLog;
-import jakarta.xml.bind.JAXBException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import jakarta.xml.bind.JAXBException;
+
+import com.sdvxhelper.model.OnePlayData;
+import com.sdvxhelper.model.PlayLog;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Persists and loads the complete play history as {@code alllog.xml}.
  *
- * <p>Replaces the Python {@code pickle.load/dump} calls on {@code alllog.pkl}.
- * On first use (when no file exists), an empty {@link PlayLog} is returned and
- * written to disk on the next {@link #save(PlayLog)} call.</p>
+ * <p>
+ * Replaces the Python {@code pickle.load/dump} calls on {@code alllog.pkl}. On
+ * first use (when no file exists), an empty {@link PlayLog} is returned and
+ * written to disk on the next {@link #save(PlayLog)} call.
+ * </p>
  *
  * @author Throdax
  * @since 2.0.0
@@ -37,10 +39,10 @@ public class PlayLogRepository extends JaxbRepository<PlayLog> {
     }
 
     /**
-     * Constructs a repository backed by a custom file path.
-     * Useful for testing.
+     * Constructs a repository backed by a custom file path. Useful for testing.
      *
-     * @param file XML file to read from / write to
+     * @param file
+     *            XML file to read from / write to
      */
     public PlayLogRepository(File file) {
         super(PlayLog.class, OnePlayData.class);
@@ -50,8 +52,10 @@ public class PlayLogRepository extends JaxbRepository<PlayLog> {
     /**
      * Loads the play history from disk.
      *
-     * <p>If the file does not yet exist, returns a new empty {@link PlayLog}.
-     * The list is sorted by date ascending after loading.</p>
+     * <p>
+     * If the file does not yet exist, returns a new empty {@link PlayLog}. The list
+     * is sorted by date ascending after loading.
+     * </p>
      *
      * @return loaded (or newly created) play log
      */
@@ -77,8 +81,10 @@ public class PlayLogRepository extends JaxbRepository<PlayLog> {
     /**
      * Saves the play log to disk atomically.
      *
-     * @param playLog play log to persist
-     * @throws IOException if the file cannot be written
+     * @param playLog
+     *            play log to persist
+     * @throws IOException
+     *             if the file cannot be written
      */
     public void save(PlayLog playLog) throws IOException {
         try {

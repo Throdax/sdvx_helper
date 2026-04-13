@@ -6,16 +6,14 @@ import java.io.IOException;
 import java.util.Locale;
 import java.util.Map;
 import java.util.ResourceBundle;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.sdvxhelper.repository.SettingsRepository;
-
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+
+import com.sdvxhelper.repository.SettingsRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Singleton that manages the application locale and provides locale-change
@@ -75,7 +73,8 @@ public final class LocaleManager {
      * locale preference. This method is idempotent; subsequent calls have no
      * effect.
      *
-     * @param settingsRepo repository used to load and persist the locale setting
+     * @param settingsRepo
+     *            repository used to load and persist the locale setting
      */
     public void init(SettingsRepository settingsRepo) {
         if (initialized) {
@@ -90,12 +89,12 @@ public final class LocaleManager {
     }
 
     /**
-     * Returns the list of locale codes for which a resource bundle file was
-     * found in {@value #I18N_DIR} at startup. The list is determined entirely
-     * by the files present on disk; no recompilation is needed to add a new
-     * language.
+     * Returns the list of locale codes for which a resource bundle file was found
+     * in {@value #I18N_DIR} at startup. The list is determined entirely by the
+     * files present on disk; no recompilation is needed to add a new language.
      *
-     * @return observable list of discovered locale codes (e.g. {@code ["en", "ja", "kr"]})
+     * @return observable list of discovered locale codes (e.g.
+     *         {@code ["en", "ja", "kr"]})
      */
     public ObservableList<String> getAvailableLocaleCodes() {
         return availableLocaleCodes;
@@ -133,7 +132,8 @@ public final class LocaleManager {
      * Sets the active locale by language code, persists the choice to settings, and
      * notifies all registered listeners.
      *
-     * @param code two-letter language code (e.g. {@code "en"}, {@code "ja"})
+     * @param code
+     *            two-letter language code (e.g. {@code "en"}, {@code "ja"})
      */
     public void setLocale(String code) {
         applyLocaleCode(code);
@@ -185,7 +185,8 @@ public final class LocaleManager {
         }
 
         if (availableLocaleCodes.isEmpty()) {
-            log.warn("No locale bundles found in '{}', falling back to bundled default 'en'", i18nDir.getAbsolutePath());
+            log.warn("No locale bundles found in '{}', falling back to bundled default 'en'",
+                    i18nDir.getAbsolutePath());
             availableLocaleCodes.add("en");
         }
     }

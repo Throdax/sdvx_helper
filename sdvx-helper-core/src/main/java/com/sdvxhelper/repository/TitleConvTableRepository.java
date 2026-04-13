@@ -1,21 +1,24 @@
 package com.sdvxhelper.repository;
 
-import com.sdvxhelper.model.TitleConvTable;
-import com.sdvxhelper.model.TitleMapping;
-import jakarta.xml.bind.JAXBException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Map;
+import jakarta.xml.bind.JAXBException;
+
+import com.sdvxhelper.model.TitleConvTable;
+import com.sdvxhelper.model.TitleMapping;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- * Persists and loads the Maya2 title-conversion table as {@code title_conv_table.xml}.
+ * Persists and loads the Maya2 title-conversion table as
+ * {@code title_conv_table.xml}.
  *
- * <p>Replaces the Python {@code pickle.load} call on
- * {@code resources/title_conv_table.pkl}.</p>
+ * <p>
+ * Replaces the Python {@code pickle.load} call on
+ * {@code resources/title_conv_table.pkl}.
+ * </p>
  *
  * @author Throdax
  * @since 2.0.0
@@ -37,7 +40,8 @@ public class TitleConvTableRepository extends JaxbRepository<TitleConvTable> {
     /**
      * Constructs a repository backed by a custom file.
      *
-     * @param file XML file to read from / write to
+     * @param file
+     *            XML file to read from / write to
      */
     public TitleConvTableRepository(File file) {
         super(TitleConvTable.class, TitleMapping.class);
@@ -45,8 +49,8 @@ public class TitleConvTableRepository extends JaxbRepository<TitleConvTable> {
     }
 
     /**
-     * Loads the title-conversion table from disk.
-     * Returns an empty {@link TitleConvTable} if the file does not exist.
+     * Loads the title-conversion table from disk. Returns an empty
+     * {@link TitleConvTable} if the file does not exist.
      *
      * @return loaded table
      */
@@ -78,8 +82,10 @@ public class TitleConvTableRepository extends JaxbRepository<TitleConvTable> {
     /**
      * Saves the table to disk atomically.
      *
-     * @param table table to persist
-     * @throws IOException if the file cannot be written
+     * @param table
+     *            table to persist
+     * @throws IOException
+     *             if the file cannot be written
      */
     public void save(TitleConvTable table) throws IOException {
         try {

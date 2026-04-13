@@ -1,12 +1,5 @@
 package com.sdvxhelper.repository;
 
-import com.sdvxhelper.util.SpecialTitles;
-import jakarta.json.bind.Jsonb;
-import jakarta.json.bind.JsonbBuilder;
-import jakarta.json.bind.JsonbConfig;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
@@ -14,17 +7,28 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import jakarta.json.bind.Jsonb;
+import jakarta.json.bind.JsonbBuilder;
+import jakarta.json.bind.JsonbConfig;
+
+import com.sdvxhelper.util.SpecialTitles;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- * Loads and saves the externalised title-normalisation data ({@code special_titles.json}).
+ * Loads and saves the externalised title-normalisation data
+ * ({@code special_titles.json}).
  *
- * <p>This repository is the runtime counterpart of the bundled
- * {@code special_titles.json} resource.  At startup it attempts to load the file
+ * <p>
+ * This repository is the runtime counterpart of the bundled
+ * {@code special_titles.json} resource. At startup it attempts to load the file
  * from the working directory; if absent it falls back to the bundled classpath
  * resource so the application always has a working default.
  *
- * <p>New title mappings, rating overrides, or ignore rules can be added by editing
- * {@code special_titles.json} — no recompilation or new release is required.</p>
+ * <p>
+ * New title mappings, rating overrides, or ignore rules can be added by editing
+ * {@code special_titles.json} — no recompilation or new release is required.
+ * </p>
  *
  * @author Throdax
  * @since 2.0.0
@@ -49,23 +53,25 @@ public class SpecialTitlesRepository {
     /**
      * Constructs a repository backed by a custom file (useful for testing).
      *
-     * @param file JSON file to read from / write to
+     * @param file
+     *            JSON file to read from / write to
      */
     public SpecialTitlesRepository(File file) {
         this.file = file;
-        JsonbConfig config = new JsonbConfig()
-                .withFormatting(true)
-                .withEncoding("UTF-8");
+        JsonbConfig config = new JsonbConfig().withFormatting(true).withEncoding("UTF-8");
         this.jsonb = JsonbBuilder.create(config);
     }
 
     /**
      * Loads the special-titles data.
      *
-     * <p>Resolution order:</p>
+     * <p>
+     * Resolution order:
+     * </p>
      * <ol>
-     *   <li>External {@code special_titles.json} in the working directory.</li>
-     *   <li>Bundled {@code special_titles.json} on the classpath (read-only default).</li>
+     * <li>External {@code special_titles.json} in the working directory.</li>
+     * <li>Bundled {@code special_titles.json} on the classpath (read-only
+     * default).</li>
      * </ol>
      *
      * @return loaded {@link SpecialTitles}; never {@code null}
@@ -104,8 +110,10 @@ public class SpecialTitlesRepository {
     /**
      * Saves the special-titles data to the external JSON file.
      *
-     * @param specialTitles data to persist
-     * @throws IOException if the file cannot be written
+     * @param specialTitles
+     *            data to persist
+     * @throws IOException
+     *             if the file cannot be written
      */
     public void save(SpecialTitles specialTitles) throws IOException {
         File parent = file.getParentFile();

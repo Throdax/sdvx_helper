@@ -4,12 +4,11 @@ import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 import java.util.Map;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.sdvxhelper.model.enums.DetectMode;
 import com.sdvxhelper.ocr.PerceptualHasher;
 import com.sdvxhelper.repository.MusicListRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Analyses captured OBS frames to determine the current game state and song
@@ -38,7 +37,8 @@ public class ImageAnalysisService {
     /**
      * Constructs the service.
      *
-     * @param musicListRepo repository providing the jacket-hash index
+     * @param musicListRepo
+     *            repository providing the jacket-hash index
      */
     public ImageAnalysisService(MusicListRepository musicListRepo) {
         this.hasher = new PerceptualHasher();
@@ -56,13 +56,16 @@ public class ImageAnalysisService {
      * pipeline should be populated in the concrete OBS-capture integration.
      * </p>
      *
-     * @param frame        full-frame {@link BufferedImage} captured from OBS
-     * @param stateHashes  map from {@link DetectMode} to its reference hash string
-     * @param regionParams map of parameter keys to numeric region values from
-     *                     params.json
+     * @param frame
+     *            full-frame {@link BufferedImage} captured from OBS
+     * @param stateHashes
+     *            map from {@link DetectMode} to its reference hash string
+     * @param regionParams
+     *            map of parameter keys to numeric region values from params.json
      * @return detected {@link DetectMode}
      */
-    public DetectMode detectMode(BufferedImage frame, Map<DetectMode, String> stateHashes, Map<String, Object> regionParams) {
+    public DetectMode detectMode(BufferedImage frame, Map<DetectMode, String> stateHashes,
+            Map<String, Object> regionParams) {
         // The detection region for the mode indicator (configurable via params.json)
         try {
             int x = toInt(regionParams.get("mode_x"));
@@ -95,14 +98,18 @@ public class ImageAnalysisService {
     /**
      * Identifies the song currently shown on the jacket area of the select screen.
      *
-     * @param frame        full-frame capture
-     * @param jacketRegion crop rectangle for the jacket area (in pixels)
-     * @param difficulty   difficulty string to look up in the jacket-hash index
+     * @param frame
+     *            full-frame capture
+     * @param jacketRegion
+     *            crop rectangle for the jacket area (in pixels)
+     * @param difficulty
+     *            difficulty string to look up in the jacket-hash index
      * @return {@code String[]{title, difficulty}} if found, or {@code null}
      */
     public String[] identifyJacket(BufferedImage frame, Rectangle jacketRegion, String difficulty) {
         try {
-            BufferedImage jacketCrop = crop(frame, jacketRegion.x, jacketRegion.y, jacketRegion.width, jacketRegion.height);
+            BufferedImage jacketCrop = crop(frame, jacketRegion.x, jacketRegion.y, jacketRegion.width,
+                    jacketRegion.height);
             String hash = hasher.hash(jacketCrop);
             return musicListRepo.findByJacketHash(hash);
         } catch (Exception e) {
@@ -120,7 +127,8 @@ public class ImageAnalysisService {
      * pre-cropped lamp region image.
      * </p>
      *
-     * @param lampRegionImage cropped image of the lamp indicator area
+     * @param lampRegionImage
+     *            cropped image of the lamp indicator area
      * @return detected lamp string ({@code "puc"}, {@code "uc"}, {@code "exh"},
      *         {@code "hard"}, {@code "clear"}, or {@code "failed"})
      */
@@ -128,7 +136,7 @@ public class ImageAnalysisService {
         long rSum = 0;
         long bSum = 0;
         long gSum = 0;
-        
+
         int width = lampRegionImage.getWidth();
         int height = lampRegionImage.getHeight();
 
@@ -168,12 +176,18 @@ public class ImageAnalysisService {
     /**
      * Crops a region from the source image, guarding against out-of-bounds errors.
      *
-     * @param src source image
-     * @param x   top-left x coordinate of the crop rectangle
-     * @param y   top-left y coordinate of the crop rectangle
-     * @param w   width of the crop rectangle
-     * @param h   height of the crop rectangle
-     * @return cropped image, or a smaller region if the requested rectangle exceeds bounds
+     * @param src
+     *            source image
+     * @param x
+     *            top-left x coordinate of the crop rectangle
+     * @param y
+     *            top-left y coordinate of the crop rectangle
+     * @param w
+     *            width of the crop rectangle
+     * @param h
+     *            height of the crop rectangle
+     * @return cropped image, or a smaller region if the requested rectangle exceeds
+     *         bounds
      */
     private static BufferedImage crop(BufferedImage src, int x, int y, int w, int h) {
         // Guard against out-of-bounds
@@ -181,12 +195,13 @@ public class ImageAnalysisService {
         int safeY = Math.clamp(y, 0, src.getHeight() - 1);
         int safeW = Math.min(w, src.getWidth() - safeX);
         int safeH = Math.min(h, src.getHeight() - safeY);
-        
+
         return src.getSubimage(safeX, safeY, safeW, safeH);
     }
 
     /**
      * Converts an object to an integer, handling both numeric types and strings.
+     * 
      * @param val
      * @return
      */
@@ -194,7 +209,7 @@ public class ImageAnalysisService {
         if (val instanceof Number n) {
             return n.intValue();
         }
-        
+
         return Integer.parseInt(String.valueOf(val));
     }
 }

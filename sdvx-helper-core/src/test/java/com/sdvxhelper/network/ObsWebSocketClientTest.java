@@ -1,13 +1,12 @@
 package com.sdvxhelper.network;
 
-import org.junit.jupiter.api.Test;
-
 import java.awt.image.BufferedImage;
-import java.util.Base64;
 import java.io.ByteArrayOutputStream;
+import java.util.Base64;
 import javax.imageio.ImageIO;
 
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 /**
  * Unit tests for {@link ObsWebSocketClient}.
@@ -61,8 +60,8 @@ class ObsWebSocketClientTest {
     void discordPresenceClientThrottlesUpdates() throws Exception {
         DiscordPresenceClient dpc = new DiscordPresenceClient("123456789");
         // Not connected, so updates should be silent no-ops
-        Assertions.assertDoesNotThrow(() -> dpc.updatePresence(
-            com.sdvxhelper.model.enums.PlayState.SELECTING, "Song", "exh", "17.255", null));
+        Assertions.assertDoesNotThrow(() -> dpc.updatePresence(com.sdvxhelper.model.enums.PlayState.SELECTING, "Song",
+                "exh", "17.255", null));
         dpc.close();
     }
 }

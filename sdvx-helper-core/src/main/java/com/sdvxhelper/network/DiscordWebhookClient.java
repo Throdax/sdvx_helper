@@ -5,7 +5,6 @@ import java.io.StringWriter;
 import java.net.URI;
 import java.net.http.HttpResponse;
 import java.time.Duration;
-
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 
@@ -40,8 +39,10 @@ public class DiscordWebhookClient {
     /**
      * Sends a text message to the specified webhook URL.
      *
-     * @param webhookUrl Discord webhook URL
-     * @param content    message text (max 2000 characters)
+     * @param webhookUrl
+     *            Discord webhook URL
+     * @param content
+     *            message text (max 2000 characters)
      * @return {@code true} if the server accepted the request (HTTP 2xx)
      */
     public boolean sendMessage(String webhookUrl, String content) {
@@ -60,15 +61,20 @@ public class DiscordWebhookClient {
     /**
      * Sends a text message with an embedded image via multipart form data.
      *
-     * @param webhookUrl Discord webhook URL
-     * @param content    message text (max 2000 characters)
-     * @param imageBytes raw image bytes (e.g. PNG)
-     * @param filename   filename to use in the attachment (e.g.
-     *                   {@code "summary.png"})
+     * @param webhookUrl
+     *            Discord webhook URL
+     * @param content
+     *            message text (max 2000 characters)
+     * @param imageBytes
+     *            raw image bytes (e.g. PNG)
+     * @param filename
+     *            filename to use in the attachment (e.g. {@code "summary.png"})
      * @return {@code true} if accepted
-     * @throws IOException if the request fails
+     * @throws IOException
+     *             if the request fails
      */
-    public boolean sendMessageWithImage(String webhookUrl, String content, byte[] imageBytes, String filename) throws IOException {
+    public boolean sendMessageWithImage(String webhookUrl, String content, byte[] imageBytes, String filename)
+            throws IOException {
         HttpService.MultipartBody body = new HttpService.MultipartBody()
                 .addField("payload_json", toJsonString(buildContentPayload(content)))
                 .addFile("files[0]", filename, "image/png", imageBytes);
@@ -87,19 +93,19 @@ public class DiscordWebhookClient {
      * Builds the simple {@code {"content":"..."}} JSON object used by both
      * plain-text and multipart webhook requests.
      *
-     * @param content the message text (may be {@code null})
+     * @param content
+     *            the message text (may be {@code null})
      * @return the {@link JsonObject} payload
      */
     private static JsonObject buildContentPayload(String content) {
-        return Json.createObjectBuilder()
-                .add("content", content != null ? content : "")
-                .build();
+        return Json.createObjectBuilder().add("content", content != null ? content : "").build();
     }
 
     /**
      * Serialises a {@link JsonObject} to a compact JSON string.
      *
-     * @param obj the object to serialise
+     * @param obj
+     *            the object to serialise
      * @return the JSON string representation
      */
     private static String toJsonString(JsonObject obj) {

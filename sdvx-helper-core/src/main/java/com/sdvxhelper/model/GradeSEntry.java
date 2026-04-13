@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import jakarta.xml.bind.annotation.XmlAccessType;
 import jakarta.xml.bind.annotation.XmlAccessorType;
 import jakarta.xml.bind.annotation.XmlAttribute;
@@ -33,8 +32,8 @@ public class GradeSEntry {
     @XmlElement(name = "tier")
     private List<TierEntry> tiers = new ArrayList<>();
 
-    /** 
-     * No-argument constructor required by JAXB. 
+    /**
+     * No-argument constructor required by JAXB.
      */
     public GradeSEntry() {
         // Required by JAXB
@@ -43,7 +42,8 @@ public class GradeSEntry {
     /**
      * Constructs an entry with the given level bucket key.
      *
-     * @param levelKey the level bucket key (e.g. {@code "lv17"}, {@code "lv18"})
+     * @param levelKey
+     *            the level bucket key (e.g. {@code "lv17"}, {@code "lv18"})
      */
     public GradeSEntry(String levelKey) {
         this.levelKey = levelKey;
@@ -61,7 +61,8 @@ public class GradeSEntry {
     /**
      * Sets the level bucket key (e.g. {@code "lv17"}, {@code "lv18"}).
      *
-     * @param levelKey the level bucket key to set
+     * @param levelKey
+     *            the level bucket key to set
      */
     public void setLevelKey(String levelKey) {
         this.levelKey = levelKey;
@@ -77,10 +78,11 @@ public class GradeSEntry {
     }
 
     /**
-     * Sets the tier mappings for this level bucket.
-     * If {@code null} is supplied an empty list is used instead.
+     * Sets the tier mappings for this level bucket. If {@code null} is supplied an
+     * empty list is used instead.
      *
-     * @param tiers the list of {@link TierEntry} tier mappings to set
+     * @param tiers
+     *            the list of {@link TierEntry} tier mappings to set
      */
     public void setTiers(List<TierEntry> tiers) {
         this.tiers = tiers != null ? tiers : new ArrayList<>();
@@ -89,7 +91,8 @@ public class GradeSEntry {
     /**
      * Converts the tiers list to a {@link Map} for O(1) lookups by title.
      *
-     * @return a map of song title to tier string for all entries in this level bucket
+     * @return a map of song title to tier string for all entries in this level
+     *         bucket
      */
     public Map<String, String> toMap() {
         Map<String, String> map = new HashMap<>(tiers.size() * 2);
@@ -102,7 +105,9 @@ public class GradeSEntry {
     /**
      * Populates the tiers list from a title-to-tier {@link Map}.
      *
-     * @param map a map of song title to tier string to convert into {@link TierEntry} elements
+     * @param map
+     *            a map of song title to tier string to convert into
+     *            {@link TierEntry} elements
      */
     public void fromMap(Map<String, String> map) {
         tiers = new ArrayList<>(map.size());

@@ -1,18 +1,20 @@
 package com.sdvxhelper.model.overlay;
 
+import java.util.ArrayList;
+import java.util.List;
 import jakarta.xml.bind.annotation.XmlAccessType;
 import jakarta.xml.bind.annotation.XmlAccessorType;
 import jakarta.xml.bind.annotation.XmlAttribute;
 import jakarta.xml.bind.annotation.XmlElement;
 import jakarta.xml.bind.annotation.XmlRootElement;
 
-import java.util.ArrayList;
-import java.util.List;
-
 /**
  * JAXB root element for the total-Volforce overlay ({@code total_vf.xml}).
  *
- * <p>Serialises to:</p>
+ * <p>
+ * Serialises to:
+ * </p>
+ * 
  * <pre>{@code
  * <total_vf value="17.255">
  *   <chart rank="1" title="…" diff="…" lv="…" score="…" lamp="…" vf="…"/>
@@ -53,7 +55,8 @@ public class TotalVfOverlay {
     /**
      * Sets the total Volforce string.
      *
-     * @param value the total VF string to set
+     * @param value
+     *            the total VF string to set
      */
     public void setValue(String value) {
         this.value = value;
@@ -71,7 +74,8 @@ public class TotalVfOverlay {
     /**
      * Sets the list of chart breakdown entries.
      *
-     * @param charts the list of {@link OverlayChartEntry} entries to set
+     * @param charts
+     *            the list of {@link OverlayChartEntry} entries to set
      */
     public void setCharts(List<OverlayChartEntry> charts) {
         this.charts = charts != null ? charts : new ArrayList<>();

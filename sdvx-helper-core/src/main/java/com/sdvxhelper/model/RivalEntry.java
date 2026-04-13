@@ -2,7 +2,6 @@ package com.sdvxhelper.model;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import jakarta.xml.bind.annotation.XmlAccessType;
 import jakarta.xml.bind.annotation.XmlAccessorType;
 import jakarta.xml.bind.annotation.XmlAttribute;
@@ -37,7 +36,8 @@ public class RivalEntry {
     /**
      * Constructs an entry for the given rival.
      *
-     * @param name the rival player's in-game name
+     * @param name
+     *            the rival player's in-game name
      */
     public RivalEntry(String name) {
         this.name = name;
@@ -55,7 +55,8 @@ public class RivalEntry {
     /**
      * Sets the rival player's in-game name.
      *
-     * @param name the rival player name to set
+     * @param name
+     *            the rival player name to set
      */
     public void setName(String name) {
         this.name = name;
@@ -71,10 +72,11 @@ public class RivalEntry {
     }
 
     /**
-     * Sets the per-chart best scores for this rival.
-     * If {@code null} is supplied an empty list is used instead.
+     * Sets the per-chart best scores for this rival. If {@code null} is supplied an
+     * empty list is used instead.
      *
-     * @param scores the list of rival {@link MusicInfo} score records to set
+     * @param scores
+     *            the list of rival {@link MusicInfo} score records to set
      */
     public void setScores(List<MusicInfo> scores) {
         this.scores = scores != null ? scores : new ArrayList<>();

@@ -1,8 +1,5 @@
 package com.sdvxhelper.ocr;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -13,12 +10,17 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import javax.imageio.ImageIO;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * Computes SHA-256 hashes for jacket images.
  *
- * <p>Used to create stable identifiers for jacket images downloaded from the web or
- * captured from OBS.  Replaces the Python {@code SHAGenerator} class in
- * {@code sha_generator.py}.</p>
+ * <p>
+ * Used to create stable identifiers for jacket images downloaded from the web
+ * or captured from OBS. Replaces the Python {@code SHAGenerator} class in
+ * {@code sha_generator.py}.
+ * </p>
  *
  * @author Throdax
  * @since 2.0.0
@@ -32,7 +34,8 @@ public class ShaGenerator {
     /**
      * Computes the SHA-256 hash of the given byte array.
      *
-     * @param bytes input bytes
+     * @param bytes
+     *            input bytes
      * @return lowercase hex-encoded SHA-256 hash string
      */
     public String hash(byte[] bytes) {
@@ -49,9 +52,11 @@ public class ShaGenerator {
      * Computes the SHA-256 hash of a {@link BufferedImage} by encoding it as PNG
      * before hashing.
      *
-     * @param image image to hash
+     * @param image
+     *            image to hash
      * @return lowercase hex SHA-256 string
-     * @throws IOException if the image cannot be encoded
+     * @throws IOException
+     *             if the image cannot be encoded
      */
     public String hash(BufferedImage image) throws IOException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -62,9 +67,11 @@ public class ShaGenerator {
     /**
      * Computes the SHA-256 hash of a file.
      *
-     * @param file input file
+     * @param file
+     *            input file
      * @return lowercase hex SHA-256 string
-     * @throws IOException if the file cannot be read
+     * @throws IOException
+     *             if the file cannot be read
      */
     public String hash(File file) throws IOException {
         try (InputStream is = new FileInputStream(file)) {
@@ -84,7 +91,7 @@ public class ShaGenerator {
         char[] chars = new char[bytes.length * 2];
         for (int i = 0; i < bytes.length; i++) {
             int v = bytes[i] & 0xFF;
-            chars[i * 2]     = HEX[v >>> 4];
+            chars[i * 2] = HEX[v >>> 4];
             chars[i * 2 + 1] = HEX[v & 0x0F];
         }
         return new String(chars);

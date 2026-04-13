@@ -5,9 +5,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.sdvxhelper.model.MusicInfo;
 import com.sdvxhelper.model.MusicInfoBuilder;
 import com.sdvxhelper.model.OnePlayData;
@@ -16,16 +13,23 @@ import com.sdvxhelper.model.SongInfo;
 import com.sdvxhelper.model.Stats;
 import com.sdvxhelper.repository.MusicListRepository;
 import com.sdvxhelper.repository.PlayLogRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Central orchestrator for recording and analysing SDVX play history.
  *
- * <p>Decomposes the Python {@code SDVXLogger} "god class" into focused responsibilities:
- * this service handles play-log push/pop and best-score computation, while VF math is
- * delegated to {@link VolforceCalculator}, XML output to {@link XmlExportService}, and
- * CSV output to {@link CsvExportService}.</p>
+ * <p>
+ * Decomposes the Python {@code SDVXLogger} "god class" into focused
+ * responsibilities: this service handles play-log push/pop and best-score
+ * computation, while VF math is delegated to {@link VolforceCalculator}, XML
+ * output to {@link XmlExportService}, and CSV output to
+ * {@link CsvExportService}.
+ * </p>
  *
- * <p>All dependencies are supplied via constructor injection for testability.</p>
+ * <p>
+ * All dependencies are supplied via constructor injection for testability.
+ * </p>
  *
  * @author Throdax
  * @since 2.0.0
@@ -46,8 +50,10 @@ public class SdvxLoggerService {
     /**
      * Constructs the service and loads existing play-log data.
      *
-     * @param playLogRepo   repository for the play-log XML file
-     * @param musicListRepo repository for the music-list XML file
+     * @param playLogRepo
+     *            repository for the play-log XML file
+     * @param musicListRepo
+     *            repository for the music-list XML file
      */
     public SdvxLoggerService(PlayLogRepository playLogRepo, MusicListRepository musicListRepo) {
         this.playLogRepo = playLogRepo;
@@ -63,10 +69,14 @@ public class SdvxLoggerService {
     /**
      * Records a new play and persists it to disk.
      *
-     * <p>Updates the best-score list and total VF after recording.</p>
+     * <p>
+     * Updates the best-score list and total VF after recording.
+     * </p>
      *
-     * @param play newly completed play record
-     * @throws IOException if the updated play log cannot be persisted
+     * @param play
+     *            newly completed play record
+     * @throws IOException
+     *             if the updated play log cannot be persisted
      */
     public void pushPlay(OnePlayData play) throws IOException {
         playLog.getPlays().add(play);
@@ -80,7 +90,8 @@ public class SdvxLoggerService {
      * Removes the most recently added play record (undo / illegal-entry removal).
      *
      * @return the removed play, or {@code null} if the log is empty
-     * @throws IOException if the updated play log cannot be persisted
+     * @throws IOException
+     *             if the updated play log cannot be persisted
      */
     public OnePlayData popLastPlay() throws IOException {
         List<OnePlayData> plays = playLog.getPlays();
@@ -101,12 +112,13 @@ public class SdvxLoggerService {
     // -------------------------------------------------------------------------
 
     /**
-     * Rebuilds the best-score list and total VF from the current play log.
-     * Called automatically after any mutation; can also be called explicitly
-     * after loading a new music list.
+     * Rebuilds the best-score list and total VF from the current play log. Called
+     * automatically after any mutation; can also be called explicitly after loading
+     * a new music list.
      */
     public void refreshBestAndVf() {
-        if (musicListRepo == null) return;
+        if (musicListRepo == null)
+            return;
 
         // Rebuild best per (title, difficulty) from play log
         java.util.Map<String, OnePlayData> bestMap = new java.util.LinkedHashMap<>();
@@ -153,8 +165,10 @@ public class SdvxLoggerService {
     /**
      * Returns all plays for the given song title and difficulty, most-recent last.
      *
-     * @param title      song title
-     * @param difficulty chart difficulty string
+     * @param title
+     *            song title
+     * @param difficulty
+     *            chart difficulty string
      * @return matching play records
      */
     public List<OnePlayData> getPlaysFor(String title, String difficulty) {
@@ -168,11 +182,13 @@ public class SdvxLoggerService {
     }
 
     /**
-     * Returns the personal-best {@link MusicInfo} for the given title and difficulty,
-     * or {@code null} if no play has been recorded.
+     * Returns the personal-best {@link MusicInfo} for the given title and
+     * difficulty, or {@code null} if no play has been recorded.
      *
-     * @param title      song title
-     * @param difficulty chart difficulty string
+     * @param title
+     *            song title
+     * @param difficulty
+     *            chart difficulty string
      * @return personal-best info or {@code null}
      */
     public MusicInfo getBestFor(String title, String difficulty) {
@@ -194,7 +210,8 @@ public class SdvxLoggerService {
     }
 
     /**
-     * Returns the total Volforce as an integer × 1000 (e.g. {@code 17255} = 17.255 VF).
+     * Returns the total Volforce as an integer × 1000 (e.g. {@code 17255} = 17.255
+     * VF).
      *
      * @return total VF integer
      */
@@ -234,10 +251,15 @@ public class SdvxLoggerService {
     // -------------------------------------------------------------------------
 
     /**
-     * Converts a best play record to a {@link MusicInfo} with metadata from the music list.
-     * @param best best play record to convert
-     * @param repo music list repository for metadata lookup
-     * @return converted MusicInfo with metadata and VF unset (caller should compute VF after conversion)
+     * Converts a best play record to a {@link MusicInfo} with metadata from the
+     * music list.
+     * 
+     * @param best
+     *            best play record to convert
+     * @param repo
+     *            music list repository for metadata lookup
+     * @return converted MusicInfo with metadata and VF unset (caller should compute
+     *         VF after conversion)
      */
     private static MusicInfo toMusicInfo(OnePlayData best, MusicListRepository repo) {
         SongInfo songInfo = repo.findSongInfo(best.getTitle());
@@ -247,48 +269,45 @@ public class SdvxLoggerService {
         }
 
         String level = resolveLevel(best.getDifficulty(), songInfo);
-        return new MusicInfoBuilder(best.getTitle())
-                .artist(songInfo.getArtist())
-                .bpm(songInfo.getBpm())
-                .difficulty(best.getDifficulty())
-                .lv(level)
-                .bestScore(best.getCurScore())
-                .bestLamp(best.getLamp())
-                .date(best.getDate())
-                .build();
+        return new MusicInfoBuilder(best.getTitle()).artist(songInfo.getArtist()).bpm(songInfo.getBpm())
+                .difficulty(best.getDifficulty()).lv(level).bestScore(best.getCurScore()).bestLamp(best.getLamp())
+                .date(best.getDate()).build();
     }
 
     /**
-     * Converts a best play record to a {@link MusicInfo} without metadata (for titles not found in the music list).
-     * @param best best play record to convert
-     * @return converted MusicInfo with only title, difficulty, score, lamp, and date set; VF unset (caller should compute VF after conversion)
+     * Converts a best play record to a {@link MusicInfo} without metadata (for
+     * titles not found in the music list).
+     * 
+     * @param best
+     *            best play record to convert
+     * @return converted MusicInfo with only title, difficulty, score, lamp, and
+     *         date set; VF unset (caller should compute VF after conversion)
      */
     private static MusicInfo toMusicInfoUnknown(OnePlayData best) {
-        return new MusicInfoBuilder(best.getTitle())
-                .difficulty(best.getDifficulty())
-                .bestScore(best.getCurScore())
-                .bestLamp(best.getLamp())
-                .date(best.getDate())
-                .build();
+        return new MusicInfoBuilder(best.getTitle()).difficulty(best.getDifficulty()).bestScore(best.getCurScore())
+                .bestLamp(best.getLamp()).date(best.getDate()).build();
     }
 
     /**
      * Resolves the chart level string for the given difficulty from the song info.
-     * @param difficulty chart difficulty string
-     * @param songInfo song info to resolve from
+     * 
+     * @param difficulty
+     *            chart difficulty string
+     * @param songInfo
+     *            song info to resolve from
      * @return level string or "??" if not found
      */
     private static String resolveLevel(String difficulty, SongInfo songInfo) {
-        
+
         if (songInfo == null) {
             return "??";
         }
-        
+
         return switch (difficulty.toLowerCase()) {
             case "nov" -> songInfo.getLvNov();
             case "adv" -> songInfo.getLvAdv();
             case "exh" -> songInfo.getLvExh();
-            default    -> songInfo.getLvAppend() != null ? songInfo.getLvAppend() : "??";
+            default -> songInfo.getLvAppend() != null ? songInfo.getLvAppend() : "??";
         };
     }
 }

@@ -4,14 +4,6 @@ import java.net.URL;
 import java.util.ResourceBundle;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.sdvxhelper.i18n.LocaleManager;
-import com.sdvxhelper.network.GitHubVersionClient;
-import com.sdvxhelper.util.VersionUtil;
-
 import javafx.application.Platform;
 import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
@@ -22,6 +14,12 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressBar;
 import javafx.scene.control.TextArea;
+
+import com.sdvxhelper.i18n.LocaleManager;
+import com.sdvxhelper.network.GitHubVersionClient;
+import com.sdvxhelper.util.VersionUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Controller for the SDVX Helper Updater window ({@code updater.fxml}).
@@ -80,7 +78,8 @@ public class UpdaterController implements Initializable {
     /**
      * Checks GitHub for the latest release version asynchronously.
      *
-     * @param event action event
+     * @param event
+     *            action event
      */
     @FXML
     public void onCheck(ActionEvent event) {
@@ -100,7 +99,8 @@ public class UpdaterController implements Initializable {
             lblLatestVersion.setText(latestVersion != null ? latestVersion : "Unknown");
             progressBar.setProgress(0);
             lblProgress.setText("");
-            boolean updateAvailable = latestVersion != null && versionClient.isUpdateAvailable(VersionUtil.getCurrentVersion());
+            boolean updateAvailable = latestVersion != null
+                    && versionClient.isUpdateAvailable(VersionUtil.getCurrentVersion());
             if (updateAvailable) {
                 lblUpdateStatus.setText("Update available!");
                 lblUpdateStatus.setStyle("-fx-text-fill: #f85149;");
@@ -128,7 +128,8 @@ public class UpdaterController implements Initializable {
     /**
      * Downloads and installs the latest release.
      *
-     * @param event action event
+     * @param event
+     *            action event
      */
     @FXML
     public void onUpdate(ActionEvent event) {
@@ -146,7 +147,8 @@ public class UpdaterController implements Initializable {
     /**
      * Closes the updater window and shuts down background tasks.
      *
-     * @param event action event
+     * @param event
+     *            action event
      */
     @FXML
     public void onClose(ActionEvent event) {

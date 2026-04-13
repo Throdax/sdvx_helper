@@ -1,10 +1,5 @@
 package com.sdvxhelper.repository;
 
-import jakarta.json.bind.Jsonb;
-import jakarta.json.bind.JsonbBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
@@ -14,14 +9,21 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import jakarta.json.bind.Jsonb;
+import jakarta.json.bind.JsonbBuilder;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Reads the detection parameters from {@code resources/params.json}.
  *
- * <p>Parameters are read-only at runtime; they define the screen regions and
- * thresholds used by the image-analysis pipeline.  The file is loaded from the
- * path specified in the user settings ({@code params_json} key), falling back to
- * the bundled classpath resource.</p>
+ * <p>
+ * Parameters are read-only at runtime; they define the screen regions and
+ * thresholds used by the image-analysis pipeline. The file is loaded from the
+ * path specified in the user settings ({@code params_json} key), falling back
+ * to the bundled classpath resource.
+ * </p>
  *
  * @author Throdax
  * @since 2.0.0
@@ -41,10 +43,11 @@ public class ParamsRepository {
     }
 
     /**
-     * Loads the detection parameters from the given file path.
-     * Falls back to the bundled classpath resource if the file cannot be read.
+     * Loads the detection parameters from the given file path. Falls back to the
+     * bundled classpath resource if the file cannot be read.
      *
-     * @param filePath path to {@code params.json} (from user settings)
+     * @param filePath
+     *            path to {@code params.json} (from user settings)
      * @return nested parameter map; never {@code null}
      */
     @SuppressWarnings("unchecked")

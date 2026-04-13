@@ -34,8 +34,10 @@ public class SongInfoEntry {
     /**
      * Constructs an entry pairing the given title with its metadata.
      *
-     * @param title    the song title key
-     * @param songInfo the {@link SongInfo} metadata for this song
+     * @param title
+     *            the song title key
+     * @param songInfo
+     *            the {@link SongInfo} metadata for this song
      */
     public SongInfoEntry(String title, SongInfo songInfo) {
         this.title = title;
@@ -54,7 +56,8 @@ public class SongInfoEntry {
     /**
      * Sets the song title key.
      *
-     * @param title the song title to set
+     * @param title
+     *            the song title to set
      */
     public void setTitle(String title) {
         this.title = title;
@@ -72,7 +75,8 @@ public class SongInfoEntry {
     /**
      * Sets the song metadata associated with this title.
      *
-     * @param songInfo the {@link SongInfo} metadata to set
+     * @param songInfo
+     *            the {@link SongInfo} metadata to set
      */
     public void setSongInfo(SongInfo songInfo) {
         this.songInfo = songInfo;

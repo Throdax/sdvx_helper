@@ -3,7 +3,9 @@ package com.sdvxhelper.model.enums;
 /**
  * Represents the player's activity state reported to Discord Rich Presence.
  *
- * <p>Maps to the Python {@code PlayStates} enum in {@code discord_presence.py}.</p>
+ * <p>
+ * Maps to the Python {@code PlayStates} enum in {@code discord_presence.py}.
+ * </p>
  *
  * @author Throdax
  * @since 2.0.0

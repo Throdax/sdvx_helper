@@ -6,11 +6,16 @@ import jakarta.json.bind.annotation.JsonbProperty;
  * Represents the {@code args} block of a Discord IPC {@code SET_ACTIVITY}
  * command frame.
  *
- * <p>Serialises to:</p>
+ * <p>
+ * Serialises to:
+ * </p>
+ * 
  * <pre>{@code {"pid":<pid>,"activity":{...}}}</pre>
  *
- * <p>When {@link #activity} is {@code null} the field is serialised as
- * {@code "activity":null}, which instructs Discord to clear the presence.</p>
+ * <p>
+ * When {@link #activity} is {@code null} the field is serialised as
+ * {@code "activity":null}, which instructs Discord to clear the presence.
+ * </p>
  *
  * @author Throdax
  * @since 2.0.0
@@ -34,11 +39,13 @@ public class IpcSetActivityArgs {
     /**
      * Constructs a {@code SET_ACTIVITY} args block.
      *
-     * @param pid      the PID of the calling process
-     * @param activity the activity to display, or {@code null} to clear
+     * @param pid
+     *            the PID of the calling process
+     * @param activity
+     *            the activity to display, or {@code null} to clear
      */
     public IpcSetActivityArgs(long pid, IpcActivity activity) {
-        this.pid      = pid;
+        this.pid = pid;
         this.activity = activity;
     }
 
@@ -54,7 +61,8 @@ public class IpcSetActivityArgs {
     /**
      * Sets the PID of the process setting the activity.
      *
-     * @param pid the process ID to set
+     * @param pid
+     *            the process ID to set
      */
     public void setPid(long pid) {
         this.pid = pid;
@@ -73,7 +81,8 @@ public class IpcSetActivityArgs {
     /**
      * Sets the activity payload.
      *
-     * @param activity the {@link IpcActivity} to set, or {@code null} to clear
+     * @param activity
+     *            the {@link IpcActivity} to set, or {@code null} to clear
      */
     public void setActivity(IpcActivity activity) {
         this.activity = activity;

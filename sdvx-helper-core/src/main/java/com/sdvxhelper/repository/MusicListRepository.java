@@ -4,11 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-
 import jakarta.xml.bind.JAXBException;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.sdvxhelper.model.DifficultyHashGroup;
 import com.sdvxhelper.model.DifficultyHashes;
@@ -18,12 +14,17 @@ import com.sdvxhelper.model.MusicList;
 import com.sdvxhelper.model.SongInfo;
 import com.sdvxhelper.model.SongInfoEntry;
 import com.sdvxhelper.model.TierEntry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Persists and loads the song/jacket database as {@code musiclist.xml}.
  *
- * <p>Replaces the Python {@code pickle.load/dump} calls on {@code musiclist.pkl}.
- * Also builds in-memory index maps for O(1) hash lookups during the detection loop.</p>
+ * <p>
+ * Replaces the Python {@code pickle.load/dump} calls on {@code musiclist.pkl}.
+ * Also builds in-memory index maps for O(1) hash lookups during the detection
+ * loop.
+ * </p>
  *
  * @author Throdax
  * @since 2.0.0
@@ -51,20 +52,22 @@ public class MusicListRepository extends JaxbRepository<MusicList> {
     /**
      * Constructs a repository backed by a custom file.
      *
-     * @param file XML file to read from / write to
+     * @param file
+     *            XML file to read from / write to
      */
     public MusicListRepository(File file) {
-        super(MusicList.class,
-              DifficultyHashGroup.class, DifficultyHashes.class, HashEntry.class,
-              SongInfoEntry.class, SongInfo.class, GradeSEntry.class, TierEntry.class);
+        super(MusicList.class, DifficultyHashGroup.class, DifficultyHashes.class, HashEntry.class, SongInfoEntry.class,
+                SongInfo.class, GradeSEntry.class, TierEntry.class);
         this.file = file;
     }
 
     /**
      * Loads the music list from disk and rebuilds in-memory indices.
      *
-     * <p>Returns {@code null} if the file does not exist; the caller should
-     * trigger a download in that case.</p>
+     * <p>
+     * Returns {@code null} if the file does not exist; the caller should trigger a
+     * download in that case.
+     * </p>
      *
      * @return loaded {@link MusicList}, or {@code null} if the file is absent
      */
@@ -87,8 +90,10 @@ public class MusicListRepository extends JaxbRepository<MusicList> {
     /**
      * Saves the music list to disk atomically.
      *
-     * @param musicList music list to persist
-     * @throws IOException if the file cannot be written
+     * @param musicList
+     *            music list to persist
+     * @throws IOException
+     *             if the file cannot be written
      */
     public void save(MusicList musicList) throws IOException {
         try {
@@ -102,7 +107,8 @@ public class MusicListRepository extends JaxbRepository<MusicList> {
     /**
      * Looks up the song title and difficulty for a given jacket perceptual hash.
      *
-     * @param hash perceptual hash hex string
+     * @param hash
+     *            perceptual hash hex string
      * @return {@code String[]{title, difficulty}} or {@code null} if not found
      */
     public String[] findByJacketHash(String hash) {
@@ -112,7 +118,8 @@ public class MusicListRepository extends JaxbRepository<MusicList> {
     /**
      * Returns the {@link SongInfo} for a given title, or {@code null} if unknown.
      *
-     * @param title song title
+     * @param title
+     *            song title
      * @return song metadata or {@code null}
      */
     public SongInfo findSongInfo(String title) {
@@ -131,7 +138,8 @@ public class MusicListRepository extends JaxbRepository<MusicList> {
     /**
      * Builds in-memory indices for O(1) lookups by jacket hash and title.
      *
-     * @param musicList the music list to index
+     * @param musicList
+     *            the music list to index
      */
     private void buildIndices(MusicList musicList) {
         jacketHashIndex = new HashMap<>();
@@ -150,8 +158,7 @@ public class MusicListRepository extends JaxbRepository<MusicList> {
             titleIndex.put(sie.getTitle(), sie.getSongInfo());
         }
 
-        log.debug("Built indices: {} jacket hashes, {} titles",
-                jacketHashIndex.size(), titleIndex.size());
+        log.debug("Built indices: {} jacket hashes, {} titles", jacketHashIndex.size(), titleIndex.size());
     }
 
     /**

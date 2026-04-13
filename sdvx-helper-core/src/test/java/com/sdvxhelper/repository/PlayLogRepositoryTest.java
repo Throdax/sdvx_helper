@@ -6,12 +6,11 @@ import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import com.sdvxhelper.model.OnePlayData;
+import com.sdvxhelper.model.PlayLog;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-
-import com.sdvxhelper.model.OnePlayData;
-import com.sdvxhelper.model.PlayLog;
 
 /**
  * Unit tests for {@link PlayLogRepository}.
@@ -38,10 +37,9 @@ class PlayLogRepositoryTest {
         PlayLogRepository repo = new PlayLogRepository(tempFile());
 
         PlayLog original = new PlayLog();
-        original.setPlays(List.of(
-            new OnePlayData("Song A", 9_000_000, 8_800_000, "clear", "exh", "2024-01-01 12:00:00"),
-            new OnePlayData("Song B", 9_900_000, 9_800_000, "puc",   "mxm", "2024-01-02 18:30:00")
-        ));
+        original.setPlays(
+                List.of(new OnePlayData("Song A", 9_000_000, 8_800_000, "clear", "exh", "2024-01-01 12:00:00"),
+                        new OnePlayData("Song B", 9_900_000, 9_800_000, "puc", "mxm", "2024-01-02 18:30:00")));
 
         repo.save(original);
         Assertions.assertTrue(tempFile().exists());
@@ -61,17 +59,15 @@ class PlayLogRepositoryTest {
         PlayLogRepository repo = new PlayLogRepository(tempFile());
 
         PlayLog pl = new PlayLog();
-        pl.setPlays(List.of(
-            new OnePlayData("X", 100, 0, "clear", "exh", "2024-01-03 10:00:00"),
-            new OnePlayData("Y", 100, 0, "clear", "exh", "2024-01-01 08:00:00"),
-            new OnePlayData("Z", 100, 0, "clear", "exh", "2024-01-02 09:00:00")
-        ));
+        pl.setPlays(List.of(new OnePlayData("X", 100, 0, "clear", "exh", "2024-01-03 10:00:00"),
+                new OnePlayData("Y", 100, 0, "clear", "exh", "2024-01-01 08:00:00"),
+                new OnePlayData("Z", 100, 0, "clear", "exh", "2024-01-02 09:00:00")));
         repo.save(pl);
 
         PlayLog loaded = repo.load();
         List<OnePlayData> plays = loaded.getPlays();
-        Assertions.assertEquals(LocalDateTime.of(2024, 1, 1,  8, 0, 0), plays.get(0).getDate());
-        Assertions.assertEquals(LocalDateTime.of(2024, 1, 2,  9, 0, 0), plays.get(1).getDate());
+        Assertions.assertEquals(LocalDateTime.of(2024, 1, 1, 8, 0, 0), plays.get(0).getDate());
+        Assertions.assertEquals(LocalDateTime.of(2024, 1, 2, 9, 0, 0), plays.get(1).getDate());
         Assertions.assertEquals(LocalDateTime.of(2024, 1, 3, 10, 0, 0), plays.get(2).getDate());
     }
 }

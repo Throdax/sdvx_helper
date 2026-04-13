@@ -5,8 +5,10 @@ import java.util.Locale;
 /**
  * Formatting helpers for score-related display strings.
  *
- * <p>Provides consistent formatting of scores, Volforce values, and level labels
- * across all views and OBS overlay XML files.</p>
+ * <p>
+ * Provides consistent formatting of scores, Volforce values, and level labels
+ * across all views and OBS overlay XML files.
+ * </p>
  *
  * @author Throdax
  * @since 2.0.0
@@ -20,7 +22,8 @@ public final class ScoreFormatter {
     /**
      * Formats a raw score as a comma-separated string (e.g. {@code "9,950,000"}).
      *
-     * @param score raw play score
+     * @param score
+     *            raw play score
      * @return formatted score string
      */
     public static String formatScore(int score) {
@@ -28,10 +31,11 @@ public final class ScoreFormatter {
     }
 
     /**
-     * Formats a Volforce integer value (e.g. {@code 369}) as a decimal string
-     * with one decimal place (e.g. {@code "36.9"}).
+     * Formats a Volforce integer value (e.g. {@code 369}) as a decimal string with
+     * one decimal place (e.g. {@code "36.9"}).
      *
-     * @param vfInt Volforce integer (e.g. from {@code VolforceCalculator})
+     * @param vfInt
+     *            Volforce integer (e.g. from {@code VolforceCalculator})
      * @return formatted VF string
      */
     public static String formatVf(int vfInt) {
@@ -39,10 +43,11 @@ public final class ScoreFormatter {
     }
 
     /**
-     * Formats a total Volforce (sum of top-50 chart VFs, integer × 10)
-     * as a three-decimal string (e.g. {@code "17.255"}).
+     * Formats a total Volforce (sum of top-50 chart VFs, integer × 10) as a
+     * three-decimal string (e.g. {@code "17.255"}).
      *
-     * @param totalVfInt total Volforce integer
+     * @param totalVfInt
+     *            total Volforce integer
      * @return formatted total-VF string
      */
     public static String formatTotalVf(int totalVfInt) {
@@ -53,7 +58,8 @@ public final class ScoreFormatter {
      * Formats a score difference with an explicit sign (e.g. {@code "+50,000"} or
      * {@code "-20,000"}).
      *
-     * @param diff score difference (may be negative)
+     * @param diff
+     *            score difference (may be negative)
      * @return signed, comma-separated string
      */
     public static String formatDiff(int diff) {
@@ -63,7 +69,8 @@ public final class ScoreFormatter {
     /**
      * Formats a chart level integer as a label string (e.g. {@code "Lv.18"}).
      *
-     * @param lv chart level
+     * @param lv
+     *            chart level
      * @return level label string
      */
     public static String formatLevel(int lv) {

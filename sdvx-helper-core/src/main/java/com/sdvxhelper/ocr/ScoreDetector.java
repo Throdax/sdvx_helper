@@ -1,19 +1,22 @@
 package com.sdvxhelper.ocr;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.awt.image.BufferedImage;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
- * Detects numeric scores from result-screen images using template perceptual hashing.
+ * Detects numeric scores from result-screen images using template perceptual
+ * hashing.
  *
- * <p>Replaces the Python digit-recognition logic in
- * {@code GenSummary.get_score()} / {@code get_score_on_select()} in
- * {@code gen_summary.py}.  A set of pre-computed digit template hashes is supplied
- * at construction; each digit region is cropped from the result image and compared
- * against all digit templates using Hamming distance.</p>
+ * <p>
+ * Replaces the Python digit-recognition logic in {@code GenSummary.get_score()}
+ * / {@code get_score_on_select()} in {@code gen_summary.py}. A set of
+ * pre-computed digit template hashes is supplied at construction; each digit
+ * region is cropped from the result image and compared against all digit
+ * templates using Hamming distance.
+ * </p>
  *
  * @author Throdax
  * @since 2.0.0
@@ -31,15 +34,16 @@ public class ScoreDetector {
     private final PerceptualHasher hasher;
 
     /**
-     * Pre-computed perceptual hashes for each digit (0–9).
-     * Key: digit character ('0'–'9'), Value: hash string.
+     * Pre-computed perceptual hashes for each digit (0–9). Key: digit character
+     * ('0'–'9'), Value: hash string.
      */
     private final Map<Character, String> digitTemplates;
 
     /**
      * Constructs a score detector with the supplied digit template hashes.
      *
-     * @param digitTemplates map from digit character to its perceptual hash
+     * @param digitTemplates
+     *            map from digit character to its perceptual hash
      */
     public ScoreDetector(Map<Character, String> digitTemplates) {
         this.hasher = new PerceptualHasher();
@@ -49,7 +53,8 @@ public class ScoreDetector {
     /**
      * Detects a single digit from a cropped digit image.
      *
-     * @param digitImage cropped image of one score digit
+     * @param digitImage
+     *            cropped image of one score digit
      * @return detected digit character ('0'–'9'), or {@code '?'} if unrecognised
      */
     public char detectDigit(BufferedImage digitImage) {
@@ -79,9 +84,12 @@ public class ScoreDetector {
     /**
      * Assembles an 8-digit score integer from a list of cropped digit images.
      *
-     * <p>If any digit cannot be recognised, returns {@code -1} to signal failure.</p>
+     * <p>
+     * If any digit cannot be recognised, returns {@code -1} to signal failure.
+     * </p>
      *
-     * @param digitImages list of 8 cropped digit images, left-to-right
+     * @param digitImages
+     *            list of 8 cropped digit images, left-to-right
      * @return detected score (0–10 000 000), or {@code -1} on recognition failure
      */
     public int detectScore(java.util.List<BufferedImage> digitImages) {

@@ -1,16 +1,15 @@
 package com.sdvxhelper.repository;
 
-import com.sdvxhelper.util.SpecialTitles;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 
+import com.sdvxhelper.util.SpecialTitles;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 /**
  * Unit tests for {@link SpecialTitlesRepository}.
@@ -56,7 +55,8 @@ class SpecialTitlesRepositoryTest {
 
     @Test
     void loadReturnsNonNullWhenBothFileAndClasspathMissing() {
-        // Point to a nonexistent classpath resource effectively by using a nonexistent file
+        // Point to a nonexistent classpath resource effectively by using a nonexistent
+        // file
         // We can only test that it doesn't throw and returns non-null
         File nonExistent = tempDir.resolve("does_not_exist.json").toFile();
         SpecialTitlesRepository repo = new SpecialTitlesRepository(nonExistent);

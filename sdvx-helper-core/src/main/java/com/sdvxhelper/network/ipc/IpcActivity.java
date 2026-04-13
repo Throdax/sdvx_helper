@@ -5,7 +5,10 @@ import jakarta.json.bind.annotation.JsonbProperty;
 /**
  * Represents a Discord Rich Presence activity payload.
  *
- * <p>Serialises to:</p>
+ * <p>
+ * Serialises to:
+ * </p>
+ * 
  * <pre>{@code
  * {
  *   "details": "<first line>",
@@ -20,7 +23,9 @@ import jakarta.json.bind.annotation.JsonbProperty;
  */
 public class IpcActivity {
 
-    /** First line of text shown below the application name in the presence widget. */
+    /**
+     * First line of text shown below the application name in the presence widget.
+     */
     @JsonbProperty("details")
     private String details;
 
@@ -43,16 +48,20 @@ public class IpcActivity {
     /**
      * Constructs a fully populated activity payload.
      *
-     * @param details    the first line of text shown under the application name
-     * @param state      the second line of text (e.g. Volforce display)
-     * @param timestamps the elapsed-time {@link IpcTimestamps} block
-     * @param assets     the image {@link IpcAssets} block
+     * @param details
+     *            the first line of text shown under the application name
+     * @param state
+     *            the second line of text (e.g. Volforce display)
+     * @param timestamps
+     *            the elapsed-time {@link IpcTimestamps} block
+     * @param assets
+     *            the image {@link IpcAssets} block
      */
     public IpcActivity(String details, String state, IpcTimestamps timestamps, IpcAssets assets) {
-        this.details    = details;
-        this.state      = state;
+        this.details = details;
+        this.state = state;
         this.timestamps = timestamps;
-        this.assets     = assets;
+        this.assets = assets;
     }
 
     /**
@@ -67,7 +76,8 @@ public class IpcActivity {
     /**
      * Sets the first line of text shown under the application name.
      *
-     * @param details the details string to set
+     * @param details
+     *            the details string to set
      */
     public void setDetails(String details) {
         this.details = details;
@@ -85,7 +95,8 @@ public class IpcActivity {
     /**
      * Sets the second line of text in the presence widget.
      *
-     * @param state the state string to set
+     * @param state
+     *            the state string to set
      */
     public void setState(String state) {
         this.state = state;
@@ -103,7 +114,8 @@ public class IpcActivity {
     /**
      * Sets the elapsed-time timestamps block.
      *
-     * @param timestamps the {@link IpcTimestamps} block to set
+     * @param timestamps
+     *            the {@link IpcTimestamps} block to set
      */
     public void setTimestamps(IpcTimestamps timestamps) {
         this.timestamps = timestamps;
@@ -121,7 +133,8 @@ public class IpcActivity {
     /**
      * Sets the image asset block.
      *
-     * @param assets the {@link IpcAssets} block to set
+     * @param assets
+     *            the {@link IpcAssets} block to set
      */
     public void setAssets(IpcAssets assets) {
         this.assets = assets;

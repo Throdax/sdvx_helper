@@ -1,10 +1,9 @@
 package com.sdvxhelper.network;
 
-import org.junit.jupiter.api.Test;
-
 import java.io.IOException;
 
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 /**
  * Unit tests for {@link Maya2Client}.

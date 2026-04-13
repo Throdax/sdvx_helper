@@ -1,27 +1,31 @@
 package com.sdvxhelper.repository;
 
-import jakarta.xml.bind.JAXBContext;
-import jakarta.xml.bind.JAXBException;
-import jakarta.xml.bind.Marshaller;
-import jakarta.xml.bind.Unmarshaller;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import jakarta.xml.bind.JAXBContext;
+import jakarta.xml.bind.JAXBException;
+import jakarta.xml.bind.Marshaller;
+import jakarta.xml.bind.Unmarshaller;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- * Generic base class providing JAXB marshal/unmarshal operations for any POJO root element.
+ * Generic base class providing JAXB marshal/unmarshal operations for any POJO
+ * root element.
  *
- * <p>All file-backed XML repositories extend this class, supplying the root type.
+ * <p>
+ * All file-backed XML repositories extend this class, supplying the root type.
  * Writes are performed atomically by writing to a {@code .tmp} file first, then
  * renaming it to the target path, reducing the risk of data corruption on
- * application crash.</p>
+ * application crash.
+ * </p>
  *
- * @param <T> the JAXB-annotated root element type
+ * @param <T>
+ *            the JAXB-annotated root element type
  * @author Throdax
  * @since 2.0.0
  */
@@ -35,9 +39,12 @@ public abstract class JaxbRepository<T> {
     /**
      * Constructs a repository for the given root type.
      *
-     * @param rootType     the JAXB root-element class
-     * @param boundClasses additional classes needed by the JAXB context (if any)
-     * @throws IllegalStateException if JAXB context initialisation fails
+     * @param rootType
+     *            the JAXB root-element class
+     * @param boundClasses
+     *            additional classes needed by the JAXB context (if any)
+     * @throws IllegalStateException
+     *             if JAXB context initialisation fails
      */
     protected JaxbRepository(Class<T> rootType, Class<?>... boundClasses) {
         this.rootType = rootType;
@@ -54,9 +61,11 @@ public abstract class JaxbRepository<T> {
     /**
      * Unmarshals an XML file into an instance of {@code T}.
      *
-     * @param file source XML file
+     * @param file
+     *            source XML file
      * @return unmarshalled object
-     * @throws JAXBException if unmarshalling fails
+     * @throws JAXBException
+     *             if unmarshalling fails
      */
     protected T load(File file) throws JAXBException {
         log.debug("Loading {} from {}", rootType.getSimpleName(), file.getAbsolutePath());
@@ -69,10 +78,14 @@ public abstract class JaxbRepository<T> {
     /**
      * Marshals {@code data} to an XML file using a write-then-rename strategy.
      *
-     * @param data   object to marshal
-     * @param target destination file
-     * @throws JAXBException if marshalling fails
-     * @throws IOException   if the temporary file cannot be renamed
+     * @param data
+     *            object to marshal
+     * @param target
+     *            destination file
+     * @throws JAXBException
+     *             if marshalling fails
+     * @throws IOException
+     *             if the temporary file cannot be renamed
      */
     protected void save(T data, File target) throws JAXBException, IOException {
         log.debug("Saving {} to {}", rootType.getSimpleName(), target.getAbsolutePath());

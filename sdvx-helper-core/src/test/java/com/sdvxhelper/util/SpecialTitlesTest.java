@@ -1,12 +1,11 @@
 package com.sdvxhelper.util;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 /**
  * Unit tests for {@link SpecialTitles}.
@@ -18,13 +17,8 @@ class SpecialTitlesTest {
     @BeforeEach
     void setUp() {
         st = new SpecialTitles();
-        st.setSpecialTitles(Map.of(
-            "archivezip", "archive::zip",
-            "LuckyClover", "Lucky*Clover"
-        ));
-        st.setDirectOverrides(Map.of(
-            "Pure Evil", List.of("NOV:5", "ADV:12", "EXH:17")
-        ));
+        st.setSpecialTitles(Map.of("archivezip", "archive::zip", "LuckyClover", "Lucky*Clover"));
+        st.setDirectOverrides(Map.of("Pure Evil", List.of("NOV:5", "ADV:12", "EXH:17")));
         st.setIgnoredNames(List.of("Help me, CODYYYYYY!!"));
         st.setDirectRemoves(List.of("Some Bad Title"));
     }

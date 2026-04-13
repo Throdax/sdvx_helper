@@ -1,18 +1,17 @@
 package com.sdvxhelper.service;
 
-import com.sdvxhelper.model.MusicInfo;
-import com.sdvxhelper.model.MusicInfoBuilder;
-import com.sdvxhelper.model.OnePlayData;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
+import com.sdvxhelper.model.MusicInfo;
+import com.sdvxhelper.model.MusicInfoBuilder;
+import com.sdvxhelper.model.OnePlayData;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 /**
  * Unit tests for {@link CsvExportService}.
@@ -26,7 +25,8 @@ class CsvExportServiceTest {
 
     @Test
     void writeBestCsvContainsHeader() throws IOException {
-        MusicInfo m = new MusicInfoBuilder("Song A").artist("Artist").bpm("180").difficulty("exh").lv("18").bestScore(9_000_000).bestLamp("clear").build();
+        MusicInfo m = new MusicInfoBuilder("Song A").artist("Artist").bpm("180").difficulty("exh").lv("18")
+                .bestScore(9_000_000).bestLamp("clear").build();
         m.setVf(300);
         File out = tempDir.resolve("best.csv").toFile();
         service.writeBestCsv(List.of(m), out);
@@ -38,10 +38,8 @@ class CsvExportServiceTest {
 
     @Test
     void writeAllLogCsvContainsAllPlays() throws IOException {
-        List<OnePlayData> plays = List.of(
-            new OnePlayData("X", 9_000_000, 8_000_000, "clear", "exh", "2024-01-01"),
-            new OnePlayData("Y", 9_500_000, 9_000_000, "uc",    "mxm", "2024-01-02")
-        );
+        List<OnePlayData> plays = List.of(new OnePlayData("X", 9_000_000, 8_000_000, "clear", "exh", "2024-01-01"),
+                new OnePlayData("Y", 9_500_000, 9_000_000, "uc", "mxm", "2024-01-02"));
         File out = tempDir.resolve("alllog.csv").toFile();
         service.writeAllLogCsv(plays, out);
         // File should exist and have content (Shift-JIS encoded)
@@ -51,11 +49,9 @@ class CsvExportServiceTest {
 
     @Test
     void writePlayCountCsvGroupsByDate() throws IOException {
-        List<OnePlayData> plays = List.of(
-            new OnePlayData("X", 9_000_000, 0, "clear", "exh", "2024-01-01 20:00"),
-            new OnePlayData("Y", 9_000_000, 0, "clear", "exh", "2024-01-01 21:00"),
-            new OnePlayData("Z", 9_000_000, 0, "clear", "exh", "2024-01-02 20:00")
-        );
+        List<OnePlayData> plays = List.of(new OnePlayData("X", 9_000_000, 0, "clear", "exh", "2024-01-01 20:00"),
+                new OnePlayData("Y", 9_000_000, 0, "clear", "exh", "2024-01-01 21:00"),
+                new OnePlayData("Z", 9_000_000, 0, "clear", "exh", "2024-01-02 20:00"));
         File out = tempDir.resolve("playcount.csv").toFile();
         service.writePlayCountCsv(plays, out);
         String content = Files.readString(out.toPath());
@@ -65,7 +61,8 @@ class CsvExportServiceTest {
 
     @Test
     void csvEscapesCommasInTitle() throws IOException {
-        MusicInfo m = new MusicInfoBuilder("Song, Part 2").artist("A").bpm("180").difficulty("exh").lv("18").bestScore(9_000_000).bestLamp("clear").build();
+        MusicInfo m = new MusicInfoBuilder("Song, Part 2").artist("A").bpm("180").difficulty("exh").lv("18")
+                .bestScore(9_000_000).bestLamp("clear").build();
         m.setVf(300);
         File out = tempDir.resolve("best_escape.csv").toFile();
         service.writeBestCsv(List.of(m), out);

@@ -8,15 +8,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.ResourceBundle;
-
-import javax.imageio.ImageIO;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.sdvxhelper.i18n.LocaleManager;
-import com.sdvxhelper.ocr.PerceptualHasher;
-
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -28,6 +19,12 @@ import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.stage.DirectoryChooser;
+import javax.imageio.ImageIO;
+
+import com.sdvxhelper.i18n.LocaleManager;
+import com.sdvxhelper.ocr.PerceptualHasher;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Controller for the OCR Reporter maintainer tool ({@code ocr_reporter.fxml}).
@@ -89,7 +86,8 @@ public class OcrReporterController implements Initializable {
      * Opens a folder chooser and loads all PNG/JPEG files from the selected
      * directory.
      *
-     * @param event action event
+     * @param event
+     *            action event
      */
     @FXML
     public void onOpenFolder(ActionEvent event) {
@@ -139,7 +137,8 @@ public class OcrReporterController implements Initializable {
     /**
      * Registers the current image's hash in the music list.
      *
-     * @param event action event
+     * @param event
+     *            action event
      */
     @FXML
     public void onRegister(ActionEvent event) {

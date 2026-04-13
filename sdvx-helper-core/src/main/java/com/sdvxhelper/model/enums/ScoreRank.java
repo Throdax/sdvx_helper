@@ -3,9 +3,11 @@ package com.sdvxhelper.model.enums;
 /**
  * Score rank boundaries used in SDVX Exceed Gear / Konaste.
  *
- * <p>Maps to the Python {@code score_rank} enum in {@code sdvxh_classes.py}.
- * Each constant also exposes the minimum score required and the grade coefficient
- * used in the Volforce calculation.</p>
+ * <p>
+ * Maps to the Python {@code score_rank} enum in {@code sdvxh_classes.py}. Each
+ * constant also exposes the minimum score required and the grade coefficient
+ * used in the Volforce calculation.
+ * </p>
  *
  * @author Throdax
  * @since 2.0.0
@@ -74,19 +76,29 @@ public enum ScoreRank {
     /**
      * Determines the {@code ScoreRank} for the given raw score.
      *
-     * @param score raw play score (0–10 000 000)
+     * @param score
+     *            raw play score (0–10 000 000)
      * @return the corresponding {@code ScoreRank}
      */
     public static ScoreRank fromScore(int score) {
-        if (score >= S.minScore)       return S;
-        if (score >= AAA_PLUS.minScore) return AAA_PLUS;
-        if (score >= AAA.minScore)      return AAA;
-        if (score >= AA_PLUS.minScore)  return AA_PLUS;
-        if (score >= AA.minScore)       return AA;
-        if (score >= A_PLUS.minScore)   return A_PLUS;
-        if (score >= A.minScore)        return A;
-        if (score >= B.minScore)        return B;
-        if (score >= C.minScore)        return C;
+        if (score >= S.minScore)
+            return S;
+        if (score >= AAA_PLUS.minScore)
+            return AAA_PLUS;
+        if (score >= AAA.minScore)
+            return AAA;
+        if (score >= AA_PLUS.minScore)
+            return AA_PLUS;
+        if (score >= AA.minScore)
+            return AA;
+        if (score >= A_PLUS.minScore)
+            return A_PLUS;
+        if (score >= A.minScore)
+            return A;
+        if (score >= B.minScore)
+            return B;
+        if (score >= C.minScore)
+            return C;
         return D;
     }
 }

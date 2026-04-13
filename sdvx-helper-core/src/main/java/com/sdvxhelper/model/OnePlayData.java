@@ -1,5 +1,6 @@
 package com.sdvxhelper.model;
 
+import java.time.LocalDateTime;
 import jakarta.xml.bind.annotation.XmlAccessType;
 import jakarta.xml.bind.annotation.XmlAccessorType;
 import jakarta.xml.bind.annotation.XmlAttribute;
@@ -7,8 +8,6 @@ import jakarta.xml.bind.annotation.XmlTransient;
 import jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 
 import com.sdvxhelper.model.enums.ScoreRank;
-
-import java.time.LocalDateTime;
 
 /**
  * Immutable record of a single play (one attempt at one chart).
@@ -92,13 +91,19 @@ public class OnePlayData implements Comparable<OnePlayData> {
     /**
      * Constructs a new play record.
      *
-     * @param title      the song title
-     * @param curScore   the score achieved in this play
-     * @param preScore   the best score before this play
-     * @param lamp       the clear lamp string
-     * @param difficulty the chart difficulty string
-     * @param date       the play date-time string ({@code "yyyy-MM-dd HH:mm:ss"} or
-     *                   {@code "yyyy-MM-dd HH:mm"})
+     * @param title
+     *            the song title
+     * @param curScore
+     *            the score achieved in this play
+     * @param preScore
+     *            the best score before this play
+     * @param lamp
+     *            the clear lamp string
+     * @param difficulty
+     *            the chart difficulty string
+     * @param date
+     *            the play date-time string ({@code "yyyy-MM-dd HH:mm:ss"} or
+     *            {@code "yyyy-MM-dd HH:mm"})
      */
     public OnePlayData(String title, int curScore, int preScore, String lamp, String difficulty, String date) {
         this.title = title;
@@ -117,7 +122,8 @@ public class OnePlayData implements Comparable<OnePlayData> {
     /**
      * Compares plays by date ascending (nulls sort first).
      *
-     * @param other the other play record
+     * @param other
+     *            the other play record
      * @return negative, zero, or positive as per {@link Comparable#compareTo}
      */
     @Override
@@ -142,8 +148,9 @@ public class OnePlayData implements Comparable<OnePlayData> {
         if (!(obj instanceof OnePlayData other)) {
             return false;
         }
-        return curScore == other.curScore && preScore == other.preScore && java.util.Objects.equals(title, other.title) && java.util.Objects.equals(difficulty, other.difficulty)
-                && java.util.Objects.equals(lamp, other.lamp) && java.util.Objects.equals(date, other.date);
+        return curScore == other.curScore && preScore == other.preScore && java.util.Objects.equals(title, other.title)
+                && java.util.Objects.equals(difficulty, other.difficulty) && java.util.Objects.equals(lamp, other.lamp)
+                && java.util.Objects.equals(date, other.date);
     }
 
     @Override
@@ -153,7 +160,8 @@ public class OnePlayData implements Comparable<OnePlayData> {
 
     @Override
     public String toString() {
-        return String.format("OnePlayData{title='%s', diff='%s', cur=%d, pre=%d(%+d), lamp='%s', date='%s'}", title, difficulty, curScore, preScore, diff, lamp, date);
+        return String.format("OnePlayData{title='%s', diff='%s', cur=%d, pre=%d(%+d), lamp='%s', date='%s'}", title,
+                difficulty, curScore, preScore, diff, lamp, date);
     }
 
     // -------------------------------------------------------------------------
@@ -172,7 +180,8 @@ public class OnePlayData implements Comparable<OnePlayData> {
     /**
      * Sets the song title.
      *
-     * @param title song title
+     * @param title
+     *            song title
      */
     public void setTitle(String title) {
         this.title = title;
@@ -190,7 +199,8 @@ public class OnePlayData implements Comparable<OnePlayData> {
     /**
      * Sets the play score.
      *
-     * @param curScore play score
+     * @param curScore
+     *            play score
      */
     public void setCurScore(int curScore) {
         this.curScore = curScore;
@@ -209,7 +219,8 @@ public class OnePlayData implements Comparable<OnePlayData> {
     /**
      * Sets the previous best score.
      *
-     * @param preScore previous best score
+     * @param preScore
+     *            previous best score
      */
     public void setPreScore(int preScore) {
         this.preScore = preScore;
@@ -228,7 +239,8 @@ public class OnePlayData implements Comparable<OnePlayData> {
     /**
      * Sets the clear lamp string.
      *
-     * @param lamp lamp string
+     * @param lamp
+     *            lamp string
      */
     public void setLamp(String lamp) {
         this.lamp = lamp;
@@ -246,7 +258,8 @@ public class OnePlayData implements Comparable<OnePlayData> {
     /**
      * Sets the chart difficulty string.
      *
-     * @param difficulty difficulty string
+     * @param difficulty
+     *            difficulty string
      */
     public void setDifficulty(String difficulty) {
         this.difficulty = difficulty;
@@ -264,7 +277,8 @@ public class OnePlayData implements Comparable<OnePlayData> {
     /**
      * Sets the date and time when the play was recorded.
      *
-     * @param date the play {@link LocalDateTime} to set
+     * @param date
+     *            the play {@link LocalDateTime} to set
      */
     public void setDate(LocalDateTime date) {
         this.date = date;
@@ -291,7 +305,8 @@ public class OnePlayData implements Comparable<OnePlayData> {
     /**
      * Sets the computed score rank.
      *
-     * @param rank score rank
+     * @param rank
+     *            score rank
      */
     public void setRank(ScoreRank rank) {
         this.rank = rank;
@@ -309,7 +324,8 @@ public class OnePlayData implements Comparable<OnePlayData> {
     /**
      * Sets the single-chart Volforce value.
      *
-     * @param vf Volforce integer
+     * @param vf
+     *            Volforce integer
      */
     public void setVf(int vf) {
         this.vf = vf;

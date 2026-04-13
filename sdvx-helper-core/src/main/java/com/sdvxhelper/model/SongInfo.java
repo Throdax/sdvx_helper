@@ -50,12 +50,18 @@ public class SongInfo {
     /**
      * Constructs a fully populated {@code SongInfo}.
      *
-     * @param artist   the artist or composer name
-     * @param bpm      the BPM string (may be a range, e.g. {@code "90-180"})
-     * @param lvNov    the novice chart level string
-     * @param lvAdv    the advanced chart level string
-     * @param lvExh    the exhaust chart level string
-     * @param lvAppend the maximum/append chart level string, or {@code null} if absent
+     * @param artist
+     *            the artist or composer name
+     * @param bpm
+     *            the BPM string (may be a range, e.g. {@code "90-180"})
+     * @param lvNov
+     *            the novice chart level string
+     * @param lvAdv
+     *            the advanced chart level string
+     * @param lvExh
+     *            the exhaust chart level string
+     * @param lvAppend
+     *            the maximum/append chart level string, or {@code null} if absent
      */
     public SongInfo(String artist, String bpm, String lvNov, String lvAdv, String lvExh, String lvAppend) {
         this.artist = artist;
@@ -78,7 +84,8 @@ public class SongInfo {
     /**
      * Sets the artist or composer name.
      *
-     * @param artist the artist name to set
+     * @param artist
+     *            the artist name to set
      */
     public void setArtist(String artist) {
         this.artist = artist;
@@ -96,7 +103,8 @@ public class SongInfo {
     /**
      * Sets the BPM string.
      *
-     * @param bpm the BPM string to set
+     * @param bpm
+     *            the BPM string to set
      */
     public void setBpm(String bpm) {
         this.bpm = bpm;
@@ -114,7 +122,8 @@ public class SongInfo {
     /**
      * Sets the novice chart level string.
      *
-     * @param lvNov the novice chart level string to set
+     * @param lvNov
+     *            the novice chart level string to set
      */
     public void setLvNov(String lvNov) {
         this.lvNov = lvNov;
@@ -132,7 +141,8 @@ public class SongInfo {
     /**
      * Sets the advanced chart level string.
      *
-     * @param lvAdv the advanced chart level string to set
+     * @param lvAdv
+     *            the advanced chart level string to set
      */
     public void setLvAdv(String lvAdv) {
         this.lvAdv = lvAdv;
@@ -150,7 +160,8 @@ public class SongInfo {
     /**
      * Sets the exhaust chart level string.
      *
-     * @param lvExh the exhaust chart level string to set
+     * @param lvExh
+     *            the exhaust chart level string to set
      */
     public void setLvExh(String lvExh) {
         this.lvExh = lvExh;
@@ -168,7 +179,9 @@ public class SongInfo {
     /**
      * Sets the maximum/append chart level string.
      *
-     * @param lvAppend the maximum/append chart level string to set, or {@code null} if absent
+     * @param lvAppend
+     *            the maximum/append chart level string to set, or {@code null} if
+     *            absent
      */
     public void setLvAppend(String lvAppend) {
         this.lvAppend = lvAppend;

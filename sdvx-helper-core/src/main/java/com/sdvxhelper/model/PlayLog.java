@@ -2,7 +2,6 @@ package com.sdvxhelper.model;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import jakarta.xml.bind.annotation.XmlAccessType;
 import jakarta.xml.bind.annotation.XmlAccessorType;
 import jakarta.xml.bind.annotation.XmlElement;
@@ -50,7 +49,8 @@ public class PlayLog {
     /**
      * Replaces the play list.
      *
-     * @param plays new list of play records
+     * @param plays
+     *            new list of play records
      */
     public void setPlays(List<OnePlayData> plays) {
         this.plays = plays != null ? plays : new ArrayList<>();

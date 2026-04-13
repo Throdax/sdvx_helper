@@ -4,11 +4,10 @@ import com.sdvxhelper.model.MusicInfo;
 import com.sdvxhelper.model.MusicInfoBuilder;
 import com.sdvxhelper.model.OnePlayData;
 import com.sdvxhelper.model.enums.ScoreRank;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-
-import org.junit.jupiter.api.Assertions;
 
 /**
  * Unit tests for {@link VolforceCalculator}.
@@ -19,7 +18,8 @@ class VolforceCalculatorTest {
 
     @Test
     void pucSRankLevel20GivesExpectedVf() {
-        // 20 * 9_900_000 * 1.05 (S coef) * 1.10 (PUC coef) * 20 / 10_000_000 = 457.38 -> 457
+        // 20 * 9_900_000 * 1.05 (S coef) * 1.10 (PUC coef) * 20 / 10_000_000 = 457.38
+        // -> 457
         int vf = VolforceCalculator.computeSingleVf(9_900_000, "puc", 20);
         Assertions.assertEquals(457, vf);
     }
@@ -37,14 +37,7 @@ class VolforceCalculatorTest {
     }
 
     @ParameterizedTest
-    @CsvSource({
-        "puc,   1.10",
-        "uc,    1.05",
-        "exh,   1.04",
-        "hard,  1.02",
-        "clear, 1.00",
-        "failed,0.50"
-    })
+    @CsvSource({"puc,   1.10", "uc,    1.05", "exh,   1.04", "hard,  1.02", "clear, 1.00", "failed,0.50"})
     void lampCoefficientValues(String lamp, double expected) {
         Assertions.assertEquals(expected, VolforceCalculator.lampCoefficient(lamp), 1e-9);
     }
@@ -64,7 +57,8 @@ class VolforceCalculatorTest {
 
     @Test
     void computeAndSetMusicInfoUpdatesRankAndVf() {
-        MusicInfo m = new MusicInfoBuilder("X").artist("A").bpm("180").difficulty("exh").lv("20").bestScore(9_900_000).bestLamp("puc").build();
+        MusicInfo m = new MusicInfoBuilder("X").artist("A").bpm("180").difficulty("exh").lv("20").bestScore(9_900_000)
+                .bestLamp("puc").build();
         int vf = VolforceCalculator.computeAndSet(m);
         Assertions.assertEquals(vf, m.getVf());
         Assertions.assertEquals(ScoreRank.S, m.getRank());

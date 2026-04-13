@@ -1,11 +1,10 @@
 package com.sdvxhelper.ocr;
 
-import org.junit.jupiter.api.Test;
-
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 /**
  * Unit tests for {@link ShaGenerator}.
@@ -16,7 +15,8 @@ class ShaGeneratorTest {
 
     @Test
     void knownBytesSha() {
-        // SHA-256("") = e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+        // SHA-256("") =
+        // e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
         String result = sha.hash(new byte[0]);
         Assertions.assertEquals("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", result);
     }

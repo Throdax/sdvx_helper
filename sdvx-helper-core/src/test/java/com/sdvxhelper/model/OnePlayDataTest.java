@@ -49,8 +49,8 @@ class OnePlayDataTest {
         List<OnePlayData> list = new ArrayList<>(List.of(p1, p2, p3));
         Collections.sort(list);
 
-        Assertions.assertEquals(LocalDateTime.of(2024, 1, 1,  8, 0, 0), list.get(0).getDate());
-        Assertions.assertEquals(LocalDateTime.of(2024, 1, 2,  9, 0, 0), list.get(1).getDate());
+        Assertions.assertEquals(LocalDateTime.of(2024, 1, 1, 8, 0, 0), list.get(0).getDate());
+        Assertions.assertEquals(LocalDateTime.of(2024, 1, 2, 9, 0, 0), list.get(1).getDate());
         Assertions.assertEquals(LocalDateTime.of(2024, 1, 3, 10, 0, 0), list.get(2).getDate());
     }
 

@@ -8,8 +8,12 @@ import jakarta.xml.bind.annotation.XmlAttribute;
  * JAXB element representing one play record inside the history and battle
  * overlay XML documents.
  *
- * <p>History output: {@code <play score="…" lamp="…" diff="…" vf="…" date="…"/>}</p>
- * <p>Battle output:  {@code <play title="…" diff="…" score="…" lamp="…" date="…"/>}</p>
+ * <p>
+ * History output: {@code <play score="…" lamp="…" diff="…" vf="…" date="…"/>}
+ * </p>
+ * <p>
+ * Battle output: {@code <play title="…" diff="…" score="…" lamp="…" date="…"/>}
+ * </p>
  *
  * @author Throdax
  * @since 2.0.0
@@ -34,8 +38,8 @@ public class OverlayPlayEntry {
     private String lamp;
 
     /**
-     * Score delta vs the previous best (e.g. {@code "+500"}); formatted as a
-     * signed integer string (used in the history overlay).
+     * Score delta vs the previous best (e.g. {@code "+500"}); formatted as a signed
+     * integer string (used in the history overlay).
      */
     @XmlAttribute
     private String diffScore;
@@ -67,7 +71,8 @@ public class OverlayPlayEntry {
     /**
      * Sets the song title.
      *
-     * @param title the song title to set
+     * @param title
+     *            the song title to set
      */
     public void setTitle(String title) {
         this.title = title;
@@ -85,7 +90,8 @@ public class OverlayPlayEntry {
     /**
      * Sets the chart difficulty string.
      *
-     * @param diff the difficulty string to set
+     * @param diff
+     *            the difficulty string to set
      */
     public void setDiff(String diff) {
         this.diff = diff;
@@ -103,7 +109,8 @@ public class OverlayPlayEntry {
     /**
      * Sets the play score.
      *
-     * @param score the play score to set
+     * @param score
+     *            the play score to set
      */
     public void setScore(int score) {
         this.score = score;
@@ -121,7 +128,8 @@ public class OverlayPlayEntry {
     /**
      * Sets the clear lamp string.
      *
-     * @param lamp the lamp string to set
+     * @param lamp
+     *            the lamp string to set
      */
     public void setLamp(String lamp) {
         this.lamp = lamp;
@@ -139,7 +147,8 @@ public class OverlayPlayEntry {
     /**
      * Sets the signed score delta versus the previous best.
      *
-     * @param diffScore the formatted score delta string to set
+     * @param diffScore
+     *            the formatted score delta string to set
      */
     public void setDiffScore(String diffScore) {
         this.diffScore = diffScore;
@@ -157,7 +166,8 @@ public class OverlayPlayEntry {
     /**
      * Sets the single-chart Volforce string.
      *
-     * @param vf the Volforce string to set
+     * @param vf
+     *            the Volforce string to set
      */
     public void setVf(String vf) {
         this.vf = vf;
@@ -175,7 +185,8 @@ public class OverlayPlayEntry {
     /**
      * Sets the play date-time string.
      *
-     * @param date the date-time string to set
+     * @param date
+     *            the date-time string to set
      */
     public void setDate(String date) {
         this.date = date;

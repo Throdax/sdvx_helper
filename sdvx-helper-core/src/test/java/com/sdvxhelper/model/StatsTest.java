@@ -1,9 +1,8 @@
 package com.sdvxhelper.model;
 
 import com.sdvxhelper.model.enums.ScoreRank;
-import org.junit.jupiter.api.Test;
-
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 /**
  * Unit tests for {@link Stats} and {@link OneLevelStat}.
@@ -11,14 +10,8 @@ import org.junit.jupiter.api.Assertions;
 class StatsTest {
 
     private MusicInfo makeInfo(String lv, int score, String lamp) {
-        MusicInfo m = new MusicInfoBuilder("T")
-                .artist("A")
-                .bpm("180")
-                .difficulty("exh")
-                .lv(lv)
-                .bestScore(score)
-                .bestLamp(lamp)
-                .build();
+        MusicInfo m = new MusicInfoBuilder("T").artist("A").bpm("180").difficulty("exh").lv(lv).bestScore(score)
+                .bestLamp(lamp).build();
         m.setRank(ScoreRank.fromScore(score));
         return m;
     }
@@ -55,23 +48,11 @@ class StatsTest {
     @Test
     void averageScoreComputedCorrectly() {
         OneLevelStat lvStat = new OneLevelStat(20);
-        MusicInfo m1 = new MusicInfoBuilder("SongA")
-                .artist("A")
-                .bpm("180")
-                .difficulty("exh")
-                .lv("20")
-                .bestScore(9_000_000)
-                .bestLamp("clear")
-                .build();
+        MusicInfo m1 = new MusicInfoBuilder("SongA").artist("A").bpm("180").difficulty("exh").lv("20")
+                .bestScore(9_000_000).bestLamp("clear").build();
         m1.setRank(ScoreRank.fromScore(9_000_000));
-        MusicInfo m2 = new MusicInfoBuilder("SongB")
-                .artist("A")
-                .bpm("180")
-                .difficulty("exh")
-                .lv("20")
-                .bestScore(8_000_000)
-                .bestLamp("clear")
-                .build();
+        MusicInfo m2 = new MusicInfoBuilder("SongB").artist("A").bpm("180").difficulty("exh").lv("20")
+                .bestScore(8_000_000).bestLamp("clear").build();
         m2.setRank(ScoreRank.fromScore(8_000_000));
         lvStat.read(m1);
         lvStat.read(m2);

@@ -4,17 +4,19 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import jakarta.xml.bind.annotation.XmlAccessType;
 import jakarta.xml.bind.annotation.XmlAccessorType;
 import jakarta.xml.bind.annotation.XmlElement;
 
 /**
- * Maps song titles to their perceptual-hash (or SHA) strings for one difficulty tier.
+ * Maps song titles to their perceptual-hash (or SHA) strings for one difficulty
+ * tier.
  *
- * <p>Used internally by {@link MusicList} to represent the nested dict structure of
- * {@code musiclist['jacket'][difficulty]} in the Python code.  JAXB serialises this
- * as a list of {@link HashEntry} elements.</p>
+ * <p>
+ * Used internally by {@link MusicList} to represent the nested dict structure
+ * of {@code musiclist['jacket'][difficulty]} in the Python code. JAXB
+ * serialises this as a list of {@link HashEntry} elements.
+ * </p>
  *
  * @author Throdax
  * @since 2.0.0
@@ -26,8 +28,8 @@ public class DifficultyHashes {
     @XmlElement(name = "entry")
     private List<HashEntry> entries = new ArrayList<>();
 
-    /** 
-     * No-argument constructor required by JAXB. 
+    /**
+     * No-argument constructor required by JAXB.
      */
     public DifficultyHashes() {
         // Required by JAXB
@@ -45,7 +47,8 @@ public class DifficultyHashes {
     /**
      * Replaces the entries list.
      *
-     * @param entries new entries
+     * @param entries
+     *            new entries
      */
     public void setEntries(List<HashEntry> entries) {
         this.entries = entries != null ? entries : new ArrayList<>();
@@ -67,7 +70,8 @@ public class DifficultyHashes {
     /**
      * Populates entries from a {@link Map}.
      *
-     * @param map title → hash map
+     * @param map
+     *            title → hash map
      */
     public void fromMap(Map<String, String> map) {
         entries = new ArrayList<>(map.size());
@@ -75,6 +79,5 @@ public class DifficultyHashes {
             entries.add(new HashEntry(e.getKey(), e.getValue()));
         }
     }
-    
-    
+
 }

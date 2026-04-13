@@ -3,7 +3,6 @@ package com.sdvxhelper.model;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-
 import jakarta.xml.bind.annotation.XmlAccessType;
 import jakarta.xml.bind.annotation.XmlAccessorType;
 import jakarta.xml.bind.annotation.XmlAttribute;
@@ -67,7 +66,10 @@ public class MusicInfo implements Comparable<MusicInfo> {
     @XmlAttribute
     private String bestLamp;
 
-    /** Date of the personal-best play; serialised via {@link LocalDateTimeXMLAdapter}. */
+    /**
+     * Date of the personal-best play; serialised via
+     * {@link LocalDateTimeXMLAdapter}.
+     */
     @XmlAttribute
     @XmlJavaTypeAdapter(LocalDateTimeXMLAdapter.class)
     private LocalDateTime date;
@@ -107,7 +109,8 @@ public class MusicInfo implements Comparable<MusicInfo> {
      * Sorts by Volforce descending so that the highest-VF chart sorts first when
      * placed in a sorted collection.
      *
-     * @param other the other {@code MusicInfo}
+     * @param other
+     *            the other {@code MusicInfo}
      * @return negative if this VF is higher, positive if lower
      */
     @Override
@@ -117,7 +120,8 @@ public class MusicInfo implements Comparable<MusicInfo> {
 
     @Override
     public String toString() {
-        return String.format("MusicInfo{title='%s', diff='%s', lv=%s, score=%d, lamp='%s', vf=%d}", title, difficulty, lv, bestScore, bestLamp, vf);
+        return String.format("MusicInfo{title='%s', diff='%s', lv=%s, score=%d, lamp='%s', vf=%d}", title, difficulty,
+                lv, bestScore, bestLamp, vf);
     }
 
     // -------------------------------------------------------------------------
@@ -136,7 +140,8 @@ public class MusicInfo implements Comparable<MusicInfo> {
     /**
      * Sets the song title.
      *
-     * @param title the song title to set
+     * @param title
+     *            the song title to set
      */
     public void setTitle(String title) {
         this.title = title;
@@ -154,7 +159,8 @@ public class MusicInfo implements Comparable<MusicInfo> {
     /**
      * Sets the artist name.
      *
-     * @param artist the artist name to set
+     * @param artist
+     *            the artist name to set
      */
     public void setArtist(String artist) {
         this.artist = artist;
@@ -173,7 +179,8 @@ public class MusicInfo implements Comparable<MusicInfo> {
     /**
      * Sets the BPM string.
      *
-     * @param bpm the BPM string to set
+     * @param bpm
+     *            the BPM string to set
      */
     public void setBpm(String bpm) {
         this.bpm = bpm;
@@ -191,7 +198,8 @@ public class MusicInfo implements Comparable<MusicInfo> {
     /**
      * Sets the chart difficulty string (e.g. {@code "exh"}, {@code "mxm"}).
      *
-     * @param difficulty the chart difficulty string to set
+     * @param difficulty
+     *            the chart difficulty string to set
      */
     public void setDifficulty(String difficulty) {
         this.difficulty = difficulty;
@@ -210,7 +218,9 @@ public class MusicInfo implements Comparable<MusicInfo> {
     /**
      * Sets the chart level string.
      *
-     * @param lv the chart level string to set (integer or {@code "??"} for unknown)
+     * @param lv
+     *            the chart level string to set (integer or {@code "??"} for
+     *            unknown)
      */
     public void setLv(String lv) {
         this.lv = lv;
@@ -242,7 +252,8 @@ public class MusicInfo implements Comparable<MusicInfo> {
     /**
      * Sets the personal-best score for this chart.
      *
-     * @param bestScore the personal-best score to set
+     * @param bestScore
+     *            the personal-best score to set
      */
     public void setBestScore(int bestScore) {
         this.bestScore = bestScore;
@@ -260,7 +271,8 @@ public class MusicInfo implements Comparable<MusicInfo> {
     /**
      * Sets the clear lamp for the personal-best play.
      *
-     * @param bestLamp the personal-best clear lamp to set
+     * @param bestLamp
+     *            the personal-best clear lamp to set
      */
     public void setBestLamp(String bestLamp) {
         this.bestLamp = bestLamp;
@@ -270,13 +282,17 @@ public class MusicInfo implements Comparable<MusicInfo> {
     // Date – LocalDateTime with JAXB bridge
     // -------------------------------------------------------------------------
 
-    /** Format shared by {@link #marshalDate} and {@link #unmarshalDate}, matching {@link LocalDateTimeXMLAdapter}. */
-    private static final DateTimeFormatter DATE_FMT =
-            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    /**
+     * Format shared by {@link #marshalDate} and {@link #unmarshalDate}, matching
+     * {@link LocalDateTimeXMLAdapter}.
+     */
+    private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-    /** Fallback format that accepts values without seconds (e.g. {@code "2024-01-01 21:05"}). */
-    private static final DateTimeFormatter DATE_FMT_SHORT =
-            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+    /**
+     * Fallback format that accepts values without seconds (e.g.
+     * {@code "2024-01-01 21:05"}).
+     */
+    private static final DateTimeFormatter DATE_FMT_SHORT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
     /**
      * Returns the date of the personal-best play as a {@link LocalDateTime}.
@@ -290,7 +306,8 @@ public class MusicInfo implements Comparable<MusicInfo> {
     /**
      * Sets the date of the personal-best play.
      *
-     * @param date the personal-best {@link LocalDateTime} to set
+     * @param date
+     *            the personal-best {@link LocalDateTime} to set
      */
     public void setDate(LocalDateTime date) {
         this.date = date;
@@ -301,20 +318,24 @@ public class MusicInfo implements Comparable<MusicInfo> {
      * ({@code "yyyy-MM-dd HH:mm:ss"}), matching the format used by
      * {@link LocalDateTimeXMLAdapter}.
      *
-     * @param dateTime the date-time to format, may be {@code null}
-     * @return the formatted string, or {@code null} if {@code dateTime} is {@code null}
+     * @param dateTime
+     *            the date-time to format, may be {@code null}
+     * @return the formatted string, or {@code null} if {@code dateTime} is
+     *         {@code null}
      */
     public static String marshalDate(LocalDateTime dateTime) {
         return dateTime != null ? dateTime.format(DATE_FMT) : null;
     }
 
     /**
-     * Parses a date string into a {@link LocalDateTime}.
-     * Accepts both the full format {@code "yyyy-MM-dd HH:mm:ss"} (used by
-     * {@link LocalDateTimeXMLAdapter}) and the short form {@code "yyyy-MM-dd HH:mm"}.
-     * A bare date ({@code "yyyy-MM-dd"}) is resolved to midnight ({@code 00:00:00}).
+     * Parses a date string into a {@link LocalDateTime}. Accepts both the full
+     * format {@code "yyyy-MM-dd HH:mm:ss"} (used by
+     * {@link LocalDateTimeXMLAdapter}) and the short form
+     * {@code "yyyy-MM-dd HH:mm"}. A bare date ({@code "yyyy-MM-dd"}) is resolved to
+     * midnight ({@code 00:00:00}).
      *
-     * @param value the date string to parse, may be {@code null} or blank
+     * @param value
+     *            the date string to parse, may be {@code null} or blank
      * @return the parsed {@link LocalDateTime}, or {@code null} if the value is
      *         {@code null}, blank, or cannot be parsed
      */
@@ -350,7 +371,8 @@ public class MusicInfo implements Comparable<MusicInfo> {
     /**
      * Sets the grade-S tier classification.
      *
-     * @param sTier the grade-S tier string to set
+     * @param sTier
+     *            the grade-S tier string to set
      */
     public void setSTier(String sTier) {
         this.sTier = sTier;
@@ -368,7 +390,8 @@ public class MusicInfo implements Comparable<MusicInfo> {
     /**
      * Sets the perfect-UC tier classification.
      *
-     * @param pTier the perfect-UC tier string to set
+     * @param pTier
+     *            the perfect-UC tier string to set
      */
     public void setPTier(String pTier) {
         this.pTier = pTier;
@@ -386,7 +409,8 @@ public class MusicInfo implements Comparable<MusicInfo> {
     /**
      * Sets the computed score rank for this chart.
      *
-     * @param rank the {@link ScoreRank} to set
+     * @param rank
+     *            the {@link ScoreRank} to set
      */
     public void setRank(ScoreRank rank) {
         this.rank = rank;
@@ -404,7 +428,8 @@ public class MusicInfo implements Comparable<MusicInfo> {
     /**
      * Sets the single-chart Volforce (integer representation).
      *
-     * @param vf the VF integer to set (e.g. {@code 369} represents 36.9 VF)
+     * @param vf
+     *            the VF integer to set (e.g. {@code 369} represents 36.9 VF)
      */
     public void setVf(int vf) {
         this.vf = vf;

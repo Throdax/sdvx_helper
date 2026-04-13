@@ -36,8 +36,10 @@ public class DifficultyHashGroup {
     /**
      * Constructs a group with the given difficulty key and hash entries.
      *
-     * @param difficulty the difficulty key (e.g. {@code "exh"}, {@code "mxm"})
-     * @param hashes     the hash entries associated with this difficulty
+     * @param difficulty
+     *            the difficulty key (e.g. {@code "exh"}, {@code "mxm"})
+     * @param hashes
+     *            the hash entries associated with this difficulty
      */
     public DifficultyHashGroup(String difficulty, DifficultyHashes hashes) {
         this.difficulty = difficulty;
@@ -56,7 +58,8 @@ public class DifficultyHashGroup {
     /**
      * Sets the difficulty key string (e.g. {@code "exh"}, {@code "mxm"}).
      *
-     * @param difficulty the difficulty key to set
+     * @param difficulty
+     *            the difficulty key to set
      */
     public void setDifficulty(String difficulty) {
         this.difficulty = difficulty;
@@ -74,7 +77,8 @@ public class DifficultyHashGroup {
     /**
      * Sets the hash entries associated with this difficulty.
      *
-     * @param hashes the {@link DifficultyHashes} to set
+     * @param hashes
+     *            the {@link DifficultyHashes} to set
      */
     public void setHashes(DifficultyHashes hashes) {
         this.hashes = hashes;
@@ -105,6 +109,5 @@ public class DifficultyHashGroup {
         }
         return true;
     }
-    
-    
+
 }

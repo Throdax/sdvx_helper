@@ -1,7 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <modelVersion>4.0.0</modelVersion>
 
@@ -13,13 +11,13 @@
 
     <artifactId>updater-app</artifactId>
     <packaging>jar</packaging>
-    
+
     <name>Updater App</name>
     <description>Self-updater from GitHub releases (maps to update.py)</description>
-    
+
     <properties>
-		<configuration-finalName>update</configuration-finalName>
-	</properties>
+        <configuration-finalName>update</configuration-finalName>
+    </properties>
 
     <dependencies>
         <dependency>
@@ -39,7 +37,7 @@
                         <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                             <mainClass>com.sdvxhelper.app.Launcher</mainClass>
                         </transformer>
-                        <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                        <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
                     </transformers>
                 </configuration>
             </plugin>
@@ -53,25 +51,23 @@
                 </configuration>
             </plugin>
             <plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-antrun-plugin</artifactId>
-				<configuration>
-					<target>
-						<attrib file="${project.build.directory}/jpackage/${configuration-finalName}/${configuration-finalName}.exe" 
-							readonly="false" 
-							verbose="true"/>
-					</target>
-				</configuration>
-			</plugin>
-			<plugin>
-				<groupId>org.codehaus.mojo</groupId>
-				<artifactId>properties-maven-plugin</artifactId>
-				<configuration>
-					<files>
-						<file>..\version.properties</file>
-					</files>
-				</configuration>
-			</plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <configuration>
+                    <target>
+                        <attrib file="${project.build.directory}/jpackage/${configuration-finalName}/${configuration-finalName}.exe" readonly="false" verbose="true" />
+                    </target>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>properties-maven-plugin</artifactId>
+                <configuration>
+                    <files>
+                        <file>..\version.properties</file>
+                    </files>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 </project>

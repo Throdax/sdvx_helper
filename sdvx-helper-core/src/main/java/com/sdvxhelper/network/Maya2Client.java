@@ -9,7 +9,6 @@ import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.util.HexFormat;
 import java.util.Map;
-
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
@@ -19,10 +18,12 @@ import org.slf4j.LoggerFactory;
 /**
  * HTTP client for the Maya2 score-upload server.
  *
- * <p>Provides health-check, music-list download, and score-upload operations.
+ * <p>
+ * Provides health-check, music-list download, and score-upload operations.
  * Upload requests are authenticated with an HMAC-SHA256 signature appended as
- * the final CSV row, matching the Python implementation in
- * {@code ManageMaya2} / {@code connect_maya2.py}.</p>
+ * the final CSV row, matching the Python implementation in {@code ManageMaya2}
+ * / {@code connect_maya2.py}.
+ * </p>
  *
  * @author Throdax
  * @since 2.0.0
@@ -40,13 +41,16 @@ public class Maya2Client {
     /**
      * Constructs a Maya2 client.
      *
-     * @param baseUrl base URL of the Maya2 server (e.g. {@code "http://192.168.1.100:8080"})
-     * @param hmacKey HMAC key for signing upload payloads (from {@code SecretConfig})
+     * @param baseUrl
+     *            base URL of the Maya2 server (e.g.
+     *            {@code "http://192.168.1.100:8080"})
+     * @param hmacKey
+     *            HMAC key for signing upload payloads (from {@code SecretConfig})
      */
     public Maya2Client(String baseUrl, String hmacKey) {
         this.baseUrl = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
         this.hmacKey = hmacKey;
-        this.http    = new HttpService(TIMEOUT);
+        this.http = new HttpService(TIMEOUT);
     }
 
     /**
@@ -56,8 +60,7 @@ public class Maya2Client {
      */
     public boolean isAlive() {
         try {
-            HttpResponse<Void> resp = http.get(
-                    URI.create(baseUrl + "/health"), Map.of(),
+            HttpResponse<Void> resp = http.get(URI.create(baseUrl + "/health"), Map.of(),
                     HttpResponse.BodyHandlers.discarding());
             boolean alive = resp.statusCode() == 200;
             log.debug("Maya2 health check: {}", alive ? "alive" : "unreachable (status=" + resp.statusCode() + ")");
@@ -71,13 +74,13 @@ public class Maya2Client {
     /**
      * Downloads the music list CSV from the Maya2 server.
      *
-     * @param endpoint relative endpoint path (e.g. {@code "/musiclist"})
+     * @param endpoint
+     *            relative endpoint path (e.g. {@code "/musiclist"})
      * @return response body as a string, or {@code null} on failure
      */
     public String downloadMusicList(String endpoint) {
         try {
-            HttpResponse<String> resp = http.get(
-                    URI.create(baseUrl + endpoint), Map.of());
+            HttpResponse<String> resp = http.get(URI.create(baseUrl + endpoint), Map.of());
             if (resp.statusCode() == 200) {
                 log.info("Downloaded music list from Maya2 ({} bytes)", resp.body().length());
                 return resp.body();
@@ -93,19 +96,21 @@ public class Maya2Client {
     /**
      * Uploads a play-history CSV payload to the Maya2 server.
      *
-     * <p>Appends an HMAC-SHA256 checksum row to the payload before sending.</p>
+     * <p>
+     * Appends an HMAC-SHA256 checksum row to the payload before sending.
+     * </p>
      *
-     * @param endpoint    relative endpoint path (e.g. {@code "/upload"})
-     * @param csvPayload  the CSV content to upload
+     * @param endpoint
+     *            relative endpoint path (e.g. {@code "/upload"})
+     * @param csvPayload
+     *            the CSV content to upload
      * @return {@code true} if the server accepted the upload (HTTP 200 or 201)
-     * @throws IOException if the upload request fails
+     * @throws IOException
+     *             if the upload request fails
      */
     public boolean upload(String endpoint, String csvPayload) throws IOException {
         String signed = sign(csvPayload);
-        HttpResponse<String> resp = http.postString(
-                URI.create(baseUrl + endpoint),
-                signed,
-                "text/csv; charset=UTF-8");
+        HttpResponse<String> resp = http.postString(URI.create(baseUrl + endpoint), signed, "text/csv; charset=UTF-8");
         boolean ok = resp.statusCode() == 200 || resp.statusCode() == 201;
         log.info("Maya2 upload: HTTP {}", resp.statusCode());
         return ok;
@@ -114,9 +119,11 @@ public class Maya2Client {
     /**
      * Appends an HMAC-SHA256 signature row to the CSV payload.
      *
-     * @param csvPayload raw CSV content
+     * @param csvPayload
+     *            raw CSV content
      * @return CSV content with appended checksum row
-     * @throws IOException if HMAC computation fails
+     * @throws IOException
+     *             if HMAC computation fails
      */
     String sign(String csvPayload) throws IOException {
         try {

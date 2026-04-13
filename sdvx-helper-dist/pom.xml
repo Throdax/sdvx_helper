@@ -121,14 +121,14 @@
                 </executions>
             </plugin>
             <plugin>
-				<groupId>org.codehaus.mojo</groupId>
-				<artifactId>properties-maven-plugin</artifactId>
-				<configuration>
-					<files>
-						<file>..\version.properties</file>
-					</files>
-				</configuration>
-			</plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>properties-maven-plugin</artifactId>
+                <configuration>
+                    <files>
+                        <file>..\version.properties</file>
+                    </files>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 

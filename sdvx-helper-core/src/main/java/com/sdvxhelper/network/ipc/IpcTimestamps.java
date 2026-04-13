@@ -6,7 +6,10 @@ import jakarta.json.bind.annotation.JsonbProperty;
  * Represents the elapsed-time timestamps block inside a Discord Rich Presence
  * {@link IpcActivity}.
  *
- * <p>Serialises to:</p>
+ * <p>
+ * Serialises to:
+ * </p>
+ * 
  * <pre>{@code {"start":<unix-epoch-seconds>}}</pre>
  *
  * @author Throdax
@@ -25,7 +28,8 @@ public class IpcTimestamps {
     /**
      * Constructs a timestamps block with the given start time.
      *
-     * @param start Unix epoch seconds for the start of the current activity
+     * @param start
+     *            Unix epoch seconds for the start of the current activity
      */
     public IpcTimestamps(long start) {
         this.start = start;
@@ -43,7 +47,8 @@ public class IpcTimestamps {
     /**
      * Sets the Unix epoch seconds at which the current activity started.
      *
-     * @param start the activity start time in epoch seconds to set
+     * @param start
+     *            the activity start time in epoch seconds to set
      */
     public void setStart(long start) {
         this.start = start;

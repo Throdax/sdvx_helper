@@ -4,7 +4,6 @@ import java.awt.Color;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
-
 import javax.imageio.ImageIO;
 
 import org.junit.jupiter.api.Assertions;
@@ -36,12 +35,12 @@ class PerceptualHasherTest {
     void veryDifferentImagesHighHammingDistance() {
         // Solid-color images hash identically in aHash (every pixel equals the mean),
         // so we use two structurally opposite half-and-half images instead.
-        // "left-black / right-white" vs "left-white / right-black" should differ maximally.
+        // "left-black / right-white" vs "left-white / right-black" should differ
+        // maximally.
         String h1 = hasher.hash(halfImage(80, 80, Color.BLACK, Color.WHITE));
         String h2 = hasher.hash(halfImage(80, 80, Color.WHITE, Color.BLACK));
         int dist = hasher.hammingDistance(h1, h2);
-        Assertions.assertTrue(dist > 10,
-                "Expected high distance for inverted half images, got " + dist);
+        Assertions.assertTrue(dist > 10, "Expected high distance for inverted half images, got " + dist);
     }
 
     @Test
@@ -77,10 +76,8 @@ class PerceptualHasherTest {
     void realJacketHashIsValidHex() throws IOException {
         BufferedImage jacket = loadTestResource("4fd1e379df6e0ec7e3a049d03.png");
         String hash = hasher.hash(jacket);
-        Assertions.assertEquals(25, hash.length(),
-                "Hash must be exactly 25 hex characters for HASH_SIZE=10");
-        Assertions.assertTrue(hash.matches("[0-9a-f]{25}"),
-                "Hash must be lowercase hex: " + hash);
+        Assertions.assertEquals(25, hash.length(), "Hash must be exactly 25 hex characters for HASH_SIZE=10");
+        Assertions.assertTrue(hash.matches("[0-9a-f]{25}"), "Hash must be lowercase hex: " + hash);
     }
 
     @Test
@@ -88,8 +85,7 @@ class PerceptualHasherTest {
         BufferedImage jacket = loadTestResource("4fd1e379df6e0ec7e3a049d03.png");
         String hash1 = hasher.hash(jacket);
         String hash2 = hasher.hash(jacket);
-        Assertions.assertEquals(hash1, hash2,
-                "Same image hashed twice must produce the same result");
+        Assertions.assertEquals(hash1, hash2, "Same image hashed twice must produce the same result");
     }
 
     @Test
@@ -107,7 +103,8 @@ class PerceptualHasherTest {
         // a uniform solid-colour synthetic image even after 8×8 downscaling.
         BufferedImage jacket = loadTestResource("4fd1e379df6e0ec7e3a049d03.png");
         String jacketHash = hasher.hash(jacket);
-        // Solid white → all bits 1 (all pixels ≥ mean), real jacket will have mixed bits
+        // Solid white → all bits 1 (all pixels ≥ mean), real jacket will have mixed
+        // bits
         String solidWhiteHash = hasher.hash(solidImage(262, 262, Color.WHITE));
         int dist = hasher.hammingDistance(jacketHash, solidWhiteHash);
         Assertions.assertTrue(dist > 5,
@@ -125,7 +122,10 @@ class PerceptualHasherTest {
         return ImageIO.read(is);
     }
 
-    /** Creates an image whose left half is {@code left} and right half is {@code right}. */
+    /**
+     * Creates an image whose left half is {@code left} and right half is
+     * {@code right}.
+     */
     private static BufferedImage halfImage(int w, int h, Color left, Color right) {
         BufferedImage img = new BufferedImage(w, h, BufferedImage.TYPE_INT_RGB);
         java.awt.Graphics2D g = img.createGraphics();

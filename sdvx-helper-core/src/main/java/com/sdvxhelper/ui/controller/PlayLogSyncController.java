@@ -4,16 +4,6 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ResourceBundle;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.sdvxhelper.i18n.LocaleManager;
-import com.sdvxhelper.model.OnePlayData;
-import com.sdvxhelper.model.PlayLog;
-import com.sdvxhelper.repository.PlayLogRepository;
-import com.sdvxhelper.service.XmlExportService;
-
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
@@ -29,6 +19,14 @@ import javafx.scene.control.TextField;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
+
+import com.sdvxhelper.i18n.LocaleManager;
+import com.sdvxhelper.model.OnePlayData;
+import com.sdvxhelper.model.PlayLog;
+import com.sdvxhelper.repository.PlayLogRepository;
+import com.sdvxhelper.service.XmlExportService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Controller for the Play Log Sync tool ({@code play_log_sync.fxml}).
@@ -126,7 +124,8 @@ public class PlayLogSyncController implements Initializable {
     /**
      * Loads the play log and displays it in the table.
      *
-     * @param event action event
+     * @param event
+     *            action event
      */
     @FXML
     public void onSync(ActionEvent event) {
@@ -150,7 +149,8 @@ public class PlayLogSyncController implements Initializable {
     /**
      * Exports OBS overlay XML files from the current play log.
      *
-     * @param event action event
+     * @param event
+     *            action event
      */
     @FXML
     public void onExportXml(ActionEvent event) {

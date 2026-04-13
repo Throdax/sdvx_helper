@@ -7,10 +7,13 @@ import java.util.Map;
 /**
  * Provides the default values for all user-configurable settings.
  *
- * <p>Mirrors the Python {@code default_val} dictionary in {@code manage_settings.py}.
- * The {@link #getDefaults()} method returns an unmodifiable snapshot; the
- * {@code SettingsRepository} merges these defaults with any stored user settings
- * on load, ensuring forward-compatibility when new keys are added.</p>
+ * <p>
+ * Mirrors the Python {@code default_val} dictionary in
+ * {@code manage_settings.py}. The {@link #getDefaults()} method returns an
+ * unmodifiable snapshot; the {@code SettingsRepository} merges these defaults
+ * with any stored user settings on load, ensuring forward-compatibility when
+ * new keys are added.
+ * </p>
  *
  * @author Throdax
  * @since 2.0.0
@@ -24,7 +27,9 @@ public final class DefaultSettings {
     /**
      * Returns an unmodifiable map containing all default setting values.
      *
-     * <p>String-keyed entries match the JSON keys used in {@code settings.json}.</p>
+     * <p>
+     * String-keyed entries match the JSON keys used in {@code settings.json}.
+     * </p>
      *
      * @return default settings map
      */

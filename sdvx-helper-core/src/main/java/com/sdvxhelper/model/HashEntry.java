@@ -31,8 +31,10 @@ public class HashEntry {
     /**
      * Constructs a new title-to-hash mapping.
      *
-     * @param title the song title key
-     * @param hash  the perceptual hash or SHA hex string
+     * @param title
+     *            the song title key
+     * @param hash
+     *            the perceptual hash or SHA hex string
      */
     public HashEntry(String title, String hash) {
         this.title = title;
@@ -51,7 +53,8 @@ public class HashEntry {
     /**
      * Sets the song title key.
      *
-     * @param title the song title to set
+     * @param title
+     *            the song title to set
      */
     public void setTitle(String title) {
         this.title = title;
@@ -69,7 +72,8 @@ public class HashEntry {
     /**
      * Sets the perceptual hash or SHA hex string.
      *
-     * @param hash the hash string to set
+     * @param hash
+     *            the hash string to set
      */
     public void setHash(String hash) {
         this.hash = hash;

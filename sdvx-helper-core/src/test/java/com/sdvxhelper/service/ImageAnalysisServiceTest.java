@@ -5,15 +5,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
-
 import javax.imageio.ImageIO;
-
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
 
 import com.sdvxhelper.ocr.PerceptualHasher;
 import com.sdvxhelper.ocr.ScoreDetector;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 /**
  * Integration-level tests for {@link ImageAnalysisService} using real SDVX
@@ -93,8 +91,10 @@ class ImageAnalysisServiceTest {
     @Test
     void jacketCropHasExpectedDimensions() {
         BufferedImage crop = resultScreen.getSubimage(JACKET_X, JACKET_Y, JACKET_W, JACKET_H);
-        Assertions.assertEquals(JACKET_W, crop.getWidth(), "Jacket crop width must equal log_crop_jacket_w from params.json");
-        Assertions.assertEquals(JACKET_H, crop.getHeight(), "Jacket crop height must equal log_crop_jacket_h from params.json");
+        Assertions.assertEquals(JACKET_W, crop.getWidth(),
+                "Jacket crop width must equal log_crop_jacket_w from params.json");
+        Assertions.assertEquals(JACKET_H, crop.getHeight(),
+                "Jacket crop height must equal log_crop_jacket_h from params.json");
     }
 
     @Test
@@ -136,8 +136,10 @@ class ImageAnalysisServiceTest {
         int rAvg = avg[0];
         int gAvg = avg[1];
         int bAvg = avg[2];
-        Assertions.assertTrue(rAvg > gAvg, "Red channel must exceed green for hard lamp (rAvg=" + rAvg + ", gAvg=" + gAvg + ")");
-        Assertions.assertTrue(rAvg > bAvg, "Red channel must exceed blue for hard lamp (rAvg=" + rAvg + ", bAvg=" + bAvg + ")");
+        Assertions.assertTrue(rAvg > gAvg,
+                "Red channel must exceed green for hard lamp (rAvg=" + rAvg + ", gAvg=" + gAvg + ")");
+        Assertions.assertTrue(rAvg > bAvg,
+                "Red channel must exceed blue for hard lamp (rAvg=" + rAvg + ", bAvg=" + bAvg + ")");
     }
 
     /**
@@ -146,8 +148,8 @@ class ImageAnalysisServiceTest {
      */
     @Test
     void allParamsCropRegionsAreWithinResultScreenBounds() {
-        int[][] regions = { { JACKET_X, JACKET_Y, JACKET_W, JACKET_H }, { LAMP_X, LAMP_Y, LAMP_W, LAMP_H }, { SCORE_D0_X, SCORE_D0_Y, SCORE_D0_W, SCORE_D0_H },
-                { SCORE_D4_X, SCORE_D4_Y, SCORE_D4_W, SCORE_D4_H }, };
+        int[][] regions = {{JACKET_X, JACKET_Y, JACKET_W, JACKET_H}, {LAMP_X, LAMP_Y, LAMP_W, LAMP_H},
+                {SCORE_D0_X, SCORE_D0_Y, SCORE_D0_W, SCORE_D0_H}, {SCORE_D4_X, SCORE_D4_Y, SCORE_D4_W, SCORE_D4_H},};
         for (int[] r : regions) {
             int x = r[0], y = r[1], w = r[2], h = r[3];
             Assertions.assertTrue(x + w <= RESULT_W, "Crop x+w=" + (x + w) + " exceeds result width " + RESULT_W);
@@ -187,7 +189,8 @@ class ImageAnalysisServiceTest {
     void jacketFileHasSelfSimilarity() throws IOException {
         BufferedImage jacket = loadResource(JACKET_RESOURCE);
         String hash = hasher.hash(jacket);
-        Assertions.assertEquals(0, hasher.hammingDistance(hash, hash), "A hash compared to itself must have Hamming distance 0");
+        Assertions.assertEquals(0, hasher.hammingDistance(hash, hash),
+                "A hash compared to itself must have Hamming distance 0");
     }
 
     /**
@@ -203,7 +206,8 @@ class ImageAnalysisServiceTest {
         String cropHash = hasher.hash(jacketCrop);
         // These are different images (different songs / different cropping) so their
         // hashes must differ.
-        Assertions.assertNotEquals(fileHash, cropHash, "Standalone jacket file and result-screen jacket crop should produce different hashes");
+        Assertions.assertNotEquals(fileHash, cropHash,
+                "Standalone jacket file and result-screen jacket crop should produce different hashes");
     }
 
     // -------------------------------------------------------------------------
@@ -241,9 +245,9 @@ class ImageAnalysisServiceTest {
         ScoreDetector smallDetector = new ScoreDetector(smallTemplates);
 
         // Large-digit crop coordinates from params.json (result_score_large_0 … _3)
-        int[][] largeCrops = { { 431, 1069, 52, 51 }, { 489, 1069, 52, 51 }, { 547, 1069, 52, 51 }, { 605, 1069, 52, 51 }, };
+        int[][] largeCrops = {{431, 1069, 52, 51}, {489, 1069, 52, 51}, {547, 1069, 52, 51}, {605, 1069, 52, 51},};
         // Small-digit crop coordinates from params.json (result_score_small_4 … _7)
-        int[][] smallCrops = { { 662, 1089, 32, 31 }, { 698, 1089, 32, 31 }, { 734, 1089, 32, 31 }, { 770, 1089, 32, 31 }, };
+        int[][] smallCrops = {{662, 1089, 32, 31}, {698, 1089, 32, 31}, {734, 1089, 32, 31}, {770, 1089, 32, 31},};
 
         StringBuilder sb = new StringBuilder(8);
         for (int[] c : largeCrops) {
@@ -274,14 +278,15 @@ class ImageAnalysisServiceTest {
         Map<Character, String> largeTemplates = loadDigitTemplates("result_score_l");
         ScoreDetector detector = new ScoreDetector(largeTemplates);
 
-        int[][] crops = { { 431, 1069, 52, 51 }, { 489, 1069, 52, 51 }, { 547, 1069, 52, 51 }, { 605, 1069, 52, 51 }, };
-        char[] expected = { '0', '9', '9', '2' };
+        int[][] crops = {{431, 1069, 52, 51}, {489, 1069, 52, 51}, {547, 1069, 52, 51}, {605, 1069, 52, 51},};
+        char[] expected = {'0', '9', '9', '2'};
 
         for (int i = 0; i < crops.length; i++) {
             int[] c = crops[i];
             BufferedImage crop = resultScreen.getSubimage(c[0], c[1], c[2], c[3]);
             char detected = detector.detectDigit(crop);
-            Assertions.assertEquals(expected[i], detected, "Large digit " + i + " at x=" + c[0] + " should be '" + expected[i] + "'");
+            Assertions.assertEquals(expected[i], detected,
+                    "Large digit " + i + " at x=" + c[0] + " should be '" + expected[i] + "'");
         }
     }
 
@@ -294,14 +299,15 @@ class ImageAnalysisServiceTest {
         Map<Character, String> smallTemplates = loadDigitTemplates("result_score_s");
         ScoreDetector detector = new ScoreDetector(smallTemplates);
 
-        int[][] crops = { { 662, 1089, 32, 31 }, { 698, 1089, 32, 31 }, { 734, 1089, 32, 31 }, { 770, 1089, 32, 31 }, };
-        char[] expected = { '8', '5', '2', '7' };
+        int[][] crops = {{662, 1089, 32, 31}, {698, 1089, 32, 31}, {734, 1089, 32, 31}, {770, 1089, 32, 31},};
+        char[] expected = {'8', '5', '2', '7'};
 
         for (int i = 0; i < crops.length; i++) {
             int[] c = crops[i];
             BufferedImage crop = resultScreen.getSubimage(c[0], c[1], c[2], c[3]);
             char detected = detector.detectDigit(crop);
-            Assertions.assertEquals(expected[i], detected, "Small digit " + i + " at x=" + c[0] + " should be '" + expected[i] + "'");
+            Assertions.assertEquals(expected[i], detected,
+                    "Small digit " + i + " at x=" + c[0] + " should be '" + expected[i] + "'");
         }
     }
 
@@ -316,17 +322,19 @@ class ImageAnalysisServiceTest {
         Map<Character, String> largeTemplates = loadDigitTemplates("result_score_l");
         ScoreDetector detector = new ScoreDetector(largeTemplates);
 
-        int[][] largeCropCoords = { { 431, 1069, 52, 51 }, { 489, 1069, 52, 51 }, { 547, 1069, 52, 51 }, { 605, 1069, 52, 51 }, };
+        int[][] largeCropCoords = {{431, 1069, 52, 51}, {489, 1069, 52, 51}, {547, 1069, 52, 51}, {605, 1069, 52, 51},};
 
         StringBuilder sb = new StringBuilder(4);
         for (int[] c : largeCropCoords) {
             char d = detector.detectDigit(resultScreen.getSubimage(c[0], c[1], c[2], c[3]));
-            Assertions.assertNotEquals('?', d, "Large digit at x=" + c[0] + " must be recognisable with large templates");
+            Assertions.assertNotEquals('?', d,
+                    "Large digit at x=" + c[0] + " must be recognisable with large templates");
             sb.append(d);
         }
 
         int half = Integer.parseInt(sb.toString());
-        Assertions.assertTrue(half >= 0 && half <= 1000, "Large digit group (most-significant 4 digits) must be in [0, 1000], was: " + half);
+        Assertions.assertTrue(half >= 0 && half <= 1000,
+                "Large digit group (most-significant 4 digits) must be in [0, 1000], was: " + half);
     }
 
     /**
@@ -340,17 +348,19 @@ class ImageAnalysisServiceTest {
         Map<Character, String> smallTemplates = loadDigitTemplates("result_score_s");
         ScoreDetector detector = new ScoreDetector(smallTemplates);
 
-        int[][] smallCropCoords = { { 662, 1089, 32, 31 }, { 698, 1089, 32, 31 }, { 734, 1089, 32, 31 }, { 770, 1089, 32, 31 }, };
+        int[][] smallCropCoords = {{662, 1089, 32, 31}, {698, 1089, 32, 31}, {734, 1089, 32, 31}, {770, 1089, 32, 31},};
 
         StringBuilder sb = new StringBuilder(4);
         for (int[] c : smallCropCoords) {
             char d = detector.detectDigit(resultScreen.getSubimage(c[0], c[1], c[2], c[3]));
-            Assertions.assertNotEquals('?', d, "Small digit at x=" + c[0] + " must be recognisable with small templates");
+            Assertions.assertNotEquals('?', d,
+                    "Small digit at x=" + c[0] + " must be recognisable with small templates");
             sb.append(d);
         }
 
         int half = Integer.parseInt(sb.toString());
-        Assertions.assertTrue(half >= 0 && half <= 9999, "Small digit group (least-significant 4 digits) must be in [0, 9999], was: " + half);
+        Assertions.assertTrue(half >= 0 && half <= 9999,
+                "Small digit group (least-significant 4 digits) must be in [0, 9999], was: " + half);
     }
 
     /**
@@ -374,23 +384,26 @@ class ImageAnalysisServiceTest {
         ScoreDetector largeDetector = new ScoreDetector(largeTemplates);
         ScoreDetector smallDetector = new ScoreDetector(smallTemplates);
 
-        int[][] largeCropCoords = { { 431, 1069, 52, 51 }, { 489, 1069, 52, 51 }, { 547, 1069, 52, 51 }, { 605, 1069, 52, 51 }, };
-        int[][] smallCropCoords = { { 662, 1089, 32, 31 }, { 698, 1089, 32, 31 }, { 734, 1089, 32, 31 }, { 770, 1089, 32, 31 }, };
+        int[][] largeCropCoords = {{431, 1069, 52, 51}, {489, 1069, 52, 51}, {547, 1069, 52, 51}, {605, 1069, 52, 51},};
+        int[][] smallCropCoords = {{662, 1089, 32, 31}, {698, 1089, 32, 31}, {734, 1089, 32, 31}, {770, 1089, 32, 31},};
 
         StringBuilder sb = new StringBuilder(8);
         for (int[] c : largeCropCoords) {
             char d = largeDetector.detectDigit(resultScreen.getSubimage(c[0], c[1], c[2], c[3]));
-            Assertions.assertNotEquals('?', d, "Large digit at x=" + c[0] + " must be recognisable with large templates");
+            Assertions.assertNotEquals('?', d,
+                    "Large digit at x=" + c[0] + " must be recognisable with large templates");
             sb.append(d);
         }
         for (int[] c : smallCropCoords) {
             char d = smallDetector.detectDigit(resultScreen.getSubimage(c[0], c[1], c[2], c[3]));
-            Assertions.assertNotEquals('?', d, "Small digit at x=" + c[0] + " must be recognisable with small templates");
+            Assertions.assertNotEquals('?', d,
+                    "Small digit at x=" + c[0] + " must be recognisable with small templates");
             sb.append(d);
         }
 
         int fullScore = Integer.parseInt(sb.toString());
-        Assertions.assertTrue(fullScore >= 0 && fullScore <= 10_000_000, "Assembled score must be in valid SDVX range [0, 10000000], was: " + fullScore);
+        Assertions.assertTrue(fullScore >= 0 && fullScore <= 10_000_000,
+                "Assembled score must be in valid SDVX range [0, 10000000], was: " + fullScore);
         Assertions.assertEquals(9_928_527, fullScore, "Combined large+small digit assembly must match ground truth");
     }
 
@@ -403,11 +416,13 @@ class ImageAnalysisServiceTest {
      * digit PNGs ({@code prefix0.png} … {@code prefix9.png}) from the main
      * classpath resources ({@code src/main/resources/images/}).
      *
-     * @param prefix image filename prefix, e.g. {@code "result_score_l"} or
-     *               {@code "result_score_s"}
+     * @param prefix
+     *            image filename prefix, e.g. {@code "result_score_l"} or
+     *            {@code "result_score_s"}
      * @return map from digit character ({@code '0'}–{@code '9'}) to its aHash
      *         string
-     * @throws IOException if any template image cannot be loaded
+     * @throws IOException
+     *             if any template image cannot be loaded
      */
     private static Map<Character, String> loadDigitTemplates(String prefix) throws IOException {
         Map<Character, String> templates = new HashMap<>();
@@ -421,9 +436,11 @@ class ImageAnalysisServiceTest {
     /**
      * Loads an image resource from the test classpath.
      *
-     * @param filename resource file name (must exist in {@code src/test/resources})
+     * @param filename
+     *            resource file name (must exist in {@code src/test/resources})
      * @return loaded {@link BufferedImage}
-     * @throws IOException if the resource cannot be found or decoded
+     * @throws IOException
+     *             if the resource cannot be found or decoded
      */
     private static BufferedImage loadResource(String filename) throws IOException {
         InputStream is = ImageAnalysisServiceTest.class.getResourceAsStream("/" + filename);
@@ -434,7 +451,8 @@ class ImageAnalysisServiceTest {
     /**
      * Computes the per-channel pixel averages [R, G, B] for the given image.
      *
-     * @param img image to analyse
+     * @param img
+     *            image to analyse
      * @return {@code int[3]} containing average R, G, B values (0–255)
      */
     private static int[] channelAverages(BufferedImage img) {
@@ -450,6 +468,6 @@ class ImageAnalysisServiceTest {
             }
         }
         int pixels = w * h;
-        return new int[] { (int) (rSum / pixels), (int) (gSum / pixels), (int) (bSum / pixels) };
+        return new int[]{(int) (rSum / pixels), (int) (gSum / pixels), (int) (bSum / pixels)};
     }
 }

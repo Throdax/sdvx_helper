@@ -26,8 +26,8 @@ public class TitleMapping {
     @XmlAttribute
     private String maya2Title;
 
-    /** 
-     * No-argument constructor required by JAXB. 
+    /**
+     * No-argument constructor required by JAXB.
      */
     public TitleMapping() {
     }
@@ -35,9 +35,11 @@ public class TitleMapping {
     /**
      * Constructs a mapping between a local title and its Maya2 server equivalent.
      *
-     * @param localTitle the title as it appears on the local system
-     *                   (filesystem-safe variant)
-     * @param maya2Title the title as it appears on the Maya2 server
+     * @param localTitle
+     *            the title as it appears on the local system (filesystem-safe
+     *            variant)
+     * @param maya2Title
+     *            the title as it appears on the Maya2 server
      */
     public TitleMapping(String localTitle, String maya2Title) {
         this.localTitle = localTitle;
@@ -57,7 +59,8 @@ public class TitleMapping {
     /**
      * Sets the title as it appears on the local system (filesystem-safe variant).
      *
-     * @param localTitle the local title string to set
+     * @param localTitle
+     *            the local title string to set
      */
     public void setLocalTitle(String localTitle) {
         this.localTitle = localTitle;
@@ -75,7 +78,8 @@ public class TitleMapping {
     /**
      * Sets the title as it appears on the Maya2 server.
      *
-     * @param maya2Title the Maya2 server title string to set
+     * @param maya2Title
+     *            the Maya2 server title string to set
      */
     public void setMaya2Title(String maya2Title) {
         this.maya2Title = maya2Title;

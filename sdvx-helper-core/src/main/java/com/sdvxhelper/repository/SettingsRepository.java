@@ -7,23 +7,23 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.Map;
-
 import jakarta.json.bind.Jsonb;
 import jakarta.json.bind.JsonbBuilder;
 import jakarta.json.bind.JsonbConfig;
 
+import com.sdvxhelper.config.DefaultSettings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.sdvxhelper.config.DefaultSettings;
-
 /**
- * Reads and writes user settings to/from {@code settings.json} using JSON-B with
- * Eclipse Yasson as the implementation.
+ * Reads and writes user settings to/from {@code settings.json} using JSON-B
+ * with Eclipse Yasson as the implementation.
  *
- * <p>On load, missing keys are merged from {@link DefaultSettings#getDefaults()} to
- * ensure forward-compatibility when new settings are introduced without requiring a
- * manual migration step.</p>
+ * <p>
+ * On load, missing keys are merged from {@link DefaultSettings#getDefaults()}
+ * to ensure forward-compatibility when new settings are introduced without
+ * requiring a manual migration step.
+ * </p>
  *
  * @author Throdax
  * @since 2.0.0
@@ -46,13 +46,12 @@ public class SettingsRepository {
     /**
      * Constructs a repository backed by a custom file (useful for testing).
      *
-     * @param file JSON settings file
+     * @param file
+     *            JSON settings file
      */
     public SettingsRepository(File file) {
         this.file = file;
-        JsonbConfig config = new JsonbConfig()
-                .withFormatting(true)
-                .withEncoding("UTF-8");
+        JsonbConfig config = new JsonbConfig().withFormatting(true).withEncoding("UTF-8");
         this.jsonb = JsonbBuilder.create(config);
     }
 
@@ -98,8 +97,10 @@ public class SettingsRepository {
     /**
      * Saves the settings map to disk as formatted JSON.
      *
-     * @param settings settings map to persist
-     * @throws IOException if the file cannot be written
+     * @param settings
+     *            settings map to persist
+     * @throws IOException
+     *             if the file cannot be written
      */
     public void save(Map<String, String> settings) throws IOException {
         File parent = file.getParentFile();

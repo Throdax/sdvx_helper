@@ -49,7 +49,8 @@ public class Stats {
      * Reads one chart's data into the appropriate level bucket. Non-integer levels
      * (e.g. {@code "??"}) are silently ignored.
      *
-     * @param minfo chart data to incorporate
+     * @param minfo
+     *            chart data to incorporate
      */
     public void readAll(MusicInfo minfo) {
         int lvInt = minfo.getLvAsInt();
@@ -61,9 +62,11 @@ public class Stats {
     /**
      * Returns the {@link OneLevelStat} for the given level.
      *
-     * @param level chart level (1–20)
+     * @param level
+     *            chart level (1–20)
      * @return the stat entry for that level
-     * @throws IndexOutOfBoundsException if level is not in range [1, 20]
+     * @throws IndexOutOfBoundsException
+     *             if level is not in range [1, 20]
      */
     public OneLevelStat getStatForLevel(int level) {
         if (level < 1 || level > 20) {

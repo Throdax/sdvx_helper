@@ -1,19 +1,21 @@
 package com.sdvxhelper.repository;
 
+import java.io.File;
+import java.io.IOException;
+import jakarta.xml.bind.JAXBException;
+
 import com.sdvxhelper.model.MusicInfo;
 import com.sdvxhelper.model.RivalEntry;
 import com.sdvxhelper.model.RivalLog;
-import jakarta.xml.bind.JAXBException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.File;
-import java.io.IOException;
 
 /**
  * Persists and loads rival score data as {@code rival_log.xml}.
  *
- * <p>Replaces the Python {@code pickle.load/dump} calls on {@code rival_log.pkl}.</p>
+ * <p>
+ * Replaces the Python {@code pickle.load/dump} calls on {@code rival_log.pkl}.
+ * </p>
  *
  * @author Throdax
  * @since 2.0.0
@@ -35,7 +37,8 @@ public class RivalLogRepository extends JaxbRepository<RivalLog> {
     /**
      * Constructs a repository backed by a custom file.
      *
-     * @param file XML file to read from / write to
+     * @param file
+     *            XML file to read from / write to
      */
     public RivalLogRepository(File file) {
         super(RivalLog.class, RivalEntry.class, MusicInfo.class);
@@ -43,8 +46,8 @@ public class RivalLogRepository extends JaxbRepository<RivalLog> {
     }
 
     /**
-     * Loads the rival log from disk.
-     * Returns an empty {@link RivalLog} if the file does not exist.
+     * Loads the rival log from disk. Returns an empty {@link RivalLog} if the file
+     * does not exist.
      *
      * @return loaded rival log
      */
@@ -66,8 +69,10 @@ public class RivalLogRepository extends JaxbRepository<RivalLog> {
     /**
      * Saves the rival log to disk atomically.
      *
-     * @param rivalLog rival log to persist
-     * @throws IOException if the file cannot be written
+     * @param rivalLog
+     *            rival log to persist
+     * @throws IOException
+     *             if the file cannot be written
      */
     public void save(RivalLog rivalLog) throws IOException {
         try {

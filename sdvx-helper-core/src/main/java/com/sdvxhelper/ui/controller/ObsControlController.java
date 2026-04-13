@@ -6,19 +6,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.stream.Collectors;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.sdvxhelper.network.ObsWebSocketClient;
-import com.sdvxhelper.repository.SettingsRepository;
-
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
+
+import com.sdvxhelper.network.ObsWebSocketClient;
+import com.sdvxhelper.repository.SettingsRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Controller for the OBS Control dialog ({@code obs_control.fxml}).
@@ -93,8 +91,11 @@ public class ObsControlController implements Initializable {
      * Initialises the controller by loading settings from {@code settings.json} and
      * populating the fields. Called by JavaFX after the FXML is loaded.
      * 
-     * @param location  the location used to resolve relative paths for the root object, or null if the location is not known
-     * @param resources the resources used to localize the root object, or null if the
+     * @param location
+     *            the location used to resolve relative paths for the root object,
+     *            or null if the location is not known
+     * @param resources
+     *            the resources used to localize the root object, or null if the
      */
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -117,10 +118,11 @@ public class ObsControlController implements Initializable {
         }
     }
 
-    /** 
-     * Establishes a connection to the OBS WebSocket server. 
+    /**
+     * Establishes a connection to the OBS WebSocket server.
      * 
-     * @param event the action event triggered by the Connect button
+     * @param event
+     *            the action event triggered by the Connect button
      */
     @FXML
     public void onConnect(ActionEvent event) {
@@ -139,10 +141,11 @@ public class ObsControlController implements Initializable {
         }
     }
 
-    /** 
-     * Closes the connection to the OBS WebSocket server. 
+    /**
+     * Closes the connection to the OBS WebSocket server.
      * 
-     * @param event the action event triggered by the Disconnect button
+     * @param event
+     *            the action event triggered by the Disconnect button
      */
     @FXML
     public void onDisconnect(ActionEvent event) {
@@ -158,7 +161,7 @@ public class ObsControlController implements Initializable {
     // Private helpers
     // -------------------------------------------------------------------------
 
-    /** 
+    /**
      * Populates the text fields with values from the settings map. Called during
      * initialization to reflect the current settings in the UI.
      */
@@ -184,7 +187,7 @@ public class ObsControlController implements Initializable {
         txtQuitDisable.setText(listToText("obs_disable_quit"));
     }
 
-    /** 
+    /**
      * Collects the current field values and updates the settings map. Called before
      * saving or connecting to ensure the latest values are used.
      */
@@ -211,10 +214,11 @@ public class ObsControlController implements Initializable {
     }
 
     /**
-     * Updates the connection status label and enables/disables the Connect and Disconnect buttons
-     * based on the connection state.
+     * Updates the connection status label and enables/disables the Connect and
+     * Disconnect buttons based on the connection state.
      *
-     * @param connected true if connected to OBS, false otherwise
+     * @param connected
+     *            true if connected to OBS, false otherwise
      */
     private void updateConnectionUi(boolean connected) {
         lblConnStatus.setText(connected ? "Connected" : "Disconnected");
@@ -225,10 +229,13 @@ public class ObsControlController implements Initializable {
     }
 
     /**
-     * Retrieves a string value from the settings map. If the value is null, an empty string is returned.
+     * Retrieves a string value from the settings map. If the value is null, an
+     * empty string is returned.
      *
-     * @param key the settings key to retrieve
-     * @return the string value associated with the key, or an empty string if the value is null
+     * @param key
+     *            the settings key to retrieve
+     * @return the string value associated with the key, or an empty string if the
+     *         value is null
      */
     private String stringOf(String key) {
         Object v = settings.get(key);
@@ -236,11 +243,13 @@ public class ObsControlController implements Initializable {
     }
 
     /**
-     * Converts a list value from the settings map into a comma-separated string.
-     * If the value is not a list, an empty string is returned.
+     * Converts a list value from the settings map into a comma-separated string. If
+     * the value is not a list, an empty string is returned.
      *
-     * @param key the settings key to retrieve
-     * @return a comma-separated string of the list elements, or an empty string if the value is not a list
+     * @param key
+     *            the settings key to retrieve
+     * @return a comma-separated string of the list elements, or an empty string if
+     *         the value is not a list
      */
     @SuppressWarnings("unchecked")
     private String listToText(String key) {

@@ -2,7 +2,6 @@ package com.sdvxhelper.model;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import jakarta.xml.bind.annotation.XmlAccessType;
 import jakarta.xml.bind.annotation.XmlAccessorType;
 import jakarta.xml.bind.annotation.XmlElement;
@@ -37,10 +36,11 @@ public class RivalLog {
     }
 
     /**
-     * Sets the list of tracked rival entries.
-     * If {@code null} is supplied an empty list is used instead.
+     * Sets the list of tracked rival entries. If {@code null} is supplied an empty
+     * list is used instead.
      *
-     * @param rivals the list of {@link RivalEntry} rival entries to set
+     * @param rivals
+     *            the list of {@link RivalEntry} rival entries to set
      */
     public void setRivals(List<RivalEntry> rivals) {
         this.rivals = rivals != null ? rivals : new ArrayList<>();

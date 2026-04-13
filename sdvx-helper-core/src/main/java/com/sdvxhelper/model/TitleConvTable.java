@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import jakarta.xml.bind.annotation.XmlAccessType;
 import jakarta.xml.bind.annotation.XmlAccessorType;
 import jakarta.xml.bind.annotation.XmlElement;
@@ -40,10 +39,11 @@ public class TitleConvTable {
     }
 
     /**
-     * Sets the list of local-to-Maya2 title mappings.
-     * If {@code null} is supplied an empty list is used instead.
+     * Sets the list of local-to-Maya2 title mappings. If {@code null} is supplied
+     * an empty list is used instead.
      *
-     * @param entries the list of {@link TitleMapping} entries to set
+     * @param entries
+     *            the list of {@link TitleMapping} entries to set
      */
     public void setEntries(List<TitleMapping> entries) {
         this.entries = entries != null ? entries : new ArrayList<>();
@@ -66,7 +66,8 @@ public class TitleConvTable {
     /**
      * Populates the entries list from a local-title-to-Maya2-title {@link Map}.
      *
-     * @param map a map of local title to Maya2 title to convert into
+     * @param map
+     *            a map of local title to Maya2 title to convert into
      *            {@link TitleMapping} elements
      */
     public void fromMap(Map<String, String> map) {

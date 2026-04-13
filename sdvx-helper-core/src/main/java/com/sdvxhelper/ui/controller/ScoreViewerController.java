@@ -5,17 +5,6 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.List;
 import java.util.ResourceBundle;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.sdvxhelper.i18n.LocaleManager;
-import com.sdvxhelper.model.MusicInfo;
-import com.sdvxhelper.repository.MusicListRepository;
-import com.sdvxhelper.repository.PlayLogRepository;
-import com.sdvxhelper.service.CsvExportService;
-import com.sdvxhelper.service.SdvxLoggerService;
-
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
@@ -30,6 +19,15 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.stage.FileChooser;
+
+import com.sdvxhelper.i18n.LocaleManager;
+import com.sdvxhelper.model.MusicInfo;
+import com.sdvxhelper.repository.MusicListRepository;
+import com.sdvxhelper.repository.PlayLogRepository;
+import com.sdvxhelper.service.CsvExportService;
+import com.sdvxhelper.service.SdvxLoggerService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Controller for the score-viewer window ({@code score_viewer.fxml}).
@@ -86,10 +84,14 @@ public class ScoreViewerController implements Initializable {
     /**
      * Initializes the controller after the FXML fields have been injected.
      *
-     * <p>Sets up table columns, filter listeners, and loads the initial data.</p>
+     * <p>
+     * Sets up table columns, filter listeners, and loads the initial data.
+     * </p>
      *
-     * @param location  URL of the FXML file (unused)
-     * @param resources resource bundle for localization (unused)
+     * @param location
+     *            URL of the FXML file (unused)
+     * @param resources
+     *            resource bundle for localization (unused)
      */
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -130,7 +132,8 @@ public class ScoreViewerController implements Initializable {
     /**
      * Handles the Export CSV button action.
      *
-     * @param event action event
+     * @param event
+     *            action event
      */
     @FXML
     public void onExportCsv(ActionEvent event) {

@@ -1,19 +1,22 @@
 package com.sdvxhelper.network;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
- * Uploads files to <a href="https://litterbox.catbox.moe">litterbox.catbox.moe</a>
- * for temporary image hosting.
+ * Uploads files to
+ * <a href="https://litterbox.catbox.moe">litterbox.catbox.moe</a> for temporary
+ * image hosting.
  *
- * <p>Used by the Discord Rich Presence feature to host jacket images.
- * Replaces the Python litterbox upload in {@code discord_presence.py}.</p>
+ * <p>
+ * Used by the Discord Rich Presence feature to host jacket images. Replaces the
+ * Python litterbox upload in {@code discord_presence.py}.
+ * </p>
  *
  * @author Throdax
  * @since 2.0.0
@@ -21,7 +24,7 @@ import java.time.Duration;
 public class LitterboxClient {
 
     private static final Logger log = LoggerFactory.getLogger(LitterboxClient.class);
-    private static final URI    ENDPOINT = URI.create("https://litterbox.catbox.moe/resources/internals/api.php");
+    private static final URI ENDPOINT = URI.create("https://litterbox.catbox.moe/resources/internals/api.php");
     private static final Duration TIMEOUT = Duration.ofSeconds(30);
 
     /** Default expiry time for uploaded files. */
@@ -39,17 +42,20 @@ public class LitterboxClient {
     /**
      * Uploads a file to Litterbox and returns its public URL.
      *
-     * @param fileBytes  raw file bytes (PNG, JPEG, etc.)
-     * @param filename   original filename including extension
-     * @param timeToLive expiry duration string (e.g. {@code "1h"}, {@code "12h"}, {@code "24h"}, {@code "72h"})
+     * @param fileBytes
+     *            raw file bytes (PNG, JPEG, etc.)
+     * @param filename
+     *            original filename including extension
+     * @param timeToLive
+     *            expiry duration string (e.g. {@code "1h"}, {@code "12h"},
+     *            {@code "24h"}, {@code "72h"})
      * @return public URL of the uploaded file, or {@code null} on failure
-     * @throws IOException if the upload request fails
+     * @throws IOException
+     *             if the upload request fails
      */
     public String upload(byte[] fileBytes, String filename, String timeToLive) throws IOException {
-        HttpService.MultipartBody body = new HttpService.MultipartBody()
-                .addField("reqtype", "fileupload")
-                .addField("time", timeToLive)
-                .addFile("fileToUpload", filename, "application/octet-stream", fileBytes);
+        HttpService.MultipartBody body = new HttpService.MultipartBody().addField("reqtype", "fileupload")
+                .addField("time", timeToLive).addFile("fileToUpload", filename, "application/octet-stream", fileBytes);
 
         HttpResponse<String> resp = http.postMultipart(ENDPOINT, body);
         if (HttpService.isSuccess(resp.statusCode())) {

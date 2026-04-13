@@ -7,9 +7,11 @@ import jakarta.xml.bind.annotation.XmlAttribute;
 /**
  * Pairs a song title with its tier classification for Grade-S tables.
  *
- * <p>Used as an element within {@link GradeSEntry} to represent one song's
- * tier rating (e.g. {@code "SSS"}, {@code "SS"}, {@code "S"}) at a given
- * chart level.</p>
+ * <p>
+ * Used as an element within {@link GradeSEntry} to represent one song's tier
+ * rating (e.g. {@code "SSS"}, {@code "SS"}, {@code "S"}) at a given chart
+ * level.
+ * </p>
  * 
  * @author Throdax
  * @since 2.0.0
@@ -30,8 +32,11 @@ public class TierEntry {
     /**
      * Constructs a tier entry pairing the given title with its tier classification.
      *
-     * @param title the song title key
-     * @param tier  the tier classification string (e.g. {@code "SSS"}, {@code "SS"}, {@code "S"})
+     * @param title
+     *            the song title key
+     * @param tier
+     *            the tier classification string (e.g. {@code "SSS"}, {@code "SS"},
+     *            {@code "S"})
      */
     public TierEntry(String title, String tier) {
         this.title = title;
@@ -50,14 +55,16 @@ public class TierEntry {
     /**
      * Sets the song title key.
      *
-     * @param title the song title to set
+     * @param title
+     *            the song title to set
      */
     public void setTitle(String title) {
         this.title = title;
     }
 
     /**
-     * Returns the tier classification string (e.g. {@code "SSS"}, {@code "SS"}, {@code "S"}).
+     * Returns the tier classification string (e.g. {@code "SSS"}, {@code "SS"},
+     * {@code "S"}).
      *
      * @return the tier classification string
      */
@@ -66,9 +73,11 @@ public class TierEntry {
     }
 
     /**
-     * Sets the tier classification string (e.g. {@code "SSS"}, {@code "SS"}, {@code "S"}).
+     * Sets the tier classification string (e.g. {@code "SSS"}, {@code "SS"},
+     * {@code "S"}).
      *
-     * @param tier the tier classification string to set
+     * @param tier
+     *            the tier classification string to set
      */
     public void setTier(String tier) {
         this.tier = tier;
