@@ -1,8 +1,10 @@
-package com.sdvxhelper.ui.controller;
+package com.sdvxhelper.app.controller;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.ResourceBundle;
 import javafx.collections.FXCollections;
@@ -11,9 +13,14 @@ import javafx.collections.transformation.FilteredList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.ListCell;
+import javafx.scene.control.ListView;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
@@ -22,6 +29,8 @@ import javafx.stage.FileChooser;
 
 import com.sdvxhelper.i18n.LocaleManager;
 import com.sdvxhelper.model.MusicInfo;
+import com.sdvxhelper.model.OnePlayData;
+import com.sdvxhelper.model.PlayLog;
 import com.sdvxhelper.repository.MusicListRepository;
 import com.sdvxhelper.repository.PlayLogRepository;
 import com.sdvxhelper.service.CsvExportService;
@@ -33,9 +42,9 @@ import org.slf4j.LoggerFactory;
  * Controller for the score-viewer window ({@code score_viewer.fxml}).
  *
  * <p>
- * Loads the personal-best list from the play log and displays it in a
- * filterable, sortable table. Replaces the Python {@code ScoreViewer} class in
- * {@code manage_score.py}.
+ * Loads the personal-best list from the play log (at the installation root) and
+ * displays it in a filterable, sortable table. Replaces the Python
+ * {@code ScoreViewer} class in {@code manage_score.py}.
  * </p>
  *
  * @author Throdax
@@ -53,6 +62,8 @@ public class ScoreViewerController implements Initializable {
     private ComboBox<String> cmbLamp;
     @FXML
     private Button btnExport;
+    @FXML
+    private Button btnDelete;
     @FXML
     private ComboBox<String> cmbLanguage;
     @FXML
@@ -75,10 +86,15 @@ public class ScoreViewerController implements Initializable {
     private TableColumn<MusicInfo, String> colSTier;
     @FXML
     private Label lblCount;
+    @FXML
+    private ListView<OnePlayData> lstPlays;
 
     private final ObservableList<MusicInfo> allScores = FXCollections.observableArrayList();
     private FilteredList<MusicInfo> filteredScores;
+    private final ObservableList<OnePlayData> selectedPlays = FXCollections.observableArrayList();
     private SdvxLoggerService loggerService;
+    private PlayLogRepository playLogRepo;
+    private PlayLog playLog;
     private final CsvExportService csvExport = new CsvExportService();
 
     /**
@@ -112,19 +128,40 @@ public class ScoreViewerController implements Initializable {
         cmbLanguage.setValue(LocaleManager.getInstance().getCurrentCode());
         cmbLanguage.setOnAction(_ -> LocaleManager.getInstance().setLocale(cmbLanguage.getValue()));
 
-        // Filter listeners
         txtFilter.textProperty().addListener((_, _, _) -> applyFilter());
         cmbLevel.valueProperty().addListener((_, _, _) -> applyFilter());
         cmbLamp.valueProperty().addListener((_, _, _) -> applyFilter());
 
-        // Populate level/lamp combos
         cmbLevel.getItems().add("All");
-        for (int i = 1; i <= 20; i++)
+        for (int i = 1; i <= 20; i++) {
             cmbLevel.getItems().add(String.valueOf(i));
+        }
         cmbLevel.getSelectionModel().selectFirst();
 
         cmbLamp.getItems().addAll("All", "puc", "uc", "exh", "hard", "clear", "failed");
         cmbLamp.getSelectionModel().selectFirst();
+
+        if (lstPlays != null) {
+            lstPlays.setItems(selectedPlays);
+            lstPlays.setCellFactory(_ -> new ListCell<OnePlayData>() {
+                @Override
+                protected void updateItem(OnePlayData item, boolean empty) {
+                    super.updateItem(item, empty);
+                    if (empty || item == null) {
+                        setText(null);
+                    } else {
+                        setText(String.format("%s  |  %,d (%+d)  |  %s", item.getDate(), item.getCurScore(),
+                                item.getDiff(), item.getLamp()));
+                    }
+                }
+            });
+            tblScores.getSelectionModel().selectedItemProperty().addListener((_, _, nv) -> refreshPlaysFor(nv));
+        }
+        if (btnDelete != null) {
+            btnDelete.setDisable(true);
+            lstPlays.getSelectionModel().selectedItemProperty()
+                    .addListener((_, _, nv) -> btnDelete.setDisable(nv == null));
+        }
 
         loadData();
     }
@@ -152,12 +189,48 @@ public class ScoreViewerController implements Initializable {
     }
 
     /**
+     * Deletes the currently selected play from {@code alllog.xml} after
+     * confirmation.
+     *
+     * @param event
+     *            action event
+     */
+    @FXML
+    public void onDelete(ActionEvent event) {
+        OnePlayData selected = lstPlays == null ? null : lstPlays.getSelectionModel().getSelectedItem();
+        if (selected == null || playLog == null || playLogRepo == null) {
+            return;
+        }
+        Alert confirm = new Alert(AlertType.CONFIRMATION, "Delete this play?\n" + selected.getTitle() + " ["
+                + selected.getDifficulty() + "] " + selected.getCurScore(), ButtonType.YES, ButtonType.NO);
+        confirm.setHeaderText("Confirm Delete");
+        confirm.showAndWait().filter(bt -> bt == ButtonType.YES).ifPresent(_ -> {
+            playLog.getPlays().remove(selected);
+            try {
+                playLogRepo.save(playLog);
+                selectedPlays.remove(selected);
+                loadData();
+                log.info("Deleted play: {} [{}]", selected.getTitle(), selected.getDifficulty());
+            } catch (IOException e) {
+                log.error("Failed to save alllog.xml after delete", e);
+            }
+        });
+    }
+
+    /**
      * Loads the personal-best list from the play log and populates the table.
      */
     private void loadData() {
-        PlayLogRepository playLogRepo = new PlayLogRepository();
+        File logFile = Path.of(System.getProperty("user.dir"), "alllog.xml").toFile();
+        if (!logFile.exists()) {
+            lblCount.setText("No play log found at alllog.xml");
+            allScores.clear();
+            return;
+        }
+        playLogRepo = new PlayLogRepository(logFile);
         MusicListRepository musicListRepo = new MusicListRepository();
         loggerService = new SdvxLoggerService(playLogRepo, musicListRepo);
+        playLog = loggerService.getPlayLog();
 
         List<MusicInfo> best = loggerService.getBestAllFumen();
         allScores.setAll(best);
@@ -165,9 +238,21 @@ public class ScoreViewerController implements Initializable {
         log.info("Loaded {} charts into score viewer", best.size());
     }
 
-    /**
-     * Applies the current filter criteria to the score list and updates the table.
-     */
+    private void refreshPlaysFor(MusicInfo chart) {
+        selectedPlays.clear();
+        if (chart == null || playLog == null) {
+            return;
+        }
+        List<OnePlayData> matches = new ArrayList<>();
+        for (OnePlayData p : playLog.getPlays()) {
+            if (p.getTitle() != null && p.getTitle().equals(chart.getTitle()) && p.getDifficulty() != null
+                    && p.getDifficulty().equalsIgnoreCase(chart.getDifficulty())) {
+                matches.add(p);
+            }
+        }
+        selectedPlays.setAll(matches);
+    }
+
     private void applyFilter() {
         String titleFilter = txtFilter.getText().toLowerCase();
         String levelFilter = cmbLevel.getValue();

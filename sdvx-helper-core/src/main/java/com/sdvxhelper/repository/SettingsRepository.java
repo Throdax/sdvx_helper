@@ -63,6 +63,7 @@ public class SettingsRepository {
     @SuppressWarnings("unchecked")
     public Map<String, String> load() {
         Map<String, String> settings = new LinkedHashMap<>();
+        boolean firstRun = !file.exists();
 
         if (file.exists()) {
             try (FileReader reader = new FileReader(file, StandardCharsets.UTF_8)) {
@@ -89,6 +90,15 @@ public class SettingsRepository {
         }
         if (added > 0) {
             log.info("Merged {} missing keys from defaults", added);
+        }
+
+        if (firstRun) {
+            try {
+                save(settings);
+                log.info("Created initial settings.json at {}", file.getAbsolutePath());
+            } catch (IOException e) {
+                log.warn("Failed to write initial settings.json: {}", e.getMessage());
+            }
         }
 
         return settings;

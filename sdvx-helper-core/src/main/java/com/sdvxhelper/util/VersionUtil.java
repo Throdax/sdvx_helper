@@ -40,6 +40,19 @@ public final class VersionUtil {
      *         failure
      */
     public static String getCurrentVersion() {
+        return getVersion(VERSION_KEY);
+    }
+
+    /**
+     * Reads a named version property from {@code version.properties} on the
+     * classpath. Supported keys include {@code helper}, {@code ocr},
+     * {@code manager}, {@code sync}, {@code updater}, and {@code version}.
+     *
+     * @param key
+     *            property key to read
+     * @return version string, or {@code "unknown"} if the key is missing
+     */
+    public static String getVersion(String key) {
         try (InputStream is = VersionUtil.class.getClassLoader().getResourceAsStream(VERSION_RESOURCE)) {
             if (is == null) {
                 log.warn("version.properties not found on classpath");
@@ -47,7 +60,7 @@ public final class VersionUtil {
             }
             Properties props = new Properties();
             props.load(is);
-            String v = props.getProperty(VERSION_KEY, "unknown").trim();
+            String v = props.getProperty(key, "unknown").trim();
             return v.isEmpty() ? "unknown" : v;
         } catch (IOException e) {
             log.error("Failed to read version.properties", e);

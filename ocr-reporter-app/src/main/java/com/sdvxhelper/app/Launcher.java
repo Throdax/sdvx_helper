@@ -33,6 +33,7 @@ public class Launcher {
      *            command-line arguments forwarded to JavaFX
      */
     public static void main(String[] args) {
+        System.setProperty("app.log.name", "ocr_reporter");
         OcrReporterApp.main(args);
     }
 }

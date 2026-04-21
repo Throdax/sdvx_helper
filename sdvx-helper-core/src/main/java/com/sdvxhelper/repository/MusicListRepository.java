@@ -2,7 +2,9 @@ package com.sdvxhelper.repository;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import jakarta.xml.bind.JAXBException;
 
@@ -10,6 +12,7 @@ import com.sdvxhelper.model.DifficultyHashGroup;
 import com.sdvxhelper.model.DifficultyHashes;
 import com.sdvxhelper.model.GradeSEntry;
 import com.sdvxhelper.model.HashEntry;
+import com.sdvxhelper.model.MusicInfo;
 import com.sdvxhelper.model.MusicList;
 import com.sdvxhelper.model.SongInfo;
 import com.sdvxhelper.model.SongInfoEntry;
@@ -41,6 +44,12 @@ public class MusicListRepository extends JaxbRepository<MusicList> {
 
     /** In-memory index: song title → {@link SongInfo}. */
     private Map<String, SongInfo> titleIndex = new HashMap<>();
+
+    /**
+     * Cached last-loaded music list, used by
+     * {@link #registerHash(String, String, String)}.
+     */
+    private MusicList cached;
 
     /**
      * Constructs a repository backed by the default file.
@@ -79,6 +88,7 @@ public class MusicListRepository extends JaxbRepository<MusicList> {
         try {
             MusicList musiclist = super.load(file);
             buildIndices(musiclist);
+            this.cached = musiclist;
             log.info("Loaded musiclist.xml ({} songs)", musiclist.getTitles().size());
             return musiclist;
         } catch (JAXBException e) {
@@ -168,5 +178,99 @@ public class MusicListRepository extends JaxbRepository<MusicList> {
      */
     public File getFile() {
         return file;
+    }
+
+    /**
+     * Returns a flat list of {@link MusicInfo} rows for all known songs, primarily
+     * intended for display in table views.
+     *
+     * @return list of song metadata rows (empty if music list not loaded)
+     */
+    public List<MusicInfo> getAll() {
+        if (cached == null) {
+            MusicList ml = load();
+            if (ml == null) {
+                return new ArrayList<>();
+            }
+        }
+        List<MusicInfo> out = new ArrayList<>();
+        for (SongInfoEntry sie : cached.getTitles()) {
+            SongInfo si = sie.getSongInfo();
+            MusicInfo mi = new MusicInfo();
+            mi.setTitle(sie.getTitle());
+            if (si != null) {
+                mi.setArtist(si.getArtist());
+                mi.setBpm(si.getBpm());
+                mi.setLv(si.getLvExh());
+            }
+            out.add(mi);
+        }
+        return out;
+    }
+
+    /**
+     * Returns all hash entries registered for the given difficulty.
+     *
+     * @param difficulty
+     *            chart difficulty code (e.g. nov, adv, exh, APPEND); empty or
+     *            {@code null} returns all entries across all difficulties
+     * @return list of registered {@link HashEntry} rows
+     */
+    public List<HashEntry> getHashesForDifficulty(String difficulty) {
+        if (cached == null) {
+            MusicList ml = load();
+            if (ml == null) {
+                return new ArrayList<>();
+            }
+        }
+        List<HashEntry> out = new ArrayList<>();
+        for (DifficultyHashGroup g : cached.getJacket()) {
+            if (difficulty == null || difficulty.isBlank() || difficulty.equals(g.getDifficulty())) {
+                out.addAll(g.getHashes().getEntries());
+            }
+        }
+        return out;
+    }
+
+    /**
+     * Registers a new jacket hash → title mapping for the given difficulty and
+     * persists the music list to disk.
+     *
+     * @param hash
+     *            perceptual hash hex string
+     * @param title
+     *            song title
+     * @param difficulty
+     *            chart difficulty code (e.g. nov, adv, exh, mxm)
+     * @throws IOException
+     *             if the music list cannot be saved
+     */
+    public void registerHash(String hash, String title, String difficulty) throws IOException {
+        if (cached == null) {
+            MusicList ml = load();
+            if (ml == null) {
+                throw new IOException("Cannot register hash: musiclist.xml not loaded");
+            }
+        }
+        DifficultyHashGroup group = null;
+        for (DifficultyHashGroup g : cached.getJacket()) {
+            if (difficulty.equals(g.getDifficulty())) {
+                group = g;
+                break;
+            }
+        }
+        if (group == null) {
+            group = new DifficultyHashGroup();
+            group.setDifficulty(difficulty);
+            group.setHashes(new DifficultyHashes());
+            cached.getJacket().add(group);
+        }
+        HashEntry entry = new HashEntry();
+        entry.setTitle(title);
+        entry.setHash(hash);
+        group.getHashes().getEntries().add(entry);
+
+        save(cached);
+        log.info("Registered hash {} for {} [{}]", hash, title, difficulty);
     }
 }

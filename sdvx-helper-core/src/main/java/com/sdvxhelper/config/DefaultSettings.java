@@ -36,9 +36,19 @@ public final class DefaultSettings {
     public static Map<String, String> getDefaults() {
         Map<String, String> defaults = new LinkedHashMap<>();
 
-        // Window position
+        // Window position (sdvx_helper app)
         defaults.put("lx", "0");
         defaults.put("ly", "0");
+
+        // Window position (per-app keys for other modules)
+        defaults.put("ocr_lx", "0");
+        defaults.put("ocr_ly", "0");
+        defaults.put("score_lx", "0");
+        defaults.put("score_ly", "0");
+        defaults.put("sync_lx", "0");
+        defaults.put("sync_ly", "0");
+        defaults.put("updater_lx", "0");
+        defaults.put("updater_ly", "0");
 
         // OBS WebSocket connection
         defaults.put("host", "localhost");

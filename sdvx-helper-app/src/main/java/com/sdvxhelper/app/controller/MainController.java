@@ -1,10 +1,13 @@
-package com.sdvxhelper.ui.controller;
+package com.sdvxhelper.app.controller;
 
 import java.io.IOException;
 import java.net.URL;
+import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -31,8 +34,10 @@ import com.sdvxhelper.i18n.LocaleManager;
 import com.sdvxhelper.model.MusicInfo;
 import com.sdvxhelper.model.OnePlayData;
 import com.sdvxhelper.model.enums.DetectMode;
+import com.sdvxhelper.network.ObsWebSocketClient;
 import com.sdvxhelper.repository.MusicListRepository;
 import com.sdvxhelper.repository.PlayLogRepository;
+import com.sdvxhelper.repository.SettingsRepository;
 import com.sdvxhelper.service.SdvxLoggerService;
 import com.sdvxhelper.util.ScoreFormatter;
 import org.slf4j.Logger;
@@ -114,6 +119,8 @@ public class MainController implements Initializable {
     private final ObservableList<OnePlayData> sessionLogData = FXCollections.observableArrayList();
     private volatile boolean detectionRunning = false;
     private ExecutorService executor;
+    private ScheduledExecutorService obsReconnectScheduler;
+    private ObsWebSocketClient obsClient;
     private NativeKeyListener hotkeyListener;
 
     // -------------------------------------------------------------------------
@@ -122,7 +129,6 @@ public class MainController implements Initializable {
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
-        // Wire up table columns
         colLogTitle.setCellValueFactory(new PropertyValueFactory<>("title"));
         colLogDiff.setCellValueFactory(new PropertyValueFactory<>("difficulty"));
         colLogScore.setCellValueFactory(new PropertyValueFactory<>("curScore"));
@@ -131,12 +137,6 @@ public class MainController implements Initializable {
         tblSessionLog.setItems(sessionLogData);
         tblSessionLog.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
 
-        // F9 button label (no image, text only)
-        if (btnF9 != null) {
-            btnF9.setText("F9");
-        }
-
-        // Language combo
         cmbLanguage.setItems(LocaleManager.getInstance().getAvailableLocaleCodes());
         cmbLanguage.setValue(LocaleManager.getInstance().getCurrentCode());
         cmbLanguage.setOnAction(_ -> LocaleManager.getInstance().setLocale(cmbLanguage.getValue()));
@@ -149,7 +149,6 @@ public class MainController implements Initializable {
 
         registerHotkeys();
 
-        // Load repositories and services in background, then auto-start detection
         executor.submit(this::initialise);
     }
 
@@ -209,7 +208,6 @@ public class MainController implements Initializable {
     @FXML
     public void onSaveVolforce(ActionEvent event) {
         setStatus("F4: Save Volforce (TODO)");
-        // TODO: Implement Volforce saving (requires file I/O, user prompts, etc.)
         log.info("Save Volforce triggered");
     }
 
@@ -222,8 +220,6 @@ public class MainController implements Initializable {
     @FXML
     public void onSaveSummary(ActionEvent event) {
         setStatus("F5: Save Summary (TODO)");
-        // TODO: Implement summary image generation (requires JavaFX snapshot, image
-        // processing, file I/O, etc.)
         log.info("Save Summary triggered");
     }
 
@@ -236,8 +232,6 @@ public class MainController implements Initializable {
     @FXML
     public void onSaveResult(ActionEvent event) {
         setStatus("F6: Save Result (TODO)");
-        // TODO: Implement result screen capture (requires OBS API integration, image
-        // processing, file I/O, etc.)
         log.info("Save Result triggered");
     }
 
@@ -250,8 +244,6 @@ public class MainController implements Initializable {
     @FXML
     public void onImportScore(ActionEvent event) {
         setStatus("F7: Import Score (TODO)");
-        // TODO: Implement score importing (requires server API, parsing, UI elements,
-        // etc.)
         log.info("Import Score triggered");
     }
 
@@ -264,8 +256,6 @@ public class MainController implements Initializable {
     @FXML
     public void onUpdateRival(ActionEvent event) {
         setStatus("F8: Update Rival (TODO)");
-        // TODO: Implement rival score fetching and display (requires server API,
-        // parsing, UI elements, etc.)
         log.info("Update Rival triggered");
     }
 
@@ -278,8 +268,6 @@ public class MainController implements Initializable {
     @FXML
     public void onStartRta(ActionEvent event) {
         setStatus("F9: Start RTA Mode (TODO)");
-        // TODO: Implement RTA mode (auto-start detection on game launch, auto-stop on
-        // exit, session timer, etc.)
         log.info("Start RTA triggered");
     }
 
@@ -304,6 +292,9 @@ public class MainController implements Initializable {
             dlg.setTitle(bundle.getString("label.settings.title"));
             dlg.getDialogPane().setContent(root);
             dlg.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+            if (lblStatus != null && lblStatus.getScene() != null) {
+                dlg.initOwner(lblStatus.getScene().getWindow());
+            }
             dlg.showAndWait().filter(bt -> bt == ButtonType.OK)
                     .ifPresent(_ -> ((SettingsController) loader.getController()).save());
         } catch (IOException e) {
@@ -333,6 +324,9 @@ public class MainController implements Initializable {
             dlg.setTitle(bundle.getString("label.obs.control.title"));
             dlg.getDialogPane().setContent(root);
             dlg.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+            if (lblStatus != null && lblStatus.getScene() != null) {
+                dlg.initOwner(lblStatus.getScene().getWindow());
+            }
             dlg.showAndWait().filter(bt -> bt == ButtonType.OK)
                     .ifPresent(_ -> ((ObsControlController) loader.getController()).save());
         } catch (IOException e) {
@@ -354,14 +348,38 @@ public class MainController implements Initializable {
     }
 
     /**
-     * Placeholder for Webhooks integration (e.g. Discord bot updates).
+     * Opens the Webhooks configuration dialog.
      *
      * @param event
      *            action event from the Webhooks menu item
      */
     @FXML
     public void onWebhooks(ActionEvent event) {
-        setStatus("Webhooks (TODO)");
+        try {
+            URL fxmlUrl = getClass().getResource("/com/sdvxhelper/app/view/webhooks.fxml");
+            if (fxmlUrl == null) {
+                setStatus("webhooks.fxml not found");
+                return;
+            }
+            ResourceBundle bundle = LocaleManager.getInstance().getBundle();
+            FXMLLoader loader = new FXMLLoader(fxmlUrl, bundle);
+            Parent root = loader.load();
+            Dialog<ButtonType> dlg = new Dialog<>();
+            String title = bundle.containsKey("window.webhook.title")
+                    ? bundle.getString("window.webhook.title")
+                    : "Webhooks";
+            dlg.setTitle(title);
+            dlg.getDialogPane().setContent(root);
+            dlg.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+            if (lblStatus != null && lblStatus.getScene() != null) {
+                dlg.initOwner(lblStatus.getScene().getWindow());
+            }
+            dlg.showAndWait().filter(bt -> bt == ButtonType.OK)
+                    .ifPresent(_ -> ((WebhooksController) loader.getController()).save());
+        } catch (IOException e) {
+            log.error("Failed to open Webhooks dialog", e);
+            setStatus("Error opening Webhooks: " + e.getMessage());
+        }
     }
 
     /**
@@ -440,6 +458,14 @@ public class MainController implements Initializable {
         if (executor != null) {
             executor.shutdownNow();
         }
+        if (obsReconnectScheduler != null) {
+            obsReconnectScheduler.shutdownNow();
+            obsReconnectScheduler = null;
+        }
+        if (obsClient != null) {
+            obsClient.close();
+            obsClient = null;
+        }
         unregisterHotkeys();
     }
 
@@ -462,7 +488,63 @@ public class MainController implements Initializable {
             setStatus("Ready — " + loggerService.getPlayLog().getPlays().size() + " plays loaded");
             startDetection();
         });
+        startObsConnectRetry();
         log.info("Initialisation complete");
+    }
+
+    /**
+     * Starts the OBS auto-connect loop. Attempts to connect immediately, then
+     * silently retries every 5 seconds until a connection succeeds.
+     */
+    private void startObsConnectRetry() {
+        if (obsReconnectScheduler != null) {
+            return;
+        }
+        obsReconnectScheduler = Executors.newSingleThreadScheduledExecutor(r -> {
+            Thread t = new Thread(r, "obs-reconnect");
+            t.setDaemon(true);
+            return t;
+        });
+        obsReconnectScheduler.scheduleWithFixedDelay(this::tryConnectObs, 0, 5, TimeUnit.SECONDS);
+    }
+
+    private void tryConnectObs() {
+        if (obsClient != null && obsClient.isConnected()) {
+            return;
+        }
+        try {
+            Map<String, String> settings = new SettingsRepository().load();
+            String host = settings.getOrDefault("obs_host", "localhost");
+            int port = parseIntSafe(settings.get("obs_port"), 4455);
+            String pass = settings.getOrDefault("obs_password", "");
+            ObsWebSocketClient client = new ObsWebSocketClient(host, port, pass);
+            client.connect();
+            obsClient = client;
+            Platform.runLater(() -> {
+                if (lblObsStatus != null) {
+                    lblObsStatus.setText("OBS: connected");
+                }
+            });
+            log.info("OBS connected successfully");
+        } catch (IOException e) {
+            log.debug("OBS connect retry failed: {}", e.getMessage());
+            Platform.runLater(() -> {
+                if (lblObsStatus != null) {
+                    lblObsStatus.setText("OBS: disconnected");
+                }
+            });
+        }
+    }
+
+    private static int parseIntSafe(String s, int fallback) {
+        if (s == null || s.isBlank()) {
+            return fallback;
+        }
+        try {
+            return Integer.parseInt(s.trim());
+        } catch (NumberFormatException e) {
+            return fallback;
+        }
     }
 
     /**
@@ -503,7 +585,6 @@ public class MainController implements Initializable {
     private void runDetectionLoop() {
         log.info("Detection loop started");
         while (detectionRunning) {
-            // TODO: Capture OBS frame, run ImageAnalysisService, push plays
             try {
                 Thread.sleep(500);
             } catch (InterruptedException e) {
@@ -528,7 +609,7 @@ public class MainController implements Initializable {
 
     /**
      * Updates the status label with the given message. Should be called on the
-     * JavaFX
+     * JavaFX application thread.
      * 
      * @param msg
      *            status message to display

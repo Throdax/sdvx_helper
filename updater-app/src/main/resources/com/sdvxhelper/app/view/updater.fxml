@@ -6,7 +6,7 @@
 
 <BorderPane xmlns="http://javafx.com/javafx"
             xmlns:fx="http://javafx.com/fxml"
-            fx:controller="com.sdvxhelper.ui.controller.UpdaterController"
+            fx:controller="com.sdvxhelper.app.controller.UpdaterController"
             prefWidth="550" prefHeight="380">
 
     <top>

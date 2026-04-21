@@ -1,74 +1,146 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import java.lang.String?>
 <?import javafx.geometry.Insets?>
-<?import javafx.scene.control.*?>
-<?import javafx.scene.image.*?>
-<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ProgressBar?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.SplitPane?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
 
 <BorderPane xmlns="http://javafx.com/javafx"
             xmlns:fx="http://javafx.com/fxml"
-            fx:controller="com.sdvxhelper.ui.controller.OcrReporterController"
-            prefWidth="900" prefHeight="600">
+            fx:controller="com.sdvxhelper.app.controller.OcrReporterController"
+            prefWidth="1200" prefHeight="820">
 
     <top>
-        <VBox>
-            <HBox spacing="12" styleClass="toolbar-bar" alignment="CENTER_LEFT">
+        <VBox spacing="6">
+            <padding><Insets top="8" right="10" bottom="4" left="10"/></padding>
+
+            <HBox spacing="10" alignment="CENTER_LEFT">
+                <Label text="Language/言語"/>
+                <ComboBox fx:id="cmbLanguage" styleClass="lang-combo"/>
+                <Region HBox.hgrow="ALWAYS"/>
                 <Button text="%button.ocr.open.folder" fx:id="btnOpenFolder" onAction="#onOpenFolder"/>
-                <Button text="%button.ocr.prev"        fx:id="btnPrev"       onAction="#onPrev" disable="true"/>
-                <Button text="%button.ocr.next"        fx:id="btnNext"       onAction="#onNext" disable="true"/>
+                <Button text="%button.ocr.prev" fx:id="btnPrev" onAction="#onPrev" disable="true"/>
+                <Button text="%button.ocr.next" fx:id="btnNext" onAction="#onNext" disable="true"/>
                 <Label fx:id="lblImageCount" text="0 / 0" styleClass="muted"/>
                 <Region HBox.hgrow="ALWAYS"/>
-                <Label text="%label.language" styleClass="muted"/>
-                <ComboBox fx:id="cmbLanguage" styleClass="lang-combo"/>
+                <Label text="%text.registered" styleClass="muted"/>
+                <Label fx:id="lblRegistered" text="0" styleClass="muted"/>
+            </HBox>
+
+            <HBox spacing="8" alignment="CENTER_LEFT">
+                <Label text="%text.ocr.search"/>
+                <TextField fx:id="txtFilter" prefColumnCount="30"/>
+                <Button text="Clear" fx:id="btnClearFilter" onAction="#onClearFilter"/>
+            </HBox>
+
+            <HBox spacing="8" alignment="CENTER_LEFT">
+                <Label text="%text.ocr.title"/>
+                <TextField fx:id="txtOcrTitle" prefColumnCount="40" editable="false"/>
+                <Label text="%text.ocr.sha.jacket"/>
+                <TextField fx:id="txtShaJacket" prefColumnCount="40" editable="false"
+                           style="-fx-font-family: 'Courier New', monospace;"/>
+            </HBox>
+
+            <HBox spacing="8" alignment="CENTER_LEFT">
+                <Label text="%text.ocr.hash.jacket"/>
+                <TextField fx:id="txtHash" prefColumnCount="20" editable="false"
+                           style="-fx-font-family: 'Courier New', monospace;"/>
+                <Label text="%text.ocr.hash.info"/>
+                <TextField fx:id="txtHashInfo" prefColumnCount="20" editable="false"
+                           style="-fx-font-family: 'Courier New', monospace;"/>
+                <Label text="%text.difficulty"/>
+                <ComboBox fx:id="cmbDifficulty"/>
+            </HBox>
+
+            <HBox spacing="8" alignment="CENTER_LEFT">
+                <Button text="%button.resgister" fx:id="btnRegister" onAction="#onRegister"
+                        styleClass="button-success" disable="true"/>
+                <Button text="%button.ocr.skip" fx:id="btnSkip" onAction="#onSkip"/>
+                <Separator orientation="VERTICAL"/>
+                <Label text="difficulty (DB):"/>
+                <ComboBox fx:id="cmbDiffDb"/>
             </HBox>
         </VBox>
     </top>
 
     <center>
         <SplitPane dividerPositions="0.55">
-            <!-- Left: image preview -->
-            <VBox spacing="8">
-                <padding><Insets top="12" right="12" bottom="12" left="12"/></padding>
-                <Label text="%label.ocr.preview" styleClass="sub-heading"/>
-                <ImageView fx:id="imgPreview" fitWidth="480" fitHeight="360" preserveRatio="true"/>
-                <Label text="%label.ocr.detected.hash" styleClass="muted"/>
-                <TextField fx:id="txtHash" editable="false"/>
+            <!-- Left column: music table + file list -->
+            <VBox spacing="6">
+                <padding><Insets top="6" right="6" bottom="6" left="6"/></padding>
+
+                <Label fx:id="lblMusicLoading" text="" styleClass="muted"/>
+                <ProgressBar fx:id="progMusic" progress="0.0" prefWidth="9999"/>
+
+                <TableView fx:id="tblMusic" VBox.vgrow="ALWAYS">
+                    <columns>
+                        <TableColumn fx:id="colMusicTitle"  text="Title"  prefWidth="260"/>
+                        <TableColumn fx:id="colMusicArtist" text="Artist" prefWidth="200"/>
+                        <TableColumn fx:id="colMusicBpm"    text="BPM"    prefWidth="70"/>
+                        <TableColumn fx:id="colMusicLv"     text="Lv"     prefWidth="60"/>
+                    </columns>
+                </TableView>
+
+                <Separator/>
+
+                <Label fx:id="lblFilesLoading" text="Saved Files" styleClass="muted"/>
+                <ProgressBar fx:id="progFiles" progress="0.0" prefWidth="9999"/>
+
+                <TableView fx:id="tblFiles" VBox.vgrow="ALWAYS">
+                    <columns>
+                        <TableColumn fx:id="colFileName" text="Saved Files" prefWidth="540"/>
+                    </columns>
+                </TableView>
             </VBox>
 
-            <!-- Right: song matching and registration -->
-            <VBox spacing="8">
-                <padding><Insets top="12" right="12" bottom="12" left="12"/></padding>
-                <Label text="OCR / Song Match" styleClass="sub-heading"/>
-                <Label text="%label.ocr.ocr.title" styleClass="muted"/>
-                <TextField fx:id="txtOcrTitle"/>
-                <Label text="%label.ocr.song.title" styleClass="muted"/>
-                <TextField fx:id="txtTitle"/>
-                <Label text="%label.ocr.difficulty" styleClass="muted"/>
-                <ComboBox fx:id="cmbDifficulty">
-                    <items>
-                        <javafx.collections.FXCollections fx:factory="observableArrayList">
-                            <String fx:value="nov"/>
-                            <String fx:value="adv"/>
-                            <String fx:value="exh"/>
-                            <String fx:value="mxm"/>
-                            <String fx:value="inf"/>
-                            <String fx:value="grv"/>
-                            <String fx:value="hvn"/>
-                            <String fx:value="vvd"/>
-                            <String fx:value="xcd"/>
-                        </javafx.collections.FXCollections>
-                    </items>
-                </ComboBox>
+            <!-- Right column: hash DB + jacket preview + info -->
+            <VBox spacing="6">
+                <padding><Insets top="6" right="6" bottom="6" left="6"/></padding>
+
+                <TableView fx:id="tblHashDb" VBox.vgrow="ALWAYS">
+                    <columns>
+                        <TableColumn fx:id="colHashTitle" text="Title" prefWidth="280"/>
+                        <TableColumn fx:id="colHashValue" text="Hash"  prefWidth="220"/>
+                    </columns>
+                </TableView>
+
                 <Separator/>
-                <Button text="%button.ocr.register" fx:id="btnRegister" onAction="#onRegister"
-                        styleClass="button-success"/>
-                <Button text="%button.ocr.skip" fx:id="btnSkip" onAction="#onSkip"/>
+
+                <HBox spacing="10" alignment="TOP_LEFT">
+                    <ImageView fx:id="imgJacket" fitWidth="160" fitHeight="160" preserveRatio="true"/>
+                    <VBox spacing="4" HBox.hgrow="ALWAYS">
+                        <ImageView fx:id="imgDifficulty" fitWidth="260" fitHeight="60" preserveRatio="true"/>
+                        <ImageView fx:id="imgInfo"       fitWidth="520" fitHeight="80" preserveRatio="true"/>
+                        <ImageView fx:id="imgPreview"    fitWidth="520" fitHeight="300" preserveRatio="true"/>
+                    </VBox>
+                </HBox>
+
                 <Separator/>
+
                 <Label text="%label.ocr.log" styleClass="muted"/>
-                <TextArea fx:id="txtLog" prefRowCount="8" editable="false"
+                <TextArea fx:id="txtLog" prefRowCount="6" editable="false"
                           style="-fx-font-family: monospace;"/>
             </VBox>
         </SplitPane>
     </center>
+
+    <bottom>
+        <HBox spacing="10" alignment="CENTER_LEFT">
+            <padding><Insets top="6" right="10" bottom="6" left="10"/></padding>
+            <Label fx:id="lblState" text="" style="-fx-text-fill: #c8102e;"/>
+            <TextField fx:id="txtTitle" prefColumnCount="50" promptText="%label.ocr.song.title"/>
+        </HBox>
+    </bottom>
 </BorderPane>

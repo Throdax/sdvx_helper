@@ -337,6 +337,7 @@
                         <type>APP_IMAGE</type>
                         <destination>${project.build.directory}/jpackage</destination>
                         <input>${project.build.directory}</input>
+                        <icon>${project.basedir}/../sdvx-helper-core/src/main/resources/icon.ico</icon>
                     </configuration>
                 </plugin>
             </plugins>

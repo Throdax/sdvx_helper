@@ -12,6 +12,8 @@ import javafx.stage.Stage;
 
 import com.sdvxhelper.i18n.LocaleManager;
 import com.sdvxhelper.repository.SettingsRepository;
+import com.sdvxhelper.ui.WindowPositionHelper;
+import com.sdvxhelper.util.VersionUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,7 +47,8 @@ public class PlayLogSyncApp extends Application {
     @Override
     public void start(Stage stage) throws IOException {
         this.primaryStage = stage;
-        LocaleManager.getInstance().init(new SettingsRepository());
+        SettingsRepository repo = new SettingsRepository();
+        LocaleManager.getInstance().init(repo);
         LocaleManager.getInstance().localeProperty()
                 .addListener((obs, oldLocale, newLocale) -> Platform.runLater(() -> {
                     try {
@@ -55,7 +58,8 @@ public class PlayLogSyncApp extends Application {
                     }
                 }));
         buildScene(LocaleManager.getInstance().getCurrentLocale());
-        stage.setTitle("SDVX Play Log Sync");
+        stage.setTitle("SDVX Play Log Sync " + VersionUtil.getVersion("sync"));
+        WindowPositionHelper.applyAndPersist(stage, repo, "sync_lx", "sync_ly");
         stage.show();
         log.info("Play Log Sync UI displayed");
     }

@@ -1,4 +1,4 @@
-package com.sdvxhelper.ui.controller;
+package com.sdvxhelper.app.controller;
 
 import java.net.URL;
 import java.util.ResourceBundle;
@@ -133,13 +133,14 @@ public class UpdaterController implements Initializable {
      */
     @FXML
     public void onUpdate(ActionEvent event) {
-        if (latestVersion == null)
+        if (latestVersion == null) {
             return;
+        }
         btnUpdate.setDisable(true);
         progressBar.setProgress(ProgressBar.INDETERMINATE_PROGRESS);
         lblProgress.setText("Downloading " + latestVersion + "…");
         log.info("Starting update download for version {}", latestVersion);
-        // TODO: Implement download and extraction of the GitHub release ZIP
+        // Download implementation to be provided by a separate TODO task.
         lblProgress.setText("Download complete – please restart the application.");
         progressBar.setProgress(1.0);
     }

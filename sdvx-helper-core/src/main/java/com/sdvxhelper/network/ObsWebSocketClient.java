@@ -4,7 +4,9 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Base64;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -16,11 +18,17 @@ import com.google.gson.JsonObject;
 import io.obswebsocket.community.client.OBSRemoteController;
 import io.obswebsocket.community.client.message.request.inputs.SetInputSettingsRequest;
 import io.obswebsocket.community.client.message.request.sceneitems.GetSceneItemIdRequest;
+import io.obswebsocket.community.client.message.request.sceneitems.GetSceneItemListRequest;
 import io.obswebsocket.community.client.message.request.sceneitems.SetSceneItemEnabledRequest;
+import io.obswebsocket.community.client.message.request.scenes.GetSceneListRequest;
 import io.obswebsocket.community.client.message.request.scenes.SetCurrentProgramSceneRequest;
 import io.obswebsocket.community.client.message.request.sources.GetSourceScreenshotRequest;
 import io.obswebsocket.community.client.message.response.sceneitems.GetSceneItemIdResponse;
+import io.obswebsocket.community.client.message.response.sceneitems.GetSceneItemListResponse;
+import io.obswebsocket.community.client.message.response.scenes.GetSceneListResponse;
 import io.obswebsocket.community.client.message.response.sources.GetSourceScreenshotResponse;
+import io.obswebsocket.community.client.model.Scene;
+import io.obswebsocket.community.client.model.SceneItem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -146,6 +154,65 @@ public class ObsWebSocketClient implements Closeable {
             controller.stop();
             connected = false;
         }
+    }
+
+    // -------------------------------------------------------------------------
+    // Scene / source discovery
+    // -------------------------------------------------------------------------
+
+    /**
+     * Retrieves all scene names currently defined in the connected OBS instance.
+     *
+     * @return list of scene names (never {@code null})
+     * @throws IOException
+     *             if the OBS request fails
+     */
+    public List<String> getSceneNames() throws IOException {
+        requireConnected();
+        CompletableFuture<GetSceneListResponse> future = new CompletableFuture<>();
+        controller.sendRequest(GetSceneListRequest.builder().build(),
+                (GetSceneListResponse resp) -> future.complete(resp));
+        GetSceneListResponse resp = await(future, "GetSceneList");
+        if (!resp.isSuccessful()) {
+            throw new IOException("OBS GetSceneList failed: " + resp.getMessageData().getRequestStatus().getComment());
+        }
+        List<String> names = new ArrayList<>();
+        List<Scene> scenes = resp.getScenes();
+        if (scenes != null) {
+            for (Scene s : scenes) {
+                names.add(s.getSceneName());
+            }
+        }
+        return names;
+    }
+
+    /**
+     * Retrieves all source names (scene items) for the given scene.
+     *
+     * @param sceneName
+     *            the OBS scene whose sources should be listed
+     * @return list of source names (never {@code null})
+     * @throws IOException
+     *             if the OBS request fails
+     */
+    public List<String> getSourceNames(String sceneName) throws IOException {
+        requireConnected();
+        CompletableFuture<GetSceneItemListResponse> future = new CompletableFuture<>();
+        controller.sendRequest(GetSceneItemListRequest.builder().sceneName(sceneName).build(),
+                (GetSceneItemListResponse resp) -> future.complete(resp));
+        GetSceneItemListResponse resp = await(future, "GetSceneItemList");
+        if (!resp.isSuccessful()) {
+            throw new IOException("OBS GetSceneItemList failed for scene '" + sceneName + "': "
+                    + resp.getMessageData().getRequestStatus().getComment());
+        }
+        List<String> names = new ArrayList<>();
+        List<SceneItem> items = resp.getSceneItems();
+        if (items != null) {
+            for (SceneItem si : items) {
+                names.add(si.getSourceName());
+            }
+        }
+        return names;
     }
 
     // -------------------------------------------------------------------------

@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.TitledPane?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.FlowPane?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Priority?>
+<?import javafx.scene.layout.VBox?>
+
+<ScrollPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.sdvxhelper.app.controller.WebhooksController"
+            fitToWidth="true" prefWidth="760" prefHeight="620">
+
+    <VBox spacing="10">
+        <padding><Insets top="12" right="12" bottom="12" left="12"/></padding>
+
+        <!-- Player name -->
+        <HBox spacing="8" alignment="CENTER_LEFT">
+            <Label text="%text.webhook.playername" styleClass="muted"/>
+            <TextField fx:id="txtPlayerName" prefColumnCount="30" HBox.hgrow="ALWAYS"/>
+        </HBox>
+
+        <Separator/>
+
+        <!-- Webhook list + Add/Delete -->
+        <HBox spacing="10">
+            <VBox spacing="6" HBox.hgrow="ALWAYS">
+                <Label text="Webhooks" styleClass="sub-heading"/>
+                <ListView fx:id="lstWebhooks" prefHeight="140"/>
+            </VBox>
+            <VBox spacing="6" alignment="TOP_CENTER">
+                <Button fx:id="btnAdd"    text="%button.webhook.add"    onAction="#onAdd"    styleClass="button-success"/>
+                <Button fx:id="btnDelete" text="%button.webhook.delete" onAction="#onDelete" styleClass="button-danger"/>
+            </VBox>
+        </HBox>
+
+        <!-- Name / URL -->
+        <GridPane hgap="12" vgap="6">
+            <columnConstraints>
+                <ColumnConstraints minWidth="140"/>
+                <ColumnConstraints hgrow="ALWAYS"/>
+            </columnConstraints>
+
+            <Label text="%text.webhook.settings.name" GridPane.columnIndex="0" GridPane.rowIndex="0" styleClass="muted"/>
+            <TextField fx:id="txtName"               GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+
+            <Label text="%text.webhook.url"          GridPane.columnIndex="0" GridPane.rowIndex="1" styleClass="muted"/>
+            <TextField fx:id="txtUrl"                GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+        </GridPane>
+
+        <HBox spacing="20" alignment="CENTER_LEFT">
+            <CheckBox fx:id="chkSendImages"   text="%checkbox.webhook.send.images"/>
+            <CheckBox fx:id="chkSendPlaylist" text="%text.weebhook.send.playlist"/>
+        </HBox>
+
+        <!-- Target level -->
+        <TitledPane text="%text.webhook.target.level" collapsible="true" expanded="true">
+            <VBox spacing="6">
+                <padding><Insets top="8" right="8" bottom="8" left="8"/></padding>
+                <CheckBox fx:id="chkLevelAll" text="all"/>
+                <FlowPane fx:id="paneLevels" hgap="8" vgap="4"/>
+            </VBox>
+        </TitledPane>
+
+        <!-- Target lamp -->
+        <TitledPane text="%text.webhook.target.lamp" collapsible="true" expanded="true">
+            <FlowPane hgap="10" vgap="6">
+                <padding><Insets top="8" right="8" bottom="8" left="8"/></padding>
+                <CheckBox fx:id="chkLampAll"    text="all"/>
+                <CheckBox fx:id="chkLampPuc"    text="PUC"/>
+                <CheckBox fx:id="chkLampUc"     text="UC"/>
+                <CheckBox fx:id="chkLampExh"    text="MAXXIVE"/>
+                <CheckBox fx:id="chkLampHard"   text="EXC"/>
+                <CheckBox fx:id="chkLampClear"  text="COMP"/>
+                <CheckBox fx:id="chkLampFailed" text="Failed"/>
+            </FlowPane>
+        </TitledPane>
+
+    </VBox>
+</ScrollPane>

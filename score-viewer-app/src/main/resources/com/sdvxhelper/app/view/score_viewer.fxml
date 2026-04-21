@@ -1,17 +1,29 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.scene.control.*?>
-<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.SplitPane?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
 
 <BorderPane xmlns="http://javafx.com/javafx"
             xmlns:fx="http://javafx.com/fxml"
-            fx:controller="com.sdvxhelper.ui.controller.ScoreViewerController"
-            prefWidth="1200" prefHeight="700">
+            fx:controller="com.sdvxhelper.app.controller.ScoreViewerController"
+            prefWidth="1280" prefHeight="760">
 
     <top>
         <HBox spacing="12" styleClass="toolbar-bar" alignment="CENTER_LEFT">
+            <padding><Insets top="8" right="10" bottom="8" left="10"/></padding>
             <Label text="%label.score.filter" styleClass="muted"/>
-            <TextField fx:id="txtFilter" promptText="%text.score.search" prefWidth="200"/>
+            <TextField fx:id="txtFilter" promptText="%text.score.search" prefWidth="220"/>
             <Label text="%label.score.level" styleClass="muted"/>
             <ComboBox fx:id="cmbLevel" promptText="All"/>
             <Label text="%label.score.lamp" styleClass="muted"/>
@@ -24,22 +36,35 @@
     </top>
 
     <center>
-        <TableView fx:id="tblScores">
-            <columns>
-                <TableColumn fx:id="colTitle"  text="%table.header.title"      prefWidth="280"/>
-                <TableColumn fx:id="colDiff"   text="%table.header.difficulty" prefWidth="90"/>
-                <TableColumn fx:id="colLevel"  text="%table.header.level"      prefWidth="60"/>
-                <TableColumn fx:id="colScore"  text="%table.header.score"      prefWidth="100"/>
-                <TableColumn fx:id="colLamp"   text="%table.header.lamp"       prefWidth="70"/>
-                <TableColumn fx:id="colVf"     text="%table.header.volforce"   prefWidth="70"/>
-                <TableColumn fx:id="colDate"   text="%table.header.lastPlayed" prefWidth="120"/>
-                <TableColumn fx:id="colSTier"  text="%table.header.tier"       prefWidth="70"/>
-            </columns>
-        </TableView>
+        <SplitPane dividerPositions="0.65" orientation="HORIZONTAL">
+            <TableView fx:id="tblScores">
+                <columns>
+                    <TableColumn fx:id="colTitle"  text="%table.header.title"      prefWidth="280"/>
+                    <TableColumn fx:id="colDiff"   text="%table.header.difficulty" prefWidth="90"/>
+                    <TableColumn fx:id="colLevel"  text="%table.header.level"      prefWidth="60"/>
+                    <TableColumn fx:id="colScore"  text="%table.header.score"      prefWidth="100"/>
+                    <TableColumn fx:id="colLamp"   text="%table.header.lamp"       prefWidth="80"/>
+                    <TableColumn fx:id="colVf"     text="%table.header.volforce"   prefWidth="80"/>
+                    <TableColumn fx:id="colDate"   text="%table.header.lastPlayed" prefWidth="140"/>
+                    <TableColumn fx:id="colSTier"  text="%table.header.tier"       prefWidth="70"/>
+                </columns>
+            </TableView>
+
+            <VBox spacing="6">
+                <padding><Insets top="6" right="6" bottom="6" left="6"/></padding>
+                <Label text="%label.score.plays" styleClass="sub-heading"/>
+                <ListView fx:id="lstPlays" VBox.vgrow="ALWAYS"/>
+                <HBox spacing="8" alignment="CENTER_RIGHT">
+                    <Button fx:id="btnDelete" text="%button.score.delete" onAction="#onDelete"
+                            styleClass="button-danger" disable="true"/>
+                </HBox>
+            </VBox>
+        </SplitPane>
     </center>
 
     <bottom>
         <HBox styleClass="toolbar-bar">
+            <padding><Insets top="6" right="10" bottom="6" left="10"/></padding>
             <Label fx:id="lblCount" text="0 charts" styleClass="status-label"/>
         </HBox>
     </bottom>

@@ -1,17 +1,27 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.geometry.Insets?>
-<?import javafx.scene.control.*?>
-<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.Tab?>
+<?import javafx.scene.control.TabPane?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Priority?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
 
 <VBox xmlns="http://javafx.com/javafx"
       xmlns:fx="http://javafx.com/fxml"
-      fx:controller="com.sdvxhelper.ui.controller.ObsControlController"
-      prefWidth="560" prefHeight="460" spacing="8">
+      fx:controller="com.sdvxhelper.app.controller.ObsControlController"
+      prefWidth="720" prefHeight="560" spacing="8">
 
     <padding><Insets top="12" right="12" bottom="12" left="12"/></padding>
 
-    <!-- Connection status -->
     <HBox spacing="12" alignment="CENTER_LEFT">
         <Label text="%label.obs.control.status" styleClass="muted"/>
         <Label fx:id="lblConnStatus" text="%label.obs.control.disconnected" styleClass="obs-disconnected"/>
@@ -22,76 +32,100 @@
 
     <Separator/>
 
-    <!-- Per-state scene/source tabs -->
     <TabPane tabClosingPolicy="UNAVAILABLE" VBox.vgrow="ALWAYS">
 
         <Tab text="%label.obs.boot">
             <GridPane hgap="12" vgap="8">
-                <padding><Insets top="8" right="8" bottom="8" left="8"/></padding>
+                <padding><Insets top="10" right="10" bottom="10" left="10"/></padding>
+                <columnConstraints>
+                    <ColumnConstraints minWidth="140"/>
+                    <ColumnConstraints hgrow="ALWAYS"/>
+                </columnConstraints>
+
                 <Label text="%label.obs.scene"   GridPane.columnIndex="0" GridPane.rowIndex="0" styleClass="muted"/>
-                <TextField fx:id="txtBootScene"  GridPane.columnIndex="1" GridPane.rowIndex="0" GridPane.hgrow="ALWAYS"/>
+                <ComboBox fx:id="cmbBootScene"   GridPane.columnIndex="1" GridPane.rowIndex="0" maxWidth="Infinity"/>
+
                 <Label text="%label.obs.enable"  GridPane.columnIndex="0" GridPane.rowIndex="1" styleClass="muted"/>
-                <TextField fx:id="txtBootEnable" GridPane.columnIndex="1" GridPane.rowIndex="1" GridPane.hgrow="ALWAYS"
-                           promptText="source1, source2"/>
+                <ListView fx:id="lstBootEnable"  GridPane.columnIndex="1" GridPane.rowIndex="1" prefHeight="140"/>
+
                 <Label text="%label.obs.disable" GridPane.columnIndex="0" GridPane.rowIndex="2" styleClass="muted"/>
-                <TextField fx:id="txtBootDisable" GridPane.columnIndex="1" GridPane.rowIndex="2" GridPane.hgrow="ALWAYS"
-                           promptText="source1, source2"/>
+                <ListView fx:id="lstBootDisable" GridPane.columnIndex="1" GridPane.rowIndex="2" prefHeight="140"/>
             </GridPane>
         </Tab>
 
         <Tab text="%label.obs.select">
             <GridPane hgap="12" vgap="8">
-                <padding><Insets top="8" right="8" bottom="8" left="8"/></padding>
+                <padding><Insets top="10" right="10" bottom="10" left="10"/></padding>
+                <columnConstraints>
+                    <ColumnConstraints minWidth="140"/>
+                    <ColumnConstraints hgrow="ALWAYS"/>
+                </columnConstraints>
+
                 <Label text="%label.obs.scene"     GridPane.columnIndex="0" GridPane.rowIndex="0" styleClass="muted"/>
-                <TextField fx:id="txtSelectScene"  GridPane.columnIndex="1" GridPane.rowIndex="0" GridPane.hgrow="ALWAYS"/>
+                <ComboBox fx:id="cmbSelectScene"   GridPane.columnIndex="1" GridPane.rowIndex="0" maxWidth="Infinity"/>
+
                 <Label text="%label.obs.enable"    GridPane.columnIndex="0" GridPane.rowIndex="1" styleClass="muted"/>
-                <TextField fx:id="txtSelectEnable" GridPane.columnIndex="1" GridPane.rowIndex="1" GridPane.hgrow="ALWAYS"
-                           promptText="source1, source2"/>
+                <ListView fx:id="lstSelectEnable"  GridPane.columnIndex="1" GridPane.rowIndex="1" prefHeight="140"/>
+
                 <Label text="%label.obs.disable"   GridPane.columnIndex="0" GridPane.rowIndex="2" styleClass="muted"/>
-                <TextField fx:id="txtSelectDisable" GridPane.columnIndex="1" GridPane.rowIndex="2" GridPane.hgrow="ALWAYS"
-                           promptText="source1, source2"/>
+                <ListView fx:id="lstSelectDisable" GridPane.columnIndex="1" GridPane.rowIndex="2" prefHeight="140"/>
             </GridPane>
         </Tab>
 
         <Tab text="%label.obs.play">
             <GridPane hgap="12" vgap="8">
-                <padding><Insets top="8" right="8" bottom="8" left="8"/></padding>
+                <padding><Insets top="10" right="10" bottom="10" left="10"/></padding>
+                <columnConstraints>
+                    <ColumnConstraints minWidth="140"/>
+                    <ColumnConstraints hgrow="ALWAYS"/>
+                </columnConstraints>
+
                 <Label text="%label.obs.scene"   GridPane.columnIndex="0" GridPane.rowIndex="0" styleClass="muted"/>
-                <TextField fx:id="txtPlayScene"  GridPane.columnIndex="1" GridPane.rowIndex="0" GridPane.hgrow="ALWAYS"/>
+                <ComboBox fx:id="cmbPlayScene"   GridPane.columnIndex="1" GridPane.rowIndex="0" maxWidth="Infinity"/>
+
                 <Label text="%label.obs.enable"  GridPane.columnIndex="0" GridPane.rowIndex="1" styleClass="muted"/>
-                <TextField fx:id="txtPlayEnable" GridPane.columnIndex="1" GridPane.rowIndex="1" GridPane.hgrow="ALWAYS"
-                           promptText="source1, source2"/>
+                <ListView fx:id="lstPlayEnable"  GridPane.columnIndex="1" GridPane.rowIndex="1" prefHeight="140"/>
+
                 <Label text="%label.obs.disable" GridPane.columnIndex="0" GridPane.rowIndex="2" styleClass="muted"/>
-                <TextField fx:id="txtPlayDisable" GridPane.columnIndex="1" GridPane.rowIndex="2" GridPane.hgrow="ALWAYS"
-                           promptText="source1, source2"/>
+                <ListView fx:id="lstPlayDisable" GridPane.columnIndex="1" GridPane.rowIndex="2" prefHeight="140"/>
             </GridPane>
         </Tab>
 
         <Tab text="%label.obs.result">
             <GridPane hgap="12" vgap="8">
-                <padding><Insets top="8" right="8" bottom="8" left="8"/></padding>
+                <padding><Insets top="10" right="10" bottom="10" left="10"/></padding>
+                <columnConstraints>
+                    <ColumnConstraints minWidth="140"/>
+                    <ColumnConstraints hgrow="ALWAYS"/>
+                </columnConstraints>
+
                 <Label text="%label.obs.scene"     GridPane.columnIndex="0" GridPane.rowIndex="0" styleClass="muted"/>
-                <TextField fx:id="txtResultScene"  GridPane.columnIndex="1" GridPane.rowIndex="0" GridPane.hgrow="ALWAYS"/>
+                <ComboBox fx:id="cmbResultScene"   GridPane.columnIndex="1" GridPane.rowIndex="0" maxWidth="Infinity"/>
+
                 <Label text="%label.obs.enable"    GridPane.columnIndex="0" GridPane.rowIndex="1" styleClass="muted"/>
-                <TextField fx:id="txtResultEnable" GridPane.columnIndex="1" GridPane.rowIndex="1" GridPane.hgrow="ALWAYS"
-                           promptText="source1, source2"/>
+                <ListView fx:id="lstResultEnable"  GridPane.columnIndex="1" GridPane.rowIndex="1" prefHeight="140"/>
+
                 <Label text="%label.obs.disable"   GridPane.columnIndex="0" GridPane.rowIndex="2" styleClass="muted"/>
-                <TextField fx:id="txtResultDisable" GridPane.columnIndex="1" GridPane.rowIndex="2" GridPane.hgrow="ALWAYS"
-                           promptText="source1, source2"/>
+                <ListView fx:id="lstResultDisable" GridPane.columnIndex="1" GridPane.rowIndex="2" prefHeight="140"/>
             </GridPane>
         </Tab>
 
         <Tab text="%label.obs.quit">
             <GridPane hgap="12" vgap="8">
-                <padding><Insets top="8" right="8" bottom="8" left="8"/></padding>
+                <padding><Insets top="10" right="10" bottom="10" left="10"/></padding>
+                <columnConstraints>
+                    <ColumnConstraints minWidth="140"/>
+                    <ColumnConstraints hgrow="ALWAYS"/>
+                </columnConstraints>
+
                 <Label text="%label.obs.scene"   GridPane.columnIndex="0" GridPane.rowIndex="0" styleClass="muted"/>
-                <TextField fx:id="txtQuitScene"  GridPane.columnIndex="1" GridPane.rowIndex="0" GridPane.hgrow="ALWAYS"/>
+                <ComboBox fx:id="cmbQuitScene"   GridPane.columnIndex="1" GridPane.rowIndex="0" maxWidth="Infinity"/>
+
                 <Label text="%label.obs.enable"  GridPane.columnIndex="0" GridPane.rowIndex="1" styleClass="muted"/>
-                <TextField fx:id="txtQuitEnable" GridPane.columnIndex="1" GridPane.rowIndex="1" GridPane.hgrow="ALWAYS"
-                           promptText="source1, source2"/>
+                <ListView fx:id="lstQuitEnable"  GridPane.columnIndex="1" GridPane.rowIndex="1" prefHeight="140"/>
+
                 <Label text="%label.obs.disable" GridPane.columnIndex="0" GridPane.rowIndex="2" styleClass="muted"/>
-                <TextField fx:id="txtQuitDisable" GridPane.columnIndex="1" GridPane.rowIndex="2" GridPane.hgrow="ALWAYS"
-                           promptText="source1, source2"/>
+                <ListView fx:id="lstQuitDisable" GridPane.columnIndex="1" GridPane.rowIndex="2" prefHeight="140"/>
             </GridPane>
         </Tab>
     </TabPane>

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+    <Properties>
+        <!-- Per-app log file name, set via -Dapp.log.name=<name> in each Launcher. -->
+        <Property name="appName">${sys:app.log.name:-sdvx_helper}</Property>
+        <Property name="logDir">log</Property>
+        <Property name="pattern">%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n</Property>
+    </Properties>
+
+    <Appenders>
+        <Console name="Console" target="SYSTEM_OUT">
+            <PatternLayout pattern="${pattern}"/>
+        </Console>
+
+        <RollingFile name="RollingFile"
+                     fileName="${logDir}/${appName}.log"
+                     filePattern="${logDir}/${appName}-%d{yyyy-MM-dd}.log.gz">
+            <PatternLayout pattern="${pattern}"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+            </Policies>
+            <DefaultRolloverStrategy>
+                <Delete basePath="${logDir}" maxDepth="1">
+                    <IfFileName glob="${appName}-*.log.gz"/>
+                    <IfLastModified age="7d"/>
+                </Delete>
+            </DefaultRolloverStrategy>
+        </RollingFile>
+    </Appenders>
+
+    <Loggers>
+        <Logger name="com.sdvxhelper" level="INFO" additivity="false">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="RollingFile"/>
+        </Logger>
+
+        <Root level="INFO">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="RollingFile"/>
+        </Root>
+    </Loggers>
+</Configuration>

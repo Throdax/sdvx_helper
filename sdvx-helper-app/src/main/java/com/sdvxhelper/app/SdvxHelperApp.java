@@ -10,9 +10,11 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 
+import com.sdvxhelper.app.controller.MainController;
 import com.sdvxhelper.i18n.LocaleManager;
 import com.sdvxhelper.repository.SettingsRepository;
-import com.sdvxhelper.ui.controller.MainController;
+import com.sdvxhelper.ui.WindowPositionHelper;
+import com.sdvxhelper.util.VersionUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,7 +49,8 @@ public class SdvxHelperApp extends Application {
     @Override
     public void start(Stage stage) throws IOException {
         this.primaryStage = stage;
-        LocaleManager.getInstance().init(new SettingsRepository());
+        SettingsRepository repo = new SettingsRepository();
+        LocaleManager.getInstance().init(repo);
         LocaleManager.getInstance().localeProperty()
                 .addListener((obs, oldLocale, newLocale) -> Platform.runLater(() -> {
                     try {
@@ -57,7 +60,8 @@ public class SdvxHelperApp extends Application {
                     }
                 }));
         buildScene(LocaleManager.getInstance().getCurrentLocale());
-        stage.setTitle("SDVX Helper");
+        stage.setTitle("SDVX Helper " + VersionUtil.getVersion("helper"));
+        WindowPositionHelper.applyAndPersist(stage, repo, "lx", "ly");
         stage.show();
         log.info("SDVX Helper UI displayed");
     }

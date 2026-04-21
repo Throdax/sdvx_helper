@@ -1,8 +1,10 @@
-package com.sdvxhelper.ui.controller;
+package com.sdvxhelper.app.controller;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.nio.file.Path;
+import java.util.Map;
 import java.util.ResourceBundle;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -24,6 +26,7 @@ import com.sdvxhelper.i18n.LocaleManager;
 import com.sdvxhelper.model.OnePlayData;
 import com.sdvxhelper.model.PlayLog;
 import com.sdvxhelper.repository.PlayLogRepository;
+import com.sdvxhelper.repository.SettingsRepository;
 import com.sdvxhelper.service.XmlExportService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -77,6 +80,8 @@ public class PlayLogSyncController implements Initializable {
 
     private final ObservableList<OnePlayData> plays = FXCollections.observableArrayList();
     private PlayLog currentPlayLog;
+    private final SettingsRepository settingsRepo = new SettingsRepository();
+    private Map<String, String> settings;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -91,34 +96,87 @@ public class PlayLogSyncController implements Initializable {
         cmbLanguage.setItems(LocaleManager.getInstance().getAvailableLocaleCodes());
         cmbLanguage.setValue(LocaleManager.getInstance().getCurrentCode());
         cmbLanguage.setOnAction(_ -> LocaleManager.getInstance().setLocale(cmbLanguage.getValue()));
+
+        settings = settingsRepo.load();
+        prefillFields();
     }
 
+    private void prefillFields() {
+        String savedLog = settings.get("play_log_sync.play_log_path");
+        if (savedLog == null || savedLog.isBlank()) {
+            savedLog = Path.of(System.getProperty("user.dir"), "alllog.xml").toAbsolutePath().toString();
+        }
+        txtPlayLogPath.setText(savedLog);
+
+        String autosaveDir = settings.get("autosave_dir");
+        txtResultsFolder.setText(autosaveDir == null ? "" : autosaveDir);
+
+        String savedOut = settings.get("play_log_sync.output_folder");
+        if (savedOut == null || savedOut.isBlank()) {
+            savedOut = System.getProperty("user.dir");
+        }
+        txtOutputFolder.setText(savedOut);
+    }
+
+    private void persistFields() {
+        settings.put("play_log_sync.play_log_path", txtPlayLogPath.getText().trim());
+        settings.put("play_log_sync.output_folder", txtOutputFolder.getText().trim());
+        try {
+            settingsRepo.save(settings);
+        } catch (IOException e) {
+            log.warn("Failed to persist play log sync settings: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Opens a file chooser to select the play log XML file.
+     *
+     * @param event
+     *            action event
+     */
     @FXML
     public void onBrowsePlayLog(ActionEvent event) {
         FileChooser fc = new FileChooser();
         fc.setTitle("Select alllog.xml");
         fc.getExtensionFilters().add(new FileChooser.ExtensionFilter("XML Files", "*.xml"));
         File f = fc.showOpenDialog(btnSync.getScene().getWindow());
-        if (f != null)
+        if (f != null) {
             txtPlayLogPath.setText(f.getAbsolutePath());
+            persistFields();
+        }
     }
 
+    /**
+     * Opens a directory chooser to select the results screenshot folder.
+     *
+     * @param event
+     *            action event
+     */
     @FXML
     public void onBrowseResults(ActionEvent event) {
         DirectoryChooser dc = new DirectoryChooser();
         dc.setTitle("Select Results Screenshot Folder");
         File d = dc.showDialog(btnSync.getScene().getWindow());
-        if (d != null)
+        if (d != null) {
             txtResultsFolder.setText(d.getAbsolutePath());
+        }
     }
 
+    /**
+     * Opens a directory chooser to select the output folder for generated XML.
+     *
+     * @param event
+     *            action event
+     */
     @FXML
     public void onBrowseOutput(ActionEvent event) {
         DirectoryChooser dc = new DirectoryChooser();
         dc.setTitle("Select Output Folder");
         File d = dc.showDialog(btnSync.getScene().getWindow());
-        if (d != null)
+        if (d != null) {
             txtOutputFolder.setText(d.getAbsolutePath());
+            persistFields();
+        }
     }
 
     /**
