@@ -47,6 +47,7 @@
                 <configuration>
                     <name>${configuration-finalName}</name>
                     <mainJar>${configuration-finalName}.jar</mainJar>
+                    <appVersion>${manager}</appVersion>
                 </configuration>
             </plugin>
             <plugin>
