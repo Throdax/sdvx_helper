@@ -30,11 +30,6 @@
                 <Label text="Language/言語"/>
                 <ComboBox fx:id="cmbLanguage" styleClass="lang-combo"/>
                 <Region HBox.hgrow="ALWAYS"/>
-                <Button text="%button.ocr.open.folder" fx:id="btnOpenFolder" onAction="#onOpenFolder"/>
-                <Button text="%button.ocr.prev" fx:id="btnPrev" onAction="#onPrev" disable="true"/>
-                <Button text="%button.ocr.next" fx:id="btnNext" onAction="#onNext" disable="true"/>
-                <Label fx:id="lblImageCount" text="0 / 0" styleClass="muted"/>
-                <Region HBox.hgrow="ALWAYS"/>
                 <Label text="%text.registered" styleClass="muted"/>
                 <Label fx:id="lblRegistered" text="0" styleClass="muted"/>
             </HBox>
@@ -68,6 +63,10 @@
                 <Button text="%button.resgister" fx:id="btnRegister" onAction="#onRegister"
                         styleClass="button-success" disable="true"/>
                 <Button text="%button.ocr.skip" fx:id="btnSkip" onAction="#onSkip"/>
+                <Button fx:id="btnColorize"        text="%button.rescan"
+                        onAction="#onColorize"        disable="true"/>
+                <Button fx:id="btnColorizeMissing" text="%button.rescan.missing"
+                        onAction="#onColorizeMissing" disable="true"/>
                 <Separator orientation="VERTICAL"/>
                 <Label text="difficulty (DB):"/>
                 <ComboBox fx:id="cmbDiffDb"/>
@@ -84,12 +83,16 @@
                 <Label fx:id="lblMusicLoading" text="" styleClass="muted"/>
                 <ProgressBar fx:id="progMusic" progress="0.0" prefWidth="9999"/>
 
-                <TableView fx:id="tblMusic" VBox.vgrow="ALWAYS">
+                <!-- col_widths=[43,40,7,4,4,4,7] at Noto Sans JP 14px (~8.5px/char), num_rows=7 -->
+                <TableView fx:id="tblMusic" VBox.vgrow="ALWAYS" prefHeight="226">
                     <columns>
-                        <TableColumn fx:id="colMusicTitle"  text="Title"  prefWidth="260"/>
-                        <TableColumn fx:id="colMusicArtist" text="Artist" prefWidth="200"/>
-                        <TableColumn fx:id="colMusicBpm"    text="BPM"    prefWidth="70"/>
-                        <TableColumn fx:id="colMusicLv"     text="Lv"     prefWidth="60"/>
+                        <TableColumn fx:id="colMusicTitle"  text="Title"  prefWidth="366"/>
+                        <TableColumn fx:id="colMusicArtist" text="Artist" prefWidth="340"/>
+                        <TableColumn fx:id="colMusicBpm"    text="BPM"    prefWidth="60"/>
+                        <TableColumn fx:id="colMusicNov"    text="NOV"    prefWidth="34"/>
+                        <TableColumn fx:id="colMusicAdv"    text="ADV"    prefWidth="34"/>
+                        <TableColumn fx:id="colMusicExh"    text="EXH"    prefWidth="34"/>
+                        <TableColumn fx:id="colMusicAppend" text="APPEND" prefWidth="60"/>
                     </columns>
                 </TableView>
 
@@ -98,34 +101,25 @@
                 <Label fx:id="lblFilesLoading" text="Saved Files" styleClass="muted"/>
                 <ProgressBar fx:id="progFiles" progress="0.0" prefWidth="9999"/>
 
-                <TableView fx:id="tblFiles" VBox.vgrow="ALWAYS">
+                <!-- col_widths=[100] at Noto Sans JP 16px, num_rows=8 -->
+                <TableView fx:id="tblFiles" VBox.vgrow="ALWAYS" prefHeight="270">
                     <columns>
-                        <TableColumn fx:id="colFileName" text="Saved Files" prefWidth="540"/>
+                        <TableColumn fx:id="colFileName" text="Saved Files" prefWidth="9999"/>
                     </columns>
                 </TableView>
             </VBox>
 
-            <!-- Right column: hash DB + jacket preview + info -->
+            <!-- Right column: hash DB + log -->
             <VBox spacing="6">
                 <padding><Insets top="6" right="6" bottom="6" left="6"/></padding>
 
+                <!-- col_widths=[50,27] at Courier New 16px (~9.6px/char) -->
                 <TableView fx:id="tblHashDb" VBox.vgrow="ALWAYS">
                     <columns>
-                        <TableColumn fx:id="colHashTitle" text="Title" prefWidth="280"/>
-                        <TableColumn fx:id="colHashValue" text="Hash"  prefWidth="220"/>
+                        <TableColumn fx:id="colHashTitle" text="Title" prefWidth="480"/>
+                        <TableColumn fx:id="colHashValue" text="Hash"  prefWidth="260"/>
                     </columns>
                 </TableView>
-
-                <Separator/>
-
-                <HBox spacing="10" alignment="TOP_LEFT">
-                    <ImageView fx:id="imgJacket" fitWidth="160" fitHeight="160" preserveRatio="true"/>
-                    <VBox spacing="4" HBox.hgrow="ALWAYS">
-                        <ImageView fx:id="imgDifficulty" fitWidth="260" fitHeight="60" preserveRatio="true"/>
-                        <ImageView fx:id="imgInfo"       fitWidth="520" fitHeight="80" preserveRatio="true"/>
-                        <ImageView fx:id="imgPreview"    fitWidth="520" fitHeight="300" preserveRatio="true"/>
-                    </VBox>
-                </HBox>
 
                 <Separator/>
 
@@ -136,11 +130,22 @@
         </SplitPane>
     </center>
 
+    <!-- Bottom panel: jacket (100×100) + difficulty band (137×29) + info strip (526×64) + title -->
     <bottom>
         <HBox spacing="10" alignment="CENTER_LEFT">
-            <padding><Insets top="6" right="10" bottom="6" left="10"/></padding>
-            <Label fx:id="lblState" text="" style="-fx-text-fill: #c8102e;"/>
-            <TextField fx:id="txtTitle" prefColumnCount="50" promptText="%label.ocr.song.title"/>
+            <padding><Insets top="4" right="10" bottom="4" left="10"/></padding>
+            <!-- jacket: Python size=(100,100) -->
+            <ImageView fx:id="imgJacket" fitWidth="100" fitHeight="100" preserveRatio="false"/>
+            <VBox spacing="4">
+                <!-- difficulty band: Python size=(137,29) -->
+                <ImageView fx:id="imgDifficulty" fitWidth="137" fitHeight="29" preserveRatio="false"/>
+                <!-- info strip: Python size=(526,64) -->
+                <ImageView fx:id="imgInfo"       fitWidth="526" fitHeight="64" preserveRatio="false"/>
+            </VBox>
+            <VBox spacing="2">
+                <Label fx:id="lblState" text="" style="-fx-text-fill: #c8102e;"/>
+                <TextField fx:id="txtTitle" prefColumnCount="50" promptText="%label.ocr.song.title"/>
+            </VBox>
         </HBox>
     </bottom>
 </BorderPane>

@@ -1,7 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <modelVersion>4.0.0</modelVersion>
 
@@ -15,12 +13,10 @@
     <packaging>pom</packaging>
 
     <name>SDVX Helper Distribution</name>
-    <description>
-        Assembles the full distribution ZIP (sdvx_helper_en_all.zip) containing
+    <description>Assembles the full distribution ZIP (sdvx_helper_en_all.zip) containing
         the JPackage app-images for all 5 tools together with shared resources.
-        Java equivalent of the packaging section in python/build.cmd.
-    </description>
-    
+        Java equivalent of the packaging section in python/build.cmd.</description>
+
     <properties>
         <zip-final-name>sdvx_helper_java_en_all</zip-final-name>
     </properties>
@@ -85,10 +81,10 @@
                 <executions>
                     <execution>
                         <id>make-dist-zip</id>
-                        <phase>package</phase>
                         <goals>
                             <goal>single</goal>
                         </goals>
+                        <phase>package</phase>
                         <configuration>
                             <descriptors>
                                 <descriptor>src/assembly/dist.xml</descriptor>

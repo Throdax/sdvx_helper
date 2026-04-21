@@ -35,7 +35,7 @@ import org.slf4j.LoggerFactory;
 public class MusicListRepository extends JaxbRepository<MusicList> {
 
     private static final Logger log = LoggerFactory.getLogger(MusicListRepository.class);
-    private static final String DEFAULT_PATH = "musiclist.xml";
+    private static final String DEFAULT_PATH = "resources/musiclist.xml";
 
     private final File file;
 

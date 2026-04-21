@@ -22,6 +22,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.control.cell.PropertyValueFactory;
@@ -31,6 +32,7 @@ import com.sdvxhelper.i18n.LocaleManager;
 import com.sdvxhelper.model.MusicInfo;
 import com.sdvxhelper.model.OnePlayData;
 import com.sdvxhelper.model.PlayLog;
+import com.sdvxhelper.model.SongInfo;
 import com.sdvxhelper.repository.MusicListRepository;
 import com.sdvxhelper.repository.PlayLogRepository;
 import com.sdvxhelper.service.CsvExportService;
@@ -64,6 +66,8 @@ public class ScoreViewerController implements Initializable {
     private Button btnExport;
     @FXML
     private Button btnDelete;
+    @FXML
+    private ComboBox<String> cmbColorMode;
     @FXML
     private ComboBox<String> cmbLanguage;
     @FXML
@@ -140,6 +144,12 @@ public class ScoreViewerController implements Initializable {
 
         cmbLamp.getItems().addAll("All", "puc", "uc", "exh", "hard", "clear", "failed");
         cmbLamp.getSelectionModel().selectFirst();
+
+        if (cmbColorMode != null) {
+            cmbColorMode.getItems().addAll("None", "By Difficulty", "By Lamp");
+            cmbColorMode.getSelectionModel().selectFirst();
+            cmbColorMode.valueProperty().addListener((_, _, _) -> applyRowColors());
+        }
 
         if (lstPlays != null) {
             lstPlays.setItems(selectedPlays);
@@ -221,18 +231,26 @@ public class ScoreViewerController implements Initializable {
      * Loads the personal-best list from the play log and populates the table.
      */
     private void loadData() {
-        File logFile = Path.of(System.getProperty("user.dir"), "alllog.xml").toFile();
+        File logFile = Path.of(System.getProperty("user.dir"), "resources", "alllog.xml").toFile();
         if (!logFile.exists()) {
-            lblCount.setText("No play log found at alllog.xml");
+            lblCount.setText("No play log found at resources/alllog.xml");
             allScores.clear();
             return;
         }
         playLogRepo = new PlayLogRepository(logFile);
-        MusicListRepository musicListRepo = new MusicListRepository();
+        MusicListRepository musicListRepo = new MusicListRepository(new File("resources/musiclist.xml"));
         loggerService = new SdvxLoggerService(playLogRepo, musicListRepo);
         playLog = loggerService.getPlayLog();
 
         List<MusicInfo> best = loggerService.getBestAllFumen();
+        for (MusicInfo mi : best) {
+            if (mi.getLv() == null || "??".equals(mi.getLv())) {
+                SongInfo si = musicListRepo.findSongInfo(mi.getTitle());
+                if (si != null) {
+                    mi.setLv(si.getLvForDifficulty(mi.getDifficulty()));
+                }
+            }
+        }
         allScores.setAll(best);
         lblCount.setText(best.size() + " charts");
         log.info("Loaded {} charts into score viewer", best.size());
@@ -266,5 +284,45 @@ public class ScoreViewerController implements Initializable {
         });
 
         lblCount.setText(filteredScores.size() + " / " + allScores.size() + " charts");
+    }
+
+    private void applyRowColors() {
+        tblScores.setRowFactory(tv -> new TableRow<MusicInfo>() {
+            @Override
+            protected void updateItem(MusicInfo item, boolean empty) {
+                super.updateItem(item, empty);
+                setStyle(item == null || empty ? "" : computeStyle(item));
+            }
+        });
+        tblScores.refresh();
+    }
+
+    private String computeStyle(MusicInfo item) {
+        String mode = cmbColorMode == null ? "None" : cmbColorMode.getValue();
+        if (mode == null || "None".equals(mode)) {
+            return "";
+        }
+        if ("By Difficulty".equals(mode)) {
+            String diff = item.getDifficulty() == null ? "" : item.getDifficulty().toLowerCase();
+            return switch (diff) {
+                case "nov" -> "-fx-background-color: #3d3d5c; -fx-text-fill: white;";
+                case "adv" -> "-fx-background-color: #7a6000; -fx-text-fill: white;";
+                case "exh" -> "-fx-background-color: #7a1a1a; -fx-text-fill: white;";
+                case "mxm", "inf", "grv", "hvn", "vvd", "xcd" -> "-fx-background-color: #5a0080; -fx-text-fill: white;";
+                default -> "";
+            };
+        }
+        if ("By Lamp".equals(mode)) {
+            String lamp = item.getBestLamp() == null ? "" : item.getBestLamp().toLowerCase();
+            return switch (lamp) {
+                case "puc" -> "-fx-background-color: #aa8800; -fx-text-fill: white;";
+                case "uc" -> "-fx-background-color: #606060; -fx-text-fill: white;";
+                case "exh" -> "-fx-background-color: #005555; -fx-text-fill: white;";
+                case "hard" -> "-fx-background-color: #003388; -fx-text-fill: white;";
+                case "clear" -> "-fx-background-color: #224422; -fx-text-fill: white;";
+                default -> "";
+            };
+        }
+        return "";
     }
 }

@@ -28,6 +28,8 @@
             <ComboBox fx:id="cmbLevel" promptText="All"/>
             <Label text="%label.score.lamp" styleClass="muted"/>
             <ComboBox fx:id="cmbLamp" promptText="All"/>
+            <Label text="%label.score.color" styleClass="muted"/>
+            <ComboBox fx:id="cmbColorMode"/>
             <Button text="%button.score.export.csv" fx:id="btnExport" onAction="#onExportCsv"/>
             <Region HBox.hgrow="ALWAYS"/>
             <Label text="%label.language" styleClass="muted"/>

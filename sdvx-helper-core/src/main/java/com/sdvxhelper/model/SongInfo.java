@@ -187,6 +187,34 @@ public class SongInfo {
         this.lvAppend = lvAppend;
     }
 
+    /**
+     * Returns the chart level string for the given difficulty code.
+     *
+     * <p>
+     * Dispatches to the per-difficulty getter that matches {@code difficulty}.
+     * Append-tier difficulties (mxm, inf, grv, hvn, vvd, xcd) fall back to the EXH
+     * level when no dedicated append level is stored.
+     * </p>
+     *
+     * @param difficulty
+     *            chart difficulty code (e.g. {@code "nov"}, {@code "adv"},
+     *            {@code "exh"}, {@code "mxm"}, {@code "inf"}, etc.),
+     *            case-insensitive; {@code null} returns the EXH level
+     * @return the chart level string for the requested difficulty, or the EXH level
+     *         as fallback when the code is unrecognised
+     */
+    public String getLvForDifficulty(String difficulty) {
+        if (difficulty == null) {
+            return getLvExh();
+        }
+        return switch (difficulty.toLowerCase()) {
+            case "nov" -> getLvNov();
+            case "adv" -> getLvAdv();
+            case "append", "mxm", "inf", "grv", "hvn", "vvd", "xcd" -> lvAppend != null ? getLvAppend() : getLvExh();
+            default -> getLvExh();
+        };
+    }
+
     @Override
     public int hashCode() {
         final int prime = 31;
