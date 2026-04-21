@@ -772,7 +772,8 @@ public class OcrReporterController implements Initializable {
     private void loadFolder(File dir) {
         File[] files = dir.listFiles(f -> {
             String name = f.getName().toLowerCase();
-            return name.endsWith(".png") || name.endsWith(".jpg") || name.endsWith(".jpeg");
+            return (name.endsWith(".png") || name.endsWith(".jpg") || name.endsWith(".jpeg"))
+                    && !name.contains("summary");
         });
 
         imageFiles.clear();

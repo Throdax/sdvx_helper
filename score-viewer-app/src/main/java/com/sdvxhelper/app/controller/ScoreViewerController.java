@@ -305,21 +305,21 @@ public class ScoreViewerController implements Initializable {
         if ("By Difficulty".equals(mode)) {
             String diff = item.getDifficulty() == null ? "" : item.getDifficulty().toLowerCase();
             return switch (diff) {
-                case "nov" -> "-fx-background-color: #3d3d5c; -fx-text-fill: white;";
-                case "adv" -> "-fx-background-color: #7a6000; -fx-text-fill: white;";
-                case "exh" -> "-fx-background-color: #7a1a1a; -fx-text-fill: white;";
-                case "mxm", "inf", "grv", "hvn", "vvd", "xcd" -> "-fx-background-color: #5a0080; -fx-text-fill: white;";
+                case "nov" -> "-fx-background-color: #7979D4; -fx-text-fill: white;";
+                case "adv" -> "-fx-background-color: #E8B81C; -fx-text-fill: white;";
+                case "exh" -> "-fx-background-color: #BD5E5E; -fx-text-fill: white;";
+                case "mxm", "inf", "grv", "hvn", "vvd", "xcd" -> "-fx-background-color: #D6D6D6; -fx-text-fill: white;";
                 default -> "";
             };
         }
         if ("By Lamp".equals(mode)) {
             String lamp = item.getBestLamp() == null ? "" : item.getBestLamp().toLowerCase();
             return switch (lamp) {
-                case "puc" -> "-fx-background-color: #aa8800; -fx-text-fill: white;";
-                case "uc" -> "-fx-background-color: #606060; -fx-text-fill: white;";
-                case "exh" -> "-fx-background-color: #005555; -fx-text-fill: white;";
-                case "hard" -> "-fx-background-color: #003388; -fx-text-fill: white;";
-                case "clear" -> "-fx-background-color: #224422; -fx-text-fill: white;";
+                case "puc" -> "-fx-background-color: #FCDC6D; -fx-text-fill: white;";
+                case "uc" -> "-fx-background-color: #E02FBB; -fx-text-fill: white;";
+                case "exh" -> "-fx-background-color: #D9D9D9; -fx-text-fill: white;";
+                case "hard" -> "-fx-background-color: #CC8190; -fx-text-fill: white;";
+                case "clear" -> "-fx-background-color: #98EB98; -fx-text-fill: white;";
                 default -> "";
             };
         }
