@@ -79,6 +79,14 @@ public class OcrReporterController implements Initializable {
     private static final String STOP_PREFIX = "[STOP]";
     private static final Pattern DIGIT_PATTERN = Pattern.compile("\\d+");
 
+    // Crop coordinates from params.json (log_crop_* entries)
+    // jacket: sx=57, sy=916, w=263, h=263 → resize to 100×100 for display
+    private static final int JACKET_SX = 57, JACKET_SY = 916, JACKET_W = 263, JACKET_H = 263;
+    // difficulty band: sx=55, sy=870, w=138, h=30 → display at 137×29
+    private static final int DIFF_SX = 55, DIFF_SY = 870, DIFF_W = 138, DIFF_H = 30;
+    // info strip: sx=379, sy=1001, w=527, h=65 → display at 526×64
+    private static final int INFO_SX = 379, INFO_SY = 1001, INFO_W = 527, INFO_H = 65;
+
     // -------------------------------------------------------------------------
     // FXML fields
     // -------------------------------------------------------------------------
@@ -778,7 +786,7 @@ public class OcrReporterController implements Initializable {
 
         imageFiles.clear();
         if (files != null) {
-            Arrays.sort(files);
+            Arrays.sort(files, (a, b) -> Long.compare(b.lastModified(), a.lastModified()));
             imageFiles.addAll(Arrays.asList(files));
         }
         fileItems.setAll(imageFiles);
@@ -807,15 +815,18 @@ public class OcrReporterController implements Initializable {
             }
 
             if (imgJacket != null) {
-                BufferedImage jacket = cropAndScale(awtImage, 0, 0, 100, 100, 100, 100);
+                // jacket_org: crop at (57,916) 263×263, then resize to 100×100
+                BufferedImage jacket = cropAndScale(awtImage, JACKET_SX, JACKET_SY, JACKET_W, JACKET_H, 100, 100);
                 imgJacket.setImage(toFxImage(jacket));
             }
             if (imgDifficulty != null) {
-                BufferedImage diff = cropAndScale(awtImage, 0, 100, 137, 29, 137, 29);
+                // difficulty_org: crop at (55,870) 138×30, display at 137×29
+                BufferedImage diff = cropAndScale(awtImage, DIFF_SX, DIFF_SY, DIFF_W, DIFF_H, 137, 29);
                 imgDifficulty.setImage(toFxImage(diff));
             }
             if (imgInfo != null) {
-                BufferedImage info = cropAndScale(awtImage, 0, 129, 526, 64, 526, 64);
+                // info: crop at (379,1001) 527×65, display at 526×64
+                BufferedImage info = cropAndScale(awtImage, INFO_SX, INFO_SY, INFO_W, INFO_H, 526, 64);
                 imgInfo.setImage(toFxImage(info));
             }
 

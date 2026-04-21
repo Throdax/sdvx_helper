@@ -4,7 +4,9 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Path;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.ResourceBundle;
 import javafx.collections.FXCollections;
@@ -154,14 +156,15 @@ public class ScoreViewerController implements Initializable {
         if (lstPlays != null) {
             lstPlays.setItems(selectedPlays);
             lstPlays.setCellFactory(_ -> new ListCell<OnePlayData>() {
+                private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
                 @Override
                 protected void updateItem(OnePlayData item, boolean empty) {
                     super.updateItem(item, empty);
                     if (empty || item == null) {
                         setText(null);
                     } else {
-                        setText(String.format("%s  |  %,d (%+d)  |  %s", item.getDate(), item.getCurScore(),
-                                item.getDiff(), item.getLamp()));
+                        String dateStr = item.getDate() != null ? item.getDate().format(FMT) : "";
+                        setText(String.format("%,d | %s | %s", item.getCurScore(), item.getLamp(), dateStr));
                     }
                 }
             });
@@ -268,6 +271,8 @@ public class ScoreViewerController implements Initializable {
                 matches.add(p);
             }
         }
+        Collections.sort(matches);
+        Collections.reverse(matches);
         selectedPlays.setAll(matches);
     }
 
@@ -315,11 +320,11 @@ public class ScoreViewerController implements Initializable {
         if ("By Lamp".equals(mode)) {
             String lamp = item.getBestLamp() == null ? "" : item.getBestLamp().toLowerCase();
             return switch (lamp) {
-                case "puc" -> "-fx-background-color: #FCDC6D; -fx-text-fill: white;";
-                case "uc" -> "-fx-background-color: #E02FBB; -fx-text-fill: white;";
-                case "exh" -> "-fx-background-color: #D9D9D9; -fx-text-fill: white;";
-                case "hard" -> "-fx-background-color: #CC8190; -fx-text-fill: white;";
-                case "clear" -> "-fx-background-color: #98EB98; -fx-text-fill: white;";
+                case "puc" -> "-fx-background-color: #ffff66; -fx-text-fill: black;";
+                case "uc" -> "-fx-background-color: #ffaaaa; -fx-text-fill: black;";
+                case "hard" -> "-fx-background-color: #ffccff; -fx-text-fill: black;";
+                case "clear" -> "-fx-background-color: #77ff77; -fx-text-fill: black;";
+                case "failed" -> "-fx-background-color: #aaaaaa; -fx-text-fill: black;";
                 default -> "";
             };
         }

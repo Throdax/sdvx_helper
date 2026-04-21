@@ -128,11 +128,20 @@ public class MusicListRepository extends JaxbRepository<MusicList> {
     /**
      * Returns the {@link SongInfo} for a given title, or {@code null} if unknown.
      *
+     * <p>
+     * Triggers a lazy {@link #load()} on the first call when the music list has not
+     * yet been loaded, mirroring the behaviour of {@link #getAll()} and
+     * {@link #getHashesForDifficulty(String)}.
+     * </p>
+     *
      * @param title
      *            song title
      * @return song metadata or {@code null}
      */
     public SongInfo findSongInfo(String title) {
+        if (cached == null) {
+            load();
+        }
         return titleIndex.get(title);
     }
 
