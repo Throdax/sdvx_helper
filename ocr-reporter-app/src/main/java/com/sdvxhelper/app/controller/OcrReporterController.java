@@ -33,15 +33,19 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressBar;
 import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.input.MouseEvent;
 import javax.imageio.ImageIO;
 
+import com.sdvxhelper.app.controller.listeners.ResultFilesTableRowListener;
+import com.sdvxhelper.app.controller.listeners.TextFilterChangeListener;
+import com.sdvxhelper.app.controller.model.HashEntry;
+import com.sdvxhelper.app.controller.model.WikiSongRow;
 import com.sdvxhelper.i18n.LocaleManager;
 import com.sdvxhelper.ocr.PerceptualHasher;
 import com.sdvxhelper.repository.MusicListRepository;
@@ -70,14 +74,17 @@ public class OcrReporterController implements Initializable {
 
     private static final Logger log = LoggerFactory.getLogger(OcrReporterController.class);
 
-    private static final String WIKI_URL_KONASTE = "https://bemaniwiki.com/index.php?%A5%B3%A5%CA%A5%B9%A5%C6"
-            + "/SOUND+VOLTEX+EXCEED+GEAR/%B3%DA%B6%CA%A5%EA%A5%B9%A5%C8";
-    private static final String WIKI_URL_OLD = "https://bemaniwiki.com/index.php?SOUND+VOLTEX+EXCEED+GEAR"
-            + "/%B5%EC%B6%CA%A5%EA%A5%B9%A5%C8";
-    private static final String WIKI_URL_NEW = "https://bemaniwiki.com/index.php?SOUND+VOLTEX+EXCEED+GEAR"
-            + "/%BF%B7%B6%CA%A5%EA%A5%B9%A5%C8";
+    // private static final String WIKI_URL_KONASTE =
+    // "https://bemaniwiki.com/index.php?%A5%B3%A5%CA%A5%B9%A5%C6"
+    // + "/SOUND+VOLTEX+EXCEED+GEAR/%B3%DA%B6%CA%A5%EA%A5%B9%A5%C8";
+    private static final String WIKI_URL_OLD = "https://bemaniwiki.com/index.php?SOUND+VOLTEX+EXCEED+GEAR/%E6%97%A7%E6%9B%B2%E3%83%AA%E3%82%B9%E3%83%88";
+    private static final String WIKI_URL_NEW = "https://bemaniwiki.com/index.php?SOUND+VOLTEX+EXCEED+GEAR/%E6%96%B0%E6%9B%B2%E3%83%AA%E3%82%B9%E3%83%88";
     private static final String STOP_PREFIX = "[STOP]";
     private static final Pattern DIGIT_PATTERN = Pattern.compile("\\d+");
+
+    // TODO: these coordinates are hardcoded based on the current screenshot format,
+    // but should ideally be read from params.json to be
+    // more robust against future changes.
 
     // Crop coordinates from params.json (log_crop_* entries)
     // jacket: sx=57, sy=916, w=263, h=263 → resize to 100×100 for display
@@ -87,18 +94,20 @@ public class OcrReporterController implements Initializable {
     // info strip: sx=379, sy=1001, w=527, h=65 → display at 526×64
     private static final int INFO_SX = 379, INFO_SY = 1001, INFO_W = 527, INFO_H = 65;
 
+    private ExecutorService bgExecutor = Executors.newCachedThreadPool(new OcrReporterThreadFactory());
+
     // -------------------------------------------------------------------------
     // FXML fields
     // -------------------------------------------------------------------------
 
     @FXML
-    private Label lblRegistered;
+    private Label labelRegistered;
     @FXML
-    private Label lblState;
+    private Label labelState;
     @FXML
-    private Label lblMusicLoading;
+    private Label labelMusicLoading;
     @FXML
-    private Label lblFilesLoading;
+    private Label labelFilesLoading;
     @FXML
     private ProgressBar progMusic;
     @FXML
@@ -114,15 +123,9 @@ public class OcrReporterController implements Initializable {
     @FXML
     private TextField txtHashInfo;
     @FXML
-    private TextField txtShaJacket;
-    @FXML
-    private TextField txtOcrTitle;
-    @FXML
     private TextField txtTitle;
     @FXML
     private ComboBox<String> cmbDifficulty;
-    @FXML
-    private ComboBox<String> cmbDiffDb;
     @FXML
     private Button btnRegister;
     @FXML
@@ -170,124 +173,22 @@ public class OcrReporterController implements Initializable {
     // State
     // -------------------------------------------------------------------------
 
-    private final PerceptualHasher hasher = new PerceptualHasher();
-    private final List<File> imageFiles = new ArrayList<>();
+    private PerceptualHasher hasher = new PerceptualHasher();
+    private List<File> imageFiles = new ArrayList<>();
 
-    private final ObservableList<WikiSongRow> wikiSongs = FXCollections.observableArrayList();
+    private ObservableList<WikiSongRow> wikiSongs = FXCollections.observableArrayList();
     private FilteredList<WikiSongRow> filteredWikiSongs;
-    private final ObservableList<File> fileItems = FXCollections.observableArrayList();
-    private final ObservableList<HashEntry> hashItems = FXCollections.observableArrayList();
+    private ObservableList<File> fileItems = FXCollections.observableArrayList();
+    private ObservableList<HashEntry> hashItems = FXCollections.observableArrayList();
 
     /** Keyed by filename → JavaFX inline style string. */
-    private final Map<String, String> fileColorMap = new HashMap<>();
+    final Map<String, String> fileColorMap = new HashMap<>();
 
     private MusicListRepository musicListRepo;
-
-    private final ExecutorService bgExecutor = Executors.newCachedThreadPool(r -> {
-        Thread t = new Thread(r, "ocr-bg");
-        t.setDaemon(true);
-        return t;
-    });
 
     // -------------------------------------------------------------------------
     // Inner types
     // -------------------------------------------------------------------------
-
-    /**
-     * One row in the BemaniWiki song table ({@code tblMusic}).
-     */
-    public static class WikiSongRow {
-        private final String title;
-        private final String artist;
-        private final String bpm;
-        private final String nov;
-        private final String adv;
-        private final String exh;
-        private final String append;
-
-        /**
-         * @param title
-         *            song title
-         * @param artist
-         *            artist name
-         * @param bpm
-         *            BPM string
-         * @param nov
-         *            novice level
-         * @param adv
-         *            advanced level
-         * @param exh
-         *            exhaust level
-         * @param append
-         *            maximum/append level (may be {@code null})
-         */
-        public WikiSongRow(String title, String artist, String bpm, String nov, String adv, String exh, String append) {
-            this.title = title;
-            this.artist = artist;
-            this.bpm = bpm;
-            this.nov = nov;
-            this.adv = adv;
-            this.exh = exh;
-            this.append = append;
-        }
-
-        /** @return the song title */
-        public String getTitle() {
-            return title;
-        }
-        /** @return the artist name */
-        public String getArtist() {
-            return artist;
-        }
-        /** @return the BPM string */
-        public String getBpm() {
-            return bpm;
-        }
-        /** @return novice chart level */
-        public String getNov() {
-            return nov;
-        }
-        /** @return advanced chart level */
-        public String getAdv() {
-            return adv;
-        }
-        /** @return exhaust chart level */
-        public String getExh() {
-            return exh;
-        }
-        /** @return maximum/append chart level */
-        public String getAppend() {
-            return append;
-        }
-    }
-
-    /**
-     * Row model for the hash database view.
-     */
-    public static class HashEntry {
-        private final String title;
-        private final String hash;
-
-        /**
-         * @param title
-         *            song title
-         * @param hash
-         *            jacket hash value
-         */
-        public HashEntry(String title, String hash) {
-            this.title = title;
-            this.hash = hash;
-        }
-
-        /** @return the song title */
-        public String getTitle() {
-            return title;
-        }
-        /** @return the jacket hash */
-        public String getHash() {
-            return hash;
-        }
-    }
 
     // -------------------------------------------------------------------------
     // Lifecycle
@@ -297,11 +198,6 @@ public class OcrReporterController implements Initializable {
     public void initialize(URL location, ResourceBundle resources) {
         cmbDifficulty.getItems().setAll("", "nov", "adv", "exh", "APPEND");
         cmbDifficulty.getSelectionModel().select("exh");
-        if (cmbDiffDb != null) {
-            cmbDiffDb.getItems().setAll("", "nov", "adv", "exh", "APPEND");
-            cmbDiffDb.getSelectionModel().select("exh");
-            cmbDiffDb.setOnAction(_ -> refreshHashDb());
-        }
 
         cmbLanguage.setItems(LocaleManager.getInstance().getAvailableLocaleCodes());
         cmbLanguage.setValue(LocaleManager.getInstance().getCurrentCode());
@@ -315,34 +211,23 @@ public class OcrReporterController implements Initializable {
             colMusicAdv.setCellValueFactory(new PropertyValueFactory<>("adv"));
             colMusicExh.setCellValueFactory(new PropertyValueFactory<>("exh"));
             colMusicAppend.setCellValueFactory(new PropertyValueFactory<>("append"));
+
             filteredWikiSongs = new FilteredList<>(wikiSongs, _ -> true);
+
             tblMusic.setItems(filteredWikiSongs);
+            tblMusic.getSelectionModel().clearSelection();
+
             tblMusic.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
-            tblMusic.getSelectionModel().selectedItemProperty().addListener((_, _, nv) -> {
-                if (nv != null && txtTitle != null) {
-                    txtTitle.setText(nv.getTitle());
-                }
-            });
         }
         if (colFileName != null) {
             colFileName.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getName()));
             tblFiles.setItems(fileItems);
-            tblFiles.getSelectionModel().selectedIndexProperty().addListener((_, _, idx) -> {
-                if (idx != null && idx.intValue() >= 0) {
-                    showCurrentImage(imageFiles.get(idx.intValue()));
-                }
-            });
-            tblFiles.setRowFactory(_ -> new TableRow<File>() {
-                @Override
-                protected void updateItem(File item, boolean empty) {
-                    super.updateItem(item, empty);
-                    if (item == null || empty) {
-                        setStyle("");
-                    } else {
-                        setStyle(fileColorMap.getOrDefault(item.getName(), ""));
-                    }
-                }
-            });
+
+            // TODO: Clear selection to avoid triggering image display before the user
+            // explicitly selects a file
+
+            tblFiles.setRowFactory(_ -> new ResultFilesTableRowListener(this));
+
         }
         if (colHashTitle != null) {
             colHashTitle.setCellValueFactory(new PropertyValueFactory<>("title"));
@@ -351,12 +236,7 @@ public class OcrReporterController implements Initializable {
         }
 
         if (txtFilter != null) {
-            txtFilter.textProperty().addListener((_, _, nv) -> {
-                if (filteredWikiSongs != null) {
-                    String q = nv == null ? "" : nv.toLowerCase();
-                    filteredWikiSongs.setPredicate(m -> q.isBlank() || m.getTitle().toLowerCase().contains(q));
-                }
-            });
+            txtFilter.textProperty().addListener(new TextFilterChangeListener(this));
         }
 
         if (btnColorize != null) {
@@ -377,8 +257,8 @@ public class OcrReporterController implements Initializable {
 
     private void loadBemaniWiki() {
         Platform.runLater(() -> {
-            if (lblMusicLoading != null) {
-                lblMusicLoading.setText("Loading BemaniWiki…");
+            if (labelMusicLoading != null) {
+                labelMusicLoading.setText("Loading BemaniWiki…");
             }
             if (progMusic != null) {
                 progMusic.setProgress(-1.0);
@@ -389,7 +269,7 @@ public class OcrReporterController implements Initializable {
         HttpClient http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(15)).build();
 
         // First URL: コナステ list (simple structure — rows of 7-8 tds)
-        fetchKonasteList(http, WIKI_URL_KONASTE, collected);
+        // fetchKonasteList(http, WIKI_URL_KONASTE, collected);
 
         // Second and third URLs: AC 旧曲 and 新曲 (rowspan handling)
         fetchAcList(http, WIKI_URL_OLD, collected, 1);
@@ -400,8 +280,8 @@ public class OcrReporterController implements Initializable {
 
         Platform.runLater(() -> {
             wikiSongs.setAll(rows);
-            if (lblMusicLoading != null) {
-                lblMusicLoading.setText("BemaniWiki: " + rows.size() + " songs loaded");
+            if (labelMusicLoading != null) {
+                labelMusicLoading.setText("BemaniWiki: " + rows.size() + " songs loaded");
             }
             if (progMusic != null) {
                 progMusic.setProgress(1.0);
@@ -411,36 +291,38 @@ public class OcrReporterController implements Initializable {
         });
     }
 
-    private void fetchKonasteList(HttpClient http, String url, Map<String, WikiSongRow> out) {
-        try {
-            String html = fetchUrl(http, url);
-            if (html == null) {
-                return;
-            }
-            Document doc = Jsoup.parse(html);
-            for (Element tr : doc.select("tr")) {
-                Elements tds = tr.select("td");
-                int n = tds.size();
-                if (n != 7 && n != 8) {
-                    continue;
-                }
-                if ("BPM".equals(tds.get(2).text())) {
-                    continue;
-                }
-                String title = tds.get(0).text();
-                String artist = tds.get(1).text();
-                String bpm = tds.get(2).text();
-                String nov = parseLevel(tds.get(3).text());
-                String adv = parseLevel(tds.get(4).text());
-                String exh = parseLevel(tds.get(5).text());
-                String appendTxt = tds.get(6).text();
-                String append = (appendTxt.isEmpty() || "-".equals(appendTxt)) ? null : parseLevel(appendTxt);
-                out.put(title, new WikiSongRow(title, artist, bpm, nov, adv, exh, append));
-            }
-        } catch (Exception e) {
-            log.warn("Failed to fetch Konaste list: {}", e.getMessage());
-        }
-    }
+    // private void fetchKonasteList(HttpClient http, String url, Map<String,
+    // WikiSongRow> out) {
+    // try {
+    // String html = fetchUrl(http, url);
+    // if (html == null) {
+    // return;
+    // }
+    // Document doc = Jsoup.parse(html);
+    // for (Element tr : doc.select("tr")) {
+    // Elements tds = tr.select("td");
+    // int n = tds.size();
+    // if (n != 7 && n != 8) {
+    // continue;
+    // }
+    // if ("BPM".equals(tds.get(2).text())) {
+    // continue;
+    // }
+    // String title = tds.get(0).text();
+    // String artist = tds.get(1).text();
+    // String bpm = tds.get(2).text();
+    // String nov = parseLevel(tds.get(3).text());
+    // String adv = parseLevel(tds.get(4).text());
+    // String exh = parseLevel(tds.get(5).text());
+    // String appendTxt = tds.get(6).text();
+    // String append = (appendTxt.isEmpty() || "-".equals(appendTxt)) ? null :
+    // parseLevel(appendTxt);
+    // out.put(title, new WikiSongRow(title, artist, bpm, nov, adv, exh, append));
+    // }
+    // } catch (Exception e) {
+    // log.warn("Failed to fetch Konaste list: {}", e.getMessage());
+    // }
+    // }
 
     private void fetchAcList(HttpClient http, String url, Map<String, WikiSongRow> out, int urlIndex) {
         try {
@@ -527,13 +409,14 @@ public class OcrReporterController implements Initializable {
         }
     }
 
-    private String parseLevel(String text) {
-        if (text == null || text.isBlank()) {
-            return "??";
-        }
-        String clean = text.startsWith(STOP_PREFIX) ? text.substring(STOP_PREFIX.length()).trim() : text;
-        return clean.isBlank() ? "??" : clean;
-    }
+    // private String parseLevel(String text) {
+    // if (text == null || text.isBlank()) {
+    // return "??";
+    // }
+    // String clean = text.startsWith(STOP_PREFIX) ?
+    // text.substring(STOP_PREFIX.length()).trim() : text;
+    // return clean.isBlank() ? "??" : clean;
+    // }
 
     private String lastDigits(String text) {
         if (text == null || text.isBlank()) {
@@ -572,8 +455,8 @@ public class OcrReporterController implements Initializable {
         try {
             musicListRepo = new MusicListRepository();
             refreshHashDb();
-            if (lblRegistered != null) {
-                lblRegistered.setText(String.valueOf(hashItems.size()));
+            if (labelRegistered != null) {
+                labelRegistered.setText(String.valueOf(hashItems.size()));
             }
         } catch (Exception e) {
             log.warn("Failed to load musiclist.xml: {}", e.getMessage());
@@ -584,11 +467,13 @@ public class OcrReporterController implements Initializable {
         if (musicListRepo == null || hashItems == null) {
             return;
         }
-        String diff = cmbDiffDb != null ? cmbDiffDb.getValue() : "";
         List<HashEntry> rows = new ArrayList<>();
-        for (com.sdvxhelper.model.HashEntry h : musicListRepo.getHashesForDifficulty(diff)) {
-            rows.add(new HashEntry(h.getTitle(), h.getHash()));
-        }
+
+        cmbDifficulty.getItems().forEach(d -> {
+            for (com.sdvxhelper.model.HashEntry h : musicListRepo.getHashesForDifficulty(d)) {
+                rows.add(new HashEntry(h.getTitle(), h.getHash()));
+            }
+        });
         hashItems.setAll(rows);
     }
 
@@ -649,19 +534,6 @@ public class OcrReporterController implements Initializable {
             log.error("Failed to register hash", e);
             appendLog("ERROR: " + e.getMessage());
         }
-        advanceToNext();
-    }
-
-    /**
-     * Skips the current image without registering it.
-     *
-     * @param event
-     *            action event
-     */
-    @FXML
-    public void onSkip(ActionEvent event) {
-        int idx = tblFiles == null ? -1 : tblFiles.getSelectionModel().getSelectedIndex();
-        appendLog("Skipped: " + (idx >= 0 && idx < imageFiles.size() ? imageFiles.get(idx).getName() : "?"));
         advanceToNext();
     }
 
@@ -740,6 +612,9 @@ public class OcrReporterController implements Initializable {
             } catch (IOException e) {
                 log.debug("Colorize error for {}: {}", f.getName(), e.getMessage());
             }
+
+            // TODO: Progress bar is not updating or not showing as updating in the GUI.
+            // Investigate.
             if (i % 10 == 0 || i == total - 1) {
                 final double prog = (double) (progress + 1) / total;
                 Platform.runLater(() -> {
@@ -756,8 +631,8 @@ public class OcrReporterController implements Initializable {
             if (tblFiles != null) {
                 tblFiles.refresh();
             }
-            if (lblFilesLoading != null) {
-                lblFilesLoading.setText("Colorize done (" + total + " files)");
+            if (labelFilesLoading != null) {
+                labelFilesLoading.setText("Colorize done (" + total + " files)");
             }
         });
     }
@@ -799,8 +674,8 @@ public class OcrReporterController implements Initializable {
         }
         enableColorizeIfReady();
         appendLog("Loaded " + imageFiles.size() + " image(s) from " + dir.getAbsolutePath());
-        if (lblFilesLoading != null) {
-            Platform.runLater(() -> lblFilesLoading.setText(imageFiles.size() + " file(s) in folder"));
+        if (labelFilesLoading != null) {
+            Platform.runLater(() -> labelFilesLoading.setText(imageFiles.size() + " file(s) in folder"));
         }
     }
 
@@ -833,7 +708,6 @@ public class OcrReporterController implements Initializable {
             String hash = hasher.hash(awtImage);
             txtHash.setText(hash);
             txtTitle.clear();
-            txtOcrTitle.clear();
         } catch (IOException e) {
             log.error("Failed to load image {}", f.getAbsolutePath(), e);
             appendLog("ERROR loading: " + f.getName());
@@ -867,5 +741,29 @@ public class OcrReporterController implements Initializable {
         if (txtLog != null) {
             Platform.runLater(() -> txtLog.appendText(line + "\n"));
         }
+    }
+
+    @FXML
+    public void onSelectMusic(MouseEvent event) {
+        // TODO: Text colour should be black
+        WikiSongRow selectedItem = tblMusic.getSelectionModel().getSelectedItem();
+        txtTitle.setText(selectedItem != null ? selectedItem.getTitle() : "");
+    }
+
+    @FXML
+    public void onSelectResult(MouseEvent event) {
+        int selectedIndex = tblFiles.getSelectionModel().getSelectedIndex();
+
+        if (selectedIndex >= 0) {
+            showCurrentImage(imageFiles.get(selectedIndex));
+        }
+    }
+
+    public Map<String, String> getFileColorMap() {
+        return fileColorMap;
+    }
+
+    public FilteredList<WikiSongRow> getFilteredWikiSongs() {
+        return filteredWikiSongs;
     }
 }

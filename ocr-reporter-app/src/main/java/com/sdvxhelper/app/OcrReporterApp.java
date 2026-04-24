@@ -50,7 +50,7 @@ public class OcrReporterApp extends Application {
         SettingsRepository repo = new SettingsRepository();
         LocaleManager.getInstance().init(repo);
         LocaleManager.getInstance().localeProperty()
-                .addListener((obs, oldLocale, newLocale) -> Platform.runLater(() -> {
+                .addListener((_, _, newLocale) -> Platform.runLater(() -> {
                     try {
                         buildScene(newLocale);
                     } catch (IOException e) {
