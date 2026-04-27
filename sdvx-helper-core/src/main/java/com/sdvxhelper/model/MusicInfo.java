@@ -10,6 +10,8 @@ import jakarta.xml.bind.annotation.XmlTransient;
 import jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 
 import com.sdvxhelper.model.enums.ScoreRank;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Represents the personal-best information for one specific chart (song +
@@ -30,6 +32,8 @@ import com.sdvxhelper.model.enums.ScoreRank;
  */
 @XmlAccessorType(XmlAccessType.FIELD)
 public class MusicInfo implements Comparable<MusicInfo> {
+
+    private static final Logger log = LoggerFactory.getLogger(MusicInfo.class);
 
     /** Song title. */
     @XmlAttribute
@@ -341,6 +345,7 @@ public class MusicInfo implements Comparable<MusicInfo> {
      */
     public static LocalDateTime unmarshalDate(String value) {
         if (value == null || value.isBlank()) {
+            log.debug("unmarshalDate: value is null or blank, returning null");
             return null;
         }
         try {

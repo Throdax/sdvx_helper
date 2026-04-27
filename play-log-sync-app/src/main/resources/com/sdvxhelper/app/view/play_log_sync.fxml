@@ -2,6 +2,7 @@
 
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
 
 <BorderPane xmlns="http://javafx.com/javafx"
             xmlns:fx="http://javafx.com/fxml"
@@ -14,48 +15,52 @@
                 <Label text="%label.sync.title" styleClass="sub-heading"/>
                 <Region HBox.hgrow="ALWAYS"/>
                 <Label text="%label.language" styleClass="muted"/>
-                <ComboBox fx:id="cmbLanguage" styleClass="lang-combo"/>
+                <ComboBox fx:id="languageCombo" styleClass="lang-combo"/>
             </HBox>
             <GridPane hgap="8" vgap="4">
-                <Label text="%label.sync.play.log"       GridPane.columnIndex="0" GridPane.rowIndex="0" styleClass="muted"/>
-                <TextField fx:id="txtPlayLogPath"  prefWidth="400" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+                <Label text="%label.sync.play.log"        GridPane.columnIndex="0" GridPane.rowIndex="0" styleClass="muted"/>
+                <TextField fx:id="playLogPathField"    prefWidth="400" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
                 <Button text="%button.sync.browse" onAction="#onBrowsePlayLog"    GridPane.columnIndex="2" GridPane.rowIndex="0"/>
 
-                <Label text="%label.sync.results.folder" GridPane.columnIndex="0" GridPane.rowIndex="1" styleClass="muted"/>
-                <TextField fx:id="txtResultsFolder" prefWidth="400" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+                <Label text="%label.sync.results.folder"  GridPane.columnIndex="0" GridPane.rowIndex="1" styleClass="muted"/>
+                <TextField fx:id="resultsFolderField"  prefWidth="400" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
                 <Button text="%button.sync.browse" onAction="#onBrowseResults"    GridPane.columnIndex="2" GridPane.rowIndex="1"/>
 
-                <Label text="%label.sync.output.folder"  GridPane.columnIndex="0" GridPane.rowIndex="2" styleClass="muted"/>
-                <TextField fx:id="txtOutputFolder"  prefWidth="400" GridPane.columnIndex="1" GridPane.rowIndex="2"/>
+                <Label text="%label.sync.output.folder"   GridPane.columnIndex="0" GridPane.rowIndex="2" styleClass="muted"/>
+                <TextField fx:id="outputFolderField"   prefWidth="400" GridPane.columnIndex="1" GridPane.rowIndex="2"/>
                 <Button text="%button.sync.browse" onAction="#onBrowseOutput"     GridPane.columnIndex="2" GridPane.rowIndex="2"/>
             </GridPane>
-            <HBox spacing="8">
-                <Button text="%button.sync.start"      fx:id="btnSync"   onAction="#onSync"      styleClass="button-success"/>
-                <Button text="%button.sync.export.xml" fx:id="btnExport" onAction="#onExportXml" styleClass="button-primary"/>
+            <HBox spacing="8" alignment="CENTER_LEFT">
+                <Button text="%button.sync.start"      fx:id="syncButton"   onAction="#onSync"      styleClass="button-success"/>
+                <CheckBox fx:id="rebuildCheck" text="%checkbox.sync.rebuild" selected="false"/>
+                <Button text="%button.sync.export.xml" fx:id="exportButton" onAction="#onExportXml" styleClass="button-primary"/>
+                <Label text="%label.sync.time.offset" styleClass="muted"/>
+                <TextField fx:id="timeOffsetField" prefWidth="60" text="0" promptText="0"/>
+                <Label text="%label.sync.time.offset.unit" styleClass="muted"/>
             </HBox>
         </VBox>
     </top>
 
     <center>
         <SplitPane dividerPositions="0.6">
-            <TableView fx:id="tblPlays">
+            <TableView fx:id="playsTable">
                 <columns>
-                    <TableColumn fx:id="colDate"    text="%table.header.lastPlayed" prefWidth="120"/>
-                    <TableColumn fx:id="colTitle"   text="%table.header.title"      prefWidth="250"/>
-                    <TableColumn fx:id="colDiff"    text="%table.header.difficulty" prefWidth="60"/>
-                    <TableColumn fx:id="colScore"   text="%table.header.score"      prefWidth="100"/>
-                    <TableColumn fx:id="colLamp"    text="%table.header.lamp"       prefWidth="70"/>
-                    <TableColumn fx:id="colStatus"  text="Status"                   prefWidth="80"/>
+                    <TableColumn fx:id="dateColumn"       text="%table.header.lastPlayed" prefWidth="120"/>
+                    <TableColumn fx:id="titleColumn"      text="%table.header.title"      prefWidth="250"/>
+                    <TableColumn fx:id="difficultyColumn" text="%table.header.difficulty" prefWidth="60"/>
+                    <TableColumn fx:id="scoreColumn"      text="%table.header.score"      prefWidth="100"/>
+                    <TableColumn fx:id="lampColumn"       text="%table.header.lamp"       prefWidth="70"/>
+                    <TableColumn fx:id="statusColumn"     text="Status"                   prefWidth="80"/>
                 </columns>
             </TableView>
-            <TextArea fx:id="txtLog" editable="false"
+            <TextArea fx:id="logArea" editable="false"
                       style="-fx-font-family: monospace;"/>
         </SplitPane>
     </center>
 
     <bottom>
         <HBox styleClass="toolbar-bar">
-            <Label fx:id="lblStatus" text="Ready" styleClass="status-label"/>
+            <Label fx:id="statusLabel" text="Ready" styleClass="status-label"/>
         </HBox>
     </bottom>
 </BorderPane>

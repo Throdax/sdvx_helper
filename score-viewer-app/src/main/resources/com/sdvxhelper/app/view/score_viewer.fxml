@@ -11,6 +11,7 @@
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Priority?>
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
 
@@ -23,43 +24,51 @@
         <HBox spacing="12" styleClass="toolbar-bar" alignment="CENTER_LEFT">
             <padding><Insets top="8" right="10" bottom="8" left="10"/></padding>
             <Label text="%label.score.filter" styleClass="muted"/>
-            <TextField fx:id="txtFilter" promptText="%text.score.search" prefWidth="220"/>
+            <TextField fx:id="filterField" promptText="%text.score.search" prefWidth="220"/>
             <Label text="%label.score.level" styleClass="muted"/>
-            <ComboBox fx:id="cmbLevel" promptText="All"/>
+            <ComboBox fx:id="levelCombo" promptText="All"/>
             <Label text="%label.score.lamp" styleClass="muted"/>
-            <ComboBox fx:id="cmbLamp" promptText="All"/>
+            <ComboBox fx:id="lampCombo" promptText="All"/>
             <Label text="%label.score.color" styleClass="muted"/>
-            <ComboBox fx:id="cmbColorMode"/>
-            <Button text="%button.score.export.csv" fx:id="btnExport" onAction="#onExportCsv"/>
+            <ComboBox fx:id="colorModeCombo"/>
+            <Button text="%button.score.export.csv" fx:id="exportButton" onAction="#onExportCsv"/>
             <Region HBox.hgrow="ALWAYS"/>
             <Label text="%label.language" styleClass="muted"/>
-            <ComboBox fx:id="cmbLanguage" styleClass="lang-combo"/>
+            <ComboBox fx:id="languageCombo" styleClass="lang-combo"/>
         </HBox>
     </top>
 
     <center>
         <SplitPane dividerPositions="0.65" orientation="HORIZONTAL">
-            <TableView fx:id="tblScores">
+            <TableView fx:id="scoresTable">
                 <columns>
-                    <TableColumn fx:id="colTitle"  text="%table.header.title"      prefWidth="280"/>
-                    <TableColumn fx:id="colDiff"   text="%table.header.difficulty" prefWidth="90"/>
-                    <TableColumn fx:id="colLevel"  text="%table.header.level"      prefWidth="60"/>
-                    <TableColumn fx:id="colScore"  text="%table.header.score"      prefWidth="100"/>
-                    <TableColumn fx:id="colLamp"   text="%table.header.lamp"       prefWidth="80"/>
-                    <TableColumn fx:id="colVf"     text="%table.header.volforce"   prefWidth="80"/>
-                    <TableColumn fx:id="colDate"   text="%table.header.lastPlayed" prefWidth="140"/>
-                    <TableColumn fx:id="colSTier"  text="%table.header.tier"       prefWidth="70"/>
+                    <TableColumn fx:id="titleColumn"      text="%table.header.title"      prefWidth="280"/>
+                    <TableColumn fx:id="difficultyColumn" text="%table.header.difficulty" prefWidth="90"/>
+                    <TableColumn fx:id="levelColumn"      text="%table.header.level"      prefWidth="60"/>
+                    <TableColumn fx:id="scoreColumn"      text="%table.header.score"      prefWidth="100"/>
+                    <TableColumn fx:id="lampColumn"       text="%table.header.lamp"       prefWidth="80"/>
+                    <TableColumn fx:id="vfColumn"         text="%table.header.volforce"   prefWidth="80"/>
+                    <TableColumn fx:id="dateColumn"       text="%table.header.lastPlayed" prefWidth="140"/>
+                    <TableColumn fx:id="sTierColumn"      text="%table.header.tier"       prefWidth="70"/>
                 </columns>
             </TableView>
 
             <VBox spacing="6">
                 <padding><Insets top="6" right="6" bottom="6" left="6"/></padding>
                 <Label text="%label.score.plays" styleClass="sub-heading"/>
-                <ListView fx:id="lstPlays" VBox.vgrow="ALWAYS"/>
+                <ListView fx:id="playsList" VBox.vgrow="ALWAYS"/>
                 <HBox spacing="8" alignment="CENTER_RIGHT">
-                    <Button fx:id="btnDelete" text="%button.score.delete" onAction="#onDelete"
+                    <Button fx:id="deleteButton" text="%button.score.delete" onAction="#onDelete"
                             styleClass="button-danger" disable="true"/>
                 </HBox>
+                <Label text="%label.score.rivals" styleClass="sub-heading"/>
+                <TableView fx:id="rivalsTable" VBox.vgrow="ALWAYS" prefHeight="180">
+                    <columns>
+                        <TableColumn fx:id="rivalNameColumn"  text="%table.header.rival.name"  prefWidth="120"/>
+                        <TableColumn fx:id="rivalScoreColumn" text="%table.header.rival.score" prefWidth="100"/>
+                        <TableColumn fx:id="rivalLampColumn"  text="%table.header.rival.lamp"  prefWidth="80"/>
+                    </columns>
+                </TableView>
             </VBox>
         </SplitPane>
     </center>
@@ -67,7 +76,7 @@
     <bottom>
         <HBox styleClass="toolbar-bar">
             <padding><Insets top="6" right="10" bottom="6" left="10"/></padding>
-            <Label fx:id="lblCount" text="0 charts" styleClass="status-label"/>
+            <Label fx:id="countLabel" text="0 charts" styleClass="status-label"/>
         </HBox>
     </bottom>
 </BorderPane>

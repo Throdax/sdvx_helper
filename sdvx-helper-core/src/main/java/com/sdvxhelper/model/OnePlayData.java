@@ -84,6 +84,14 @@ public class OnePlayData implements Comparable<OnePlayData> {
     @XmlTransient
     private int vf;
 
+    /**
+     * Absolute path to the autosaved result screenshot for this play. Not
+     * persisted; set at runtime so the summary service can load and crop screenshot
+     * parts.
+     */
+    @XmlTransient
+    private String screenshotFile;
+
     /** No-argument constructor required by JAXB. */
     public OnePlayData() {
     }
@@ -329,5 +337,25 @@ public class OnePlayData implements Comparable<OnePlayData> {
      */
     public void setVf(int vf) {
         this.vf = vf;
+    }
+
+    /**
+     * Returns the path to the autosaved result screenshot, or {@code null} if no
+     * screenshot was saved for this play.
+     *
+     * @return absolute screenshot path, or {@code null}
+     */
+    public String getScreenshotFile() {
+        return screenshotFile;
+    }
+
+    /**
+     * Sets the path to the autosaved result screenshot.
+     *
+     * @param screenshotFile
+     *            absolute path to the screenshot PNG
+     */
+    public void setScreenshotFile(String screenshotFile) {
+        this.screenshotFile = screenshotFile;
     }
 }

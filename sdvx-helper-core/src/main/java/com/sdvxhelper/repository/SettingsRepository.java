@@ -33,8 +33,8 @@ public class SettingsRepository {
     private static final Logger log = LoggerFactory.getLogger(SettingsRepository.class);
     private static final String DEFAULT_PATH = "settings.json";
 
-    private final File file;
-    private final Jsonb jsonb;
+    private File file;
+    private Jsonb jsonb;
 
     /**
      * Constructs a repository backed by the default file.
@@ -72,7 +72,7 @@ public class SettingsRepository {
                     settings.putAll(loaded);
                 }
                 log.info("Loaded settings from {}", file.getAbsolutePath());
-            } catch (Exception e) {
+            } catch (IOException | jakarta.json.bind.JsonbException e) {
                 log.warn("Failed to load settings.json; using defaults", e);
             }
         } else {
@@ -120,7 +120,7 @@ public class SettingsRepository {
         try (FileWriter writer = new FileWriter(file, StandardCharsets.UTF_8)) {
             jsonb.toJson(settings, writer);
             log.info("Saved settings to {}", file.getAbsolutePath());
-        } catch (Exception e) {
+        } catch (IOException | jakarta.json.bind.JsonbException e) {
             throw new IOException("Failed to write settings.json", e);
         }
     }

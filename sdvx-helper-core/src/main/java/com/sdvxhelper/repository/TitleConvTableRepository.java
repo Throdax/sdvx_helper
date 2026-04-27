@@ -28,7 +28,7 @@ public class TitleConvTableRepository extends JaxbRepository<TitleConvTable> {
     private static final Logger log = LoggerFactory.getLogger(TitleConvTableRepository.class);
     private static final String DEFAULT_PATH = "resources/title_conv_table.xml";
 
-    private final File file;
+    private File file;
 
     /**
      * Constructs a repository backed by the default file.

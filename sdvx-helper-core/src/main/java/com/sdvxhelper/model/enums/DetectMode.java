@@ -17,6 +17,12 @@ public enum DetectMode {
     /** Detection not yet started or image not recognised. */
     INIT,
 
+    /**
+     * The song-commit (confirm) screen is visible — song has been chosen but play
+     * not yet started.
+     */
+    DETECT,
+
     /** The song-select screen is currently visible. */
     SELECT,
 

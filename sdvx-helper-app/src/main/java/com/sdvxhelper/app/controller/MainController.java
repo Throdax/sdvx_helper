@@ -1,13 +1,16 @@
 package com.sdvxhelper.app.controller;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.nio.file.Path;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -30,16 +33,33 @@ import com.github.kwhat.jnativehook.GlobalScreen;
 import com.github.kwhat.jnativehook.NativeHookException;
 import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent;
 import com.github.kwhat.jnativehook.keyboard.NativeKeyListener;
+import com.sdvxhelper.app.controller.detection.DetectionEngine;
+import com.sdvxhelper.app.controller.detection.DetectionListener;
+import com.sdvxhelper.app.controller.detection.ObsOverlayService;
+import com.sdvxhelper.app.controller.detection.ScreenHandler;
+import com.sdvxhelper.app.controller.detection.WebhookDispatcher;
+import com.sdvxhelper.app.controller.factories.DetectionThreadFactory;
+import com.sdvxhelper.app.controller.listeners.SdvxNativeKeyListener;
 import com.sdvxhelper.i18n.LocaleManager;
-import com.sdvxhelper.model.MusicInfo;
 import com.sdvxhelper.model.OnePlayData;
 import com.sdvxhelper.model.enums.DetectMode;
+import com.sdvxhelper.network.DiscordPresenceClient;
+import com.sdvxhelper.network.DiscordWebhookClient;
+import com.sdvxhelper.network.GoogleDriveClient;
+import com.sdvxhelper.network.Maya2Client;
 import com.sdvxhelper.network.ObsWebSocketClient;
+import com.sdvxhelper.ocr.PerceptualHasher;
 import com.sdvxhelper.repository.MusicListRepository;
+import com.sdvxhelper.repository.ParamsRepository;
 import com.sdvxhelper.repository.PlayLogRepository;
 import com.sdvxhelper.repository.SettingsRepository;
+import com.sdvxhelper.service.CsvExportService;
+import com.sdvxhelper.service.ImageAnalysisService;
 import com.sdvxhelper.service.SdvxLoggerService;
+import com.sdvxhelper.service.SummaryImageService;
+import com.sdvxhelper.service.XmlExportService;
 import com.sdvxhelper.util.ScoreFormatter;
+import com.sdvxhelper.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,9 +67,10 @@ import org.slf4j.LoggerFactory;
  * Controller for the main application window ({@code main.fxml}).
  *
  * <p>
- * Orchestrates the detection loop, updates the UI with the current song info,
- * and handles user actions (start/stop detection, undo last play, function
- * hotkeys).
+ * Acts as a UI coordinator: wires services together during initialisation,
+ * handles FXML action events, and implements {@link DetectionListener} to
+ * receive background-thread callbacks from {@link DetectionEngine}.
+ * </p>
  *
  * <p>
  * Replaces the Python {@code SDVXHelper} class in {@code sdvx_helper.pyw}.
@@ -58,7 +79,7 @@ import org.slf4j.LoggerFactory;
  * @author Throdax
  * @since 2.0.0
  */
-public class MainController implements Initializable {
+public class MainController implements Initializable, DetectionListener {
 
     private static final Logger log = LoggerFactory.getLogger(MainController.class);
 
@@ -67,61 +88,74 @@ public class MainController implements Initializable {
     // -------------------------------------------------------------------------
 
     @FXML
-    private Label lblObsStatus;
+    private Label obsStatusLabel;
     @FXML
-    private Label lblTotalVf;
+    private Label totalVfLabel;
     @FXML
-    private Label lblPlayCount;
+    private Label playCountLabel;
     @FXML
-    private Label lblTitle;
+    private Label titleLabel;
     @FXML
-    private Label lblDiff;
+    private Label diffLabel;
     @FXML
-    private Label lblLevel;
+    private Label levelLabel;
     @FXML
-    private Label lblBest;
+    private Label bestLabel;
     @FXML
-    private Label lblLamp;
+    private Label lampLabel;
     @FXML
-    private Label lblVf;
+    private Label vfLabel;
     @FXML
-    private Label lblDetectMode;
+    private Label detectModeLabel;
     @FXML
-    private Label lblStatus;
+    private Label statusLabel;
     @FXML
-    private Button btnStartStop;
+    private Button startStopButton;
     @FXML
-    private Button btnPopPlay;
+    private Button popPlayButton;
     @FXML
-    private Button btnF9;
+    private Button f9Button;
     @FXML
-    private TableView<OnePlayData> tblSessionLog;
+    private TableView<OnePlayData> sessionLogTable;
     @FXML
-    private TableColumn<OnePlayData, String> colLogTitle;
+    private TableColumn<OnePlayData, String> logTitleColumn;
     @FXML
-    private TableColumn<OnePlayData, String> colLogDiff;
+    private TableColumn<OnePlayData, String> logDiffColumn;
     @FXML
-    private TableColumn<OnePlayData, Integer> colLogScore;
+    private TableColumn<OnePlayData, Integer> logScoreColumn;
     @FXML
-    private TableColumn<OnePlayData, String> colLogLamp;
+    private TableColumn<OnePlayData, String> logLampColumn;
     @FXML
-    private TableColumn<OnePlayData, String> colLogDate;
+    private TableColumn<OnePlayData, String> logDateColumn;
     @FXML
-    private TextArea txtOutput;
+    private TextArea outputArea;
     @FXML
-    private ComboBox<String> cmbLanguage;
+    private ComboBox<String> languageCombo;
 
     // -------------------------------------------------------------------------
-    // State
+    // Core services (owned by this controller)
     // -------------------------------------------------------------------------
 
     private SdvxLoggerService loggerService;
-    private final ObservableList<OnePlayData> sessionLogData = FXCollections.observableArrayList();
-    private volatile boolean detectionRunning = false;
+    private SummaryImageService summaryImageService;
+    private CsvExportService csvExportService;
+    private XmlExportService xmlExportService;
+    private DiscordPresenceClient discordPresenceClient;
+
+    // -------------------------------------------------------------------------
+    // Detection sub-system
+    // -------------------------------------------------------------------------
+
+    private DetectionEngine detectionEngine;
+
+    // -------------------------------------------------------------------------
+    // JavaFX state
+    // -------------------------------------------------------------------------
+
+    private ObservableList<OnePlayData> sessionLogData = FXCollections.observableArrayList();
     private ExecutorService executor;
-    private ScheduledExecutorService obsReconnectScheduler;
-    private ObsWebSocketClient obsClient;
     private NativeKeyListener hotkeyListener;
+    private Map<String, String> settings = Collections.emptyMap();
 
     // -------------------------------------------------------------------------
     // Initializable
@@ -129,27 +163,166 @@ public class MainController implements Initializable {
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
-        colLogTitle.setCellValueFactory(new PropertyValueFactory<>("title"));
-        colLogDiff.setCellValueFactory(new PropertyValueFactory<>("difficulty"));
-        colLogScore.setCellValueFactory(new PropertyValueFactory<>("curScore"));
-        colLogLamp.setCellValueFactory(new PropertyValueFactory<>("lamp"));
-        colLogDate.setCellValueFactory(new PropertyValueFactory<>("date"));
-        tblSessionLog.setItems(sessionLogData);
-        tblSessionLog.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
+        logTitleColumn.setCellValueFactory(new PropertyValueFactory<>("title"));
+        logDiffColumn.setCellValueFactory(new PropertyValueFactory<>("difficulty"));
+        logScoreColumn.setCellValueFactory(new PropertyValueFactory<>("curScore"));
+        logLampColumn.setCellValueFactory(new PropertyValueFactory<>("lamp"));
+        logDateColumn.setCellValueFactory(new PropertyValueFactory<>("date"));
+        sessionLogTable.setItems(sessionLogData);
+        sessionLogTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
 
-        cmbLanguage.setItems(LocaleManager.getInstance().getAvailableLocaleCodes());
-        cmbLanguage.setValue(LocaleManager.getInstance().getCurrentCode());
-        cmbLanguage.setOnAction(_ -> LocaleManager.getInstance().setLocale(cmbLanguage.getValue()));
+        languageCombo.setItems(LocaleManager.getInstance().getAvailableLocaleCodes());
+        languageCombo.setValue(LocaleManager.getInstance().getCurrentCode());
+        languageCombo.setOnAction(_ -> LocaleManager.getInstance().setLocale(languageCombo.getValue()));
 
-        executor = Executors.newSingleThreadExecutor(r -> {
-            Thread t = new Thread(r, "detection-loop");
-            t.setDaemon(true);
-            return t;
+        executor = Executors.newSingleThreadExecutor(new DetectionThreadFactory());
+        registerHotkeys();
+        executor.submit(this::initialise);
+    }
+
+    // -------------------------------------------------------------------------
+    // Initialisation (runs on background thread)
+    // -------------------------------------------------------------------------
+
+    private void initialise() {
+        log.info("Initialising repositories and services…");
+
+        settings = new SettingsRepository().load();
+        String paramsPath = settings.getOrDefault("params_json", "resources/params.json");
+        Map<String, String> params = new ParamsRepository().load(paramsPath);
+
+        MusicListRepository musicListRepo = new MusicListRepository();
+        PlayLogRepository playLogRepo = new PlayLogRepository();
+        loggerService = new SdvxLoggerService(playLogRepo, musicListRepo);
+        ImageAnalysisService imageAnalysisService = new ImageAnalysisService(musicListRepo);
+        PerceptualHasher perceptualHasher = new PerceptualHasher();
+        summaryImageService = new SummaryImageService();
+        DiscordWebhookClient discordWebhookClient = new DiscordWebhookClient();
+        csvExportService = new CsvExportService();
+        xmlExportService = new XmlExportService();
+
+        discordPresenceClient = buildDiscordPresenceClient();
+
+        if ("true".equalsIgnoreCase(settings.get("get_rival_score"))) {
+            downloadRivalsOnStartup();
+        }
+
+        ScreenHandler screenHandler = new ScreenHandler(imageAnalysisService, loggerService, xmlExportService,
+                csvExportService, perceptualHasher, params, settings);
+        ObsOverlayService obsOverlayService = new ObsOverlayService(settings);
+        WebhookDispatcher webhookDispatcher = new WebhookDispatcher(discordWebhookClient, loggerService, settings);
+
+        detectionEngine = new DetectionEngine(this, imageAnalysisService, discordPresenceClient, screenHandler,
+                obsOverlayService, webhookDispatcher, params, settings);
+
+        Platform.runLater(() -> {
+            refreshVfDisplay();
+            setStatus("Ready — " + loggerService.getPlayLog().getPlays().size() + " plays loaded");
+            startDetection();
         });
 
-        registerHotkeys();
+        detectionEngine.startObsConnectRetry();
+        log.info("Initialisation complete");
+    }
 
-        executor.submit(this::initialise);
+    private DiscordPresenceClient buildDiscordPresenceClient() {
+        if (!"true".equalsIgnoreCase(settings.get("discord_presence_enable"))) {
+            log.debug("Discord Rich Presence disabled by setting");
+            return null;
+        }
+        String appId = settings.getOrDefault("discord_client_id", "");
+        if (appId.isBlank()) {
+            log.warn("Discord Rich Presence enabled but discord_client_id is blank");
+            return null;
+        }
+        try {
+            DiscordPresenceClient client = new DiscordPresenceClient(appId);
+            client.connect();
+            log.info("Discord Rich Presence connected");
+            return client;
+        } catch (IOException e) {
+            log.warn("Discord Rich Presence unavailable: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    private void downloadRivalsOnStartup() {
+        List<String> rivalNames = StringUtils.parseListSetting(settings.getOrDefault("rival_names", "[]"));
+        List<String> rivalDrives = StringUtils.parseListSetting(settings.getOrDefault("rival_googledrive", "[]"));
+        for (int i = 0; i < Math.min(rivalNames.size(), rivalDrives.size()); i++) {
+            String driveId = rivalDrives.get(i).trim();
+            if (driveId.isBlank()) {
+                continue;
+            }
+            try {
+                String csv = new GoogleDriveClient().downloadCsv(driveId);
+                if (csv != null) {
+                    loggerService.applyRivalCsv(csv);
+                    log.info("Downloaded rival data for {}", rivalNames.get(i));
+                }
+            } catch (IOException e) {
+                log.warn("Failed to download rival data for {}: {}", rivalNames.get(i), e.getMessage());
+            }
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // DetectionListener — UI callbacks (called on background thread)
+    // -------------------------------------------------------------------------
+
+    @Override
+    public void onPlayRecorded(OnePlayData play) {
+        Platform.runLater(() -> {
+            sessionLogData.add(play);
+            sessionLogTable.scrollTo(play);
+            refreshVfDisplay();
+        });
+    }
+
+    @Override
+    public void onTitleAndDiffChanged(String title, String diff) {
+        Platform.runLater(() -> {
+            titleLabel.setText(title);
+            diffLabel.setText(diff.toUpperCase());
+        });
+    }
+
+    @Override
+    public void onModeChanged(DetectMode mode) {
+        Platform.runLater(() -> detectModeLabel.setText(mode.name()));
+    }
+
+    @Override
+    public void onObsStatusChanged(String status) {
+        Platform.runLater(() -> obsStatusLabel.setText(status));
+    }
+
+    // -------------------------------------------------------------------------
+    // Detection start / stop
+    // -------------------------------------------------------------------------
+
+    private void startDetection() {
+        if (detectionEngine == null || detectionEngine.isRunning()) {
+            log.debug("startDetection: skipped (engine={}, running={})", detectionEngine == null ? "null" : "present",
+                    detectionEngine != null && detectionEngine.isRunning());
+            return;
+        }
+        detectionEngine.start();
+        startStopButton.setText("Stop Detection");
+        startStopButton.getStyleClass().removeAll("button-success");
+        startStopButton.getStyleClass().add("button-danger");
+        setStatus("Detection running…");
+        executor.submit(detectionEngine::runDetectionLoop);
+    }
+
+    private void stopDetection() {
+        if (detectionEngine != null) {
+            detectionEngine.stop();
+        }
+        startStopButton.setText("Start Detection");
+        startStopButton.getStyleClass().removeAll("button-danger");
+        startStopButton.getStyleClass().add("button-success");
+        setStatus("Detection stopped");
     }
 
     // -------------------------------------------------------------------------
@@ -164,7 +337,7 @@ public class MainController implements Initializable {
      */
     @FXML
     public void onStartStop(ActionEvent event) {
-        if (detectionRunning) {
+        if (detectionEngine != null && detectionEngine.isRunning()) {
             stopDetection();
         } else {
             startDetection();
@@ -180,6 +353,7 @@ public class MainController implements Initializable {
     @FXML
     public void onPopPlay(ActionEvent event) {
         if (loggerService == null) {
+            log.warn("onPopPlay: loggerService not initialised, ignoring action");
             return;
         }
         executor.submit(() -> {
@@ -200,82 +374,146 @@ public class MainController implements Initializable {
     }
 
     /**
-     * Triggers saving the current Volforce to disk (F4).
-     * 
+     * Saves the Volforce and class-badge images to disk (F4).
+     *
      * @param event
-     *            action event from the Save Volforce menu item or F4 hotkey
+     *            action event
      */
     @FXML
     public void onSaveVolforce(ActionEvent event) {
-        setStatus("F4: Save Volforce (TODO)");
-        log.info("Save Volforce triggered");
+        if (detectionEngine == null || detectionEngine.getCurrentMode() != DetectMode.RESULT
+                || detectionEngine.getCurrentFrame() == null) {
+            log.debug("onSaveVolforce: not on result screen (engine={}, mode={}, frame={})",
+                    detectionEngine == null ? "null" : "present",
+                    detectionEngine != null ? detectionEngine.getCurrentMode() : "n/a",
+                    detectionEngine != null ? detectionEngine.getCurrentFrame() : "null");
+            setStatus("F4: not on result screen");
+            return;
+        }
+        executor.submit(() -> {
+            detectionEngine.triggerCaptureVolforce();
+            Platform.runLater(() -> setStatus("F4: Volforce saved"));
+        });
     }
 
     /**
-     * Saves a summary image of the current session to disk (F5).
-     * 
+     * Saves a composite summary PNG of today's session plays (F5).
+     *
      * @param event
-     *            action event from the Save Summary menu item or F5 hotkey
+     *            action event
      */
     @FXML
     public void onSaveSummary(ActionEvent event) {
-        setStatus("F5: Save Summary (TODO)");
-        log.info("Save Summary triggered");
+        if (loggerService == null) {
+            setStatus("F5: not ready");
+            return;
+        }
+        List<OnePlayData> plays = loggerService.getTodayLog();
+        String autosaveDir = settings.getOrDefault("autosave_dir", "out");
+        executor.submit(() -> {
+            summaryImageService.generateAndSave(plays, Path.of(autosaveDir));
+            Platform.runLater(() -> setStatus("F5: Summary saved"));
+        });
     }
 
     /**
-     * Saves a screenshot of the result screen to disk (F6).
-     * 
+     * Manually triggers result-screen processing on the current frame (F6).
+     *
      * @param event
-     *            action event from the Save Result menu item or F6 hotkey
+     *            action event
      */
     @FXML
     public void onSaveResult(ActionEvent event) {
-        setStatus("F6: Save Result (TODO)");
-        log.info("Save Result triggered");
+        if (detectionEngine != null) {
+            executor.submit(detectionEngine::triggerResultScreen);
+        }
+        setStatus("F6: Save Result triggered");
     }
 
     /**
-     * Imports a score from the music selection screen (F7).
-     * 
+     * Imports the score from the music-select screen (F7).
+     *
      * @param event
-     *            action event from the Import Score menu item or F7 hotkey
+     *            action event
      */
     @FXML
     public void onImportScore(ActionEvent event) {
-        setStatus("F7: Import Score (TODO)");
-        log.info("Import Score triggered");
+        if (detectionEngine == null) {
+            setStatus("F7: not ready");
+            return;
+        }
+        if (detectionEngine.getCurrentMode() == DetectMode.SELECT && detectionEngine.getCurrentFrame() != null) {
+            executor.submit(detectionEngine::triggerSelectScreen);
+        } else {
+            setStatus("F7: not on select screen");
+        }
     }
 
     /**
-     * Updates the rival score data from the server (F8).
-     * 
+     * Updates rival score data and writes the battle XML (F8).
+     *
      * @param event
-     *            action event from the Update Rival menu item or F8 hotkey
+     *            action event
      */
     @FXML
     public void onUpdateRival(ActionEvent event) {
-        setStatus("F8: Update Rival (TODO)");
-        log.info("Update Rival triggered");
+        executor.submit(() -> {
+            loggerService.refreshBestAndVf();
+            ObsWebSocketClient obsClient = detectionEngine != null ? detectionEngine.getObsClient() : null;
+            if (obsClient != null && obsClient.isConnected()) {
+                Maya2Client maya2 = buildMaya2Client();
+                if (maya2 != null && maya2.isAlive()) {
+                    log.debug("Maya2 alive — rival cross-reference would go here");
+                }
+            }
+            try {
+                xmlExportService.writeSdvxBattle(loggerService.getTodayLog(), new File("out/sdvx_battle.xml"));
+            } catch (IOException e) {
+                log.warn("Failed to write sdvx_battle.xml: {}", e.getMessage());
+            }
+            Platform.runLater(() -> {
+                refreshVfDisplay();
+                setStatus("F8: Rival updated");
+            });
+        });
     }
 
     /**
-     * Starts RTA (Real-Time Attack) mode (F9).
-     * 
+     * Toggles RTA (Real-Time Attack) mode (F9).
+     *
      * @param event
-     *            action event from the RTA menu item or F9 hotkey
+     *            action event
      */
     @FXML
     public void onStartRta(ActionEvent event) {
-        setStatus("F9: Start RTA Mode (TODO)");
-        log.info("Start RTA triggered");
+        if (detectionEngine == null) {
+            log.warn("onStartRta: detectionEngine not initialised, ignoring action");
+            return;
+        }
+        if (detectionEngine.isRtaMode()) {
+            detectionEngine.stopRta();
+            setStatus("F9: RTA stopped");
+            log.info("RTA mode stopped");
+            f9Button.setText("Start RTA");
+        } else {
+            double targetVf;
+            try {
+                targetVf = Double.parseDouble(settings.getOrDefault("rta_target_vf", "20.0"));
+            } catch (NumberFormatException e) {
+                targetVf = 20.0;
+            }
+            detectionEngine.startRta(targetVf);
+            setStatus("F9: RTA started, target VF=" + targetVf);
+            log.info("RTA mode started, target VF={}", targetVf);
+            f9Button.setText("Stop RTA");
+        }
     }
 
     /**
      * Opens the Settings dialog.
-     * 
+     *
      * @param event
-     *            action event from the Settings menu item
+     *            action event
      */
     @FXML
     public void onSettings(ActionEvent event) {
@@ -292,11 +530,13 @@ public class MainController implements Initializable {
             dlg.setTitle(bundle.getString("label.settings.title"));
             dlg.getDialogPane().setContent(root);
             dlg.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
-            if (lblStatus != null && lblStatus.getScene() != null) {
-                dlg.initOwner(lblStatus.getScene().getWindow());
+            if (statusLabel.getScene() != null) {
+                dlg.initOwner(statusLabel.getScene().getWindow());
             }
-            dlg.showAndWait().filter(bt -> bt == ButtonType.OK)
-                    .ifPresent(_ -> ((SettingsController) loader.getController()).save());
+            dlg.showAndWait().filter(bt -> bt == ButtonType.OK).ifPresent(_ -> {
+                ((SettingsController) loader.getController()).save();
+                settings = new SettingsRepository().load();
+            });
         } catch (IOException e) {
             log.error("Failed to open Settings dialog", e);
             setStatus("Error opening Settings: " + e.getMessage());
@@ -305,9 +545,9 @@ public class MainController implements Initializable {
 
     /**
      * Opens the OBS Control dialog.
-     * 
+     *
      * @param event
-     *            action event from the OBS Control menu item
+     *            action event
      */
     @FXML
     public void onObsControl(ActionEvent event) {
@@ -324,8 +564,8 @@ public class MainController implements Initializable {
             dlg.setTitle(bundle.getString("label.obs.control.title"));
             dlg.getDialogPane().setContent(root);
             dlg.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
-            if (lblStatus != null && lblStatus.getScene() != null) {
-                dlg.initOwner(lblStatus.getScene().getWindow());
+            if (statusLabel.getScene() != null) {
+                dlg.initOwner(statusLabel.getScene().getWindow());
             }
             dlg.showAndWait().filter(bt -> bt == ButtonType.OK)
                     .ifPresent(_ -> ((ObsControlController) loader.getController()).save());
@@ -336,22 +576,43 @@ public class MainController implements Initializable {
     }
 
     /**
-     * Placeholder for Google Drive integration (exporting logs, uploading
-     * screenshots, etc.).
+     * Downloads rival CSV from Google Drive and cross-references it.
      *
      * @param event
-     *            action event from the Google Drive menu item
+     *            action event
      */
     @FXML
     public void onGoogleDrive(ActionEvent event) {
-        setStatus("Google Drive (TODO)");
+        executor.submit(() -> {
+            Map<String, String> currentSettings = new SettingsRepository().load();
+            String fileId = currentSettings.getOrDefault("my_googledrive", "").trim();
+            if (fileId.isEmpty()) {
+                Platform.runLater(() -> setStatus("Google Drive file ID not configured in settings"));
+                return;
+            }
+            try {
+                String csv = new GoogleDriveClient().downloadCsv(fileId);
+                if (csv != null) {
+                    loggerService.applyRivalCsv(csv);
+                    Platform.runLater(() -> {
+                        refreshVfDisplay();
+                        setStatus("Rival data updated from Google Drive");
+                    });
+                } else {
+                    Platform.runLater(() -> setStatus("Google Drive: download returned no data"));
+                }
+            } catch (IOException e) {
+                log.warn("Google Drive download failed: {}", e.getMessage());
+                Platform.runLater(() -> setStatus("Google Drive sync failed: " + e.getMessage()));
+            }
+        });
     }
 
     /**
      * Opens the Webhooks configuration dialog.
      *
      * @param event
-     *            action event from the Webhooks menu item
+     *            action event
      */
     @FXML
     public void onWebhooks(ActionEvent event) {
@@ -371,8 +632,8 @@ public class MainController implements Initializable {
             dlg.setTitle(title);
             dlg.getDialogPane().setContent(root);
             dlg.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
-            if (lblStatus != null && lblStatus.getScene() != null) {
-                dlg.initOwner(lblStatus.getScene().getWindow());
+            if (statusLabel.getScene() != null) {
+                dlg.initOwner(statusLabel.getScene().getWindow());
             }
             dlg.showAndWait().filter(bt -> bt == ButtonType.OK)
                     .ifPresent(_ -> ((WebhooksController) loader.getController()).save());
@@ -383,60 +644,161 @@ public class MainController implements Initializable {
     }
 
     /**
-     * Exits the application.
-     * 
+     * Exports all play log entries to a CSV file.
+     *
      * @param event
-     *            action event from the Exit menu item
+     *            action event
+     */
+    @FXML
+    public void onExportAllCsv(ActionEvent event) {
+        if (loggerService == null) {
+            setStatus("Not ready");
+            return;
+        }
+        javafx.stage.FileChooser chooser = new javafx.stage.FileChooser();
+        chooser.setTitle("Export All Plays CSV");
+        chooser.getExtensionFilters().add(new javafx.stage.FileChooser.ExtensionFilter("CSV Files", "*.csv"));
+        File file = chooser.showSaveDialog(statusLabel.getScene().getWindow());
+        if (file != null) {
+            final File target = file;
+            executor.submit(() -> {
+                try {
+                    csvExportService.writeAllLogCsv(loggerService.getPlayLog().getPlays(), target);
+                    Platform.runLater(() -> setStatus("Exported all plays CSV to " + target.getName()));
+                } catch (IOException e) {
+                    log.error("Failed to export all plays CSV", e);
+                    Platform.runLater(() -> setStatus("Export failed: " + e.getMessage()));
+                }
+            });
+        }
+    }
+
+    /**
+     * Exports personal-best scores to a CSV file.
+     *
+     * @param event
+     *            action event
+     */
+    @FXML
+    public void onExportBestCsv(ActionEvent event) {
+        if (loggerService == null) {
+            setStatus("Not ready");
+            return;
+        }
+        javafx.stage.FileChooser chooser = new javafx.stage.FileChooser();
+        chooser.setTitle("Export Best Scores CSV");
+        chooser.getExtensionFilters().add(new javafx.stage.FileChooser.ExtensionFilter("CSV Files", "*.csv"));
+        File file = chooser.showSaveDialog(statusLabel.getScene().getWindow());
+        if (file != null) {
+            final File target = file;
+            executor.submit(() -> {
+                try {
+                    csvExportService.writeBestCsv(loggerService.getBestAllFumen(), target);
+                    Platform.runLater(() -> setStatus("Exported best scores CSV to " + target.getName()));
+                } catch (IOException e) {
+                    log.error("Failed to export best scores CSV", e);
+                    Platform.runLater(() -> setStatus("Export failed: " + e.getMessage()));
+                }
+            });
+        }
+    }
+
+    /**
+     * Exits the application.
+     *
+     * @param event
+     *            action event
      */
     @FXML
     public void onExit(ActionEvent event) {
+        onWindowClose();
         Platform.exit();
     }
 
     // -------------------------------------------------------------------------
-    // Public API (called from detection loop / app)
+    // Public API (called by the app on window close / locale change)
     // -------------------------------------------------------------------------
 
     /**
-     * Called by the detection loop (on background thread) when a new song is
-     * detected.
-     *
-     * @param info
-     *            best-score info for the detected song/chart
+     * Performs on-close actions: generate today summary, OBS quit event, Maya2
+     * upload, play-count CSV, send playlist.
      */
-    public void onSongDetected(MusicInfo info) {
-        Platform.runLater(() -> {
-            lblTitle.setText(info.getTitle());
-            lblDiff.setText(info.getDifficulty().toUpperCase());
-            lblLevel.setText(ScoreFormatter.formatLevel(info.getLvAsInt()));
-            lblBest.setText(ScoreFormatter.formatScore(info.getBestScore()));
-            lblLamp.setText(info.getBestLamp());
-            lblVf.setText(ScoreFormatter.formatVf(info.getVf()));
-        });
+    public void onWindowClose() {
+        log.info("Performing on-close actions");
+        if (loggerService == null) {
+            log.warn("onWindowClose: loggerService not initialised, skipping on-close actions");
+            return;
+        }
+        String autosaveDir = settings.getOrDefault("autosave_dir", "out");
+        List<OnePlayData> todayPlays = loggerService.getTodayLog();
+        Map<String, String> params = detectionEngine != null ? detectionEngine.getParams() : Collections.emptyMap();
+        summaryImageService.generateAndSave(todayPlays, Path.of(autosaveDir), params);
+
+        if (detectionEngine != null) {
+            detectionEngine.triggerQuitSources();
+        }
+
+        saveCsvToGoogleDriveOnClose();
+        uploadToMaya2OnClose();
+
+        if (detectionEngine != null) {
+            detectionEngine.sendPlaylistSummary();
+        }
+        if (discordPresenceClient != null) {
+            discordPresenceClient.close();
+        }
+    }
+
+    private void saveCsvToGoogleDriveOnClose() {
+        String myGdrive = settings.getOrDefault("my_googledrive", "").trim();
+        if (myGdrive.isBlank()) {
+            log.debug("saveCsvToGoogleDriveOnClose: my_googledrive not configured, skipping");
+            return;
+        }
+        try {
+            csvExportService.writeBestCsv(loggerService.getBestAllFumen(), new File(myGdrive, "sdvx_helper_best.csv"));
+            log.info("Best CSV saved to Google Drive path");
+        } catch (IOException e) {
+            log.warn("Failed to save best CSV on close: {}", e.getMessage());
+        }
+        try {
+            csvExportService.writeAllLogCsv(loggerService.getPlayLog().getPlays(), new File(myGdrive, "playcount.csv"));
+            log.info("Playcount CSV saved to Google Drive path");
+        } catch (IOException e) {
+            log.warn("Failed to save playcount CSV on close: {}", e.getMessage());
+        }
+    }
+
+    private void uploadToMaya2OnClose() {
+        Maya2Client maya2 = buildMaya2Client();
+        if (maya2 == null || !maya2.isAlive()) {
+            log.debug("uploadToMaya2OnClose: Maya2 not configured or unreachable, skipping upload");
+            return;
+        }
+        try {
+            File tempCsv = File.createTempFile("sdvx_best_", ".csv");
+            csvExportService.writeBestCsv(loggerService.getBestAllFumen(), tempCsv);
+            String csvContent = java.nio.file.Files.readString(tempCsv.toPath());
+            maya2.upload("/upload_best", csvContent);
+            tempCsv.delete();
+            log.info("Best scores uploaded to Maya2");
+        } catch (IOException e) {
+            log.debug("Maya2 upload failed: {}", e.getMessage());
+        }
     }
 
     /**
-     * Called by the detection loop when the game state changes.
-     *
-     * @param mode
-     *            new detection mode
+     * Stops the detection loop and releases the JNativeHook global hotkey listener.
+     * Called by the app before a locale-triggered scene rebuild.
      */
-    public void onDetectModeChanged(DetectMode mode) {
-        Platform.runLater(() -> lblDetectMode.setText(mode.name()));
-    }
-
-    /**
-     * Called when a new play is recorded.
-     *
-     * @param play
-     *            newly recorded play
-     */
-    public void onPlayRecorded(OnePlayData play) {
-        Platform.runLater(() -> {
-            sessionLogData.add(play);
-            tblSessionLog.scrollTo(play);
-            refreshVfDisplay();
-        });
+    public void cleanup() {
+        if (detectionEngine != null) {
+            detectionEngine.shutdown();
+        }
+        if (executor != null) {
+            executor.shutdownNow();
+        }
+        unregisterHotkeys();
     }
 
     /**
@@ -446,204 +808,41 @@ public class MainController implements Initializable {
      *            log line to append
      */
     public void appendOutput(String line) {
-        Platform.runLater(() -> txtOutput.appendText(line + "\n"));
-    }
-
-    /**
-     * Stops the detection loop and releases the JNativeHook global hotkey listener.
-     * Called by the app before a locale-triggered scene rebuild.
-     */
-    public void cleanup() {
-        detectionRunning = false;
-        if (executor != null) {
-            executor.shutdownNow();
-        }
-        if (obsReconnectScheduler != null) {
-            obsReconnectScheduler.shutdownNow();
-            obsReconnectScheduler = null;
-        }
-        if (obsClient != null) {
-            obsClient.close();
-            obsClient = null;
-        }
-        unregisterHotkeys();
+        Platform.runLater(() -> outputArea.appendText(line + "\n"));
     }
 
     // -------------------------------------------------------------------------
-    // Private helpers
+    // Private UI helpers
     // -------------------------------------------------------------------------
 
-    /**
-     * Initializes repositories and services, then starts the detection loop. Runs
-     * on a background thread started by {@link #initialize(URL, ResourceBundle)}.
-     */
-    private void initialise() {
-        log.info("Initialising repositories and services…");
-        PlayLogRepository playLogRepo = new PlayLogRepository();
-        MusicListRepository musicListRepo = new MusicListRepository();
-        loggerService = new SdvxLoggerService(playLogRepo, musicListRepo);
-
-        Platform.runLater(() -> {
-            refreshVfDisplay();
-            setStatus("Ready — " + loggerService.getPlayLog().getPlays().size() + " plays loaded");
-            startDetection();
-        });
-        startObsConnectRetry();
-        log.info("Initialisation complete");
-    }
-
-    /**
-     * Starts the OBS auto-connect loop. Attempts to connect immediately, then
-     * silently retries every 5 seconds until a connection succeeds.
-     */
-    private void startObsConnectRetry() {
-        if (obsReconnectScheduler != null) {
-            return;
-        }
-        obsReconnectScheduler = Executors.newSingleThreadScheduledExecutor(r -> {
-            Thread t = new Thread(r, "obs-reconnect");
-            t.setDaemon(true);
-            return t;
-        });
-        obsReconnectScheduler.scheduleWithFixedDelay(this::tryConnectObs, 0, 5, TimeUnit.SECONDS);
-    }
-
-    private void tryConnectObs() {
-        if (obsClient != null && obsClient.isConnected()) {
-            return;
-        }
-        try {
-            Map<String, String> settings = new SettingsRepository().load();
-            String host = settings.getOrDefault("obs_host", "localhost");
-            int port = parseIntSafe(settings.get("obs_port"), 4455);
-            String pass = settings.getOrDefault("obs_password", "");
-            ObsWebSocketClient client = new ObsWebSocketClient(host, port, pass);
-            client.connect();
-            obsClient = client;
-            Platform.runLater(() -> {
-                if (lblObsStatus != null) {
-                    lblObsStatus.setText("OBS: connected");
-                }
-            });
-            log.info("OBS connected successfully");
-        } catch (IOException e) {
-            log.debug("OBS connect retry failed: {}", e.getMessage());
-            Platform.runLater(() -> {
-                if (lblObsStatus != null) {
-                    lblObsStatus.setText("OBS: disconnected");
-                }
-            });
-        }
-    }
-
-    private static int parseIntSafe(String s, int fallback) {
-        if (s == null || s.isBlank()) {
-            return fallback;
-        }
-        try {
-            return Integer.parseInt(s.trim());
-        } catch (NumberFormatException e) {
-            return fallback;
-        }
-    }
-
-    /**
-     * Starts the detection loop on a background thread and updates the UI to
-     * reflect the running state.
-     */
-    private void startDetection() {
-        if (detectionRunning) {
-            return;
-        }
-        detectionRunning = true;
-        btnStartStop.setText("Stop Detection");
-        btnStartStop.getStyleClass().removeAll("button-success");
-        btnStartStop.getStyleClass().add("button-danger");
-        setStatus("Detection running…");
-        executor.submit(this::runDetectionLoop);
-    }
-
-    /**
-     * Stops the detection loop and updates the UI accordingly.
-     */
-    private void stopDetection() {
-        detectionRunning = false;
-        btnStartStop.setText("Start Detection");
-        btnStartStop.getStyleClass().removeAll("button-danger");
-        btnStartStop.getStyleClass().add("button-success");
-        setStatus("Detection stopped");
-    }
-
-    /**
-     * Main loop that captures OBS frames, runs the image analysis, and pushes new
-     * plays to the logger service.
-     *
-     * <p>
-     * Runs on a background thread started by {@link #startDetection()}.
-     * </p>
-     */
-    private void runDetectionLoop() {
-        log.info("Detection loop started");
-        while (detectionRunning) {
-            try {
-                Thread.sleep(500);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                break;
-            }
-        }
-        log.info("Detection loop stopped");
-    }
-
-    /**
-     * Refreshes the total Volforce and play count display from the logger service.
-     * Should be called after any change to the play log (new play, undo, etc.).
-     */
     private void refreshVfDisplay() {
         if (loggerService == null) {
+            log.debug("refreshVfDisplay: loggerService not yet initialised, skipping display refresh");
             return;
         }
-        lblTotalVf.setText(ScoreFormatter.formatTotalVf(loggerService.getTotalVfInt()));
-        lblPlayCount.setText(String.valueOf(loggerService.getPlayLog().getPlays().size()));
+        totalVfLabel.setText(ScoreFormatter.formatTotalVf(loggerService.getTotalVfInt()));
+        playCountLabel.setText(String.valueOf(loggerService.getPlayLog().getPlays().size()));
     }
 
-    /**
-     * Updates the status label with the given message. Should be called on the
-     * JavaFX application thread.
-     * 
-     * @param msg
-     *            status message to display
-     */
     private void setStatus(String msg) {
-        lblStatus.setText(msg);
+        statusLabel.setText(msg);
     }
 
-    /**
-     * Registers global hotkeys (F4-F9) using JNativeHook, mapping them to the
-     * corresponding action handlers. Should be called once during initialization.
-     */
+    // -------------------------------------------------------------------------
+    // Hotkeys
+    // -------------------------------------------------------------------------
+
     private void registerHotkeys() {
         try {
             GlobalScreen.registerNativeHook();
-            hotkeyListener = new NativeKeyListener() {
-                @Override
-                public void nativeKeyPressed(NativeKeyEvent e) {
-                    int code = e.getKeyCode();
-                    if (code == NativeKeyEvent.VC_F4) {
-                        Platform.runLater(() -> onSaveVolforce(null));
-                    } else if (code == NativeKeyEvent.VC_F5) {
-                        Platform.runLater(() -> onSaveSummary(null));
-                    } else if (code == NativeKeyEvent.VC_F6) {
-                        Platform.runLater(() -> onSaveResult(null));
-                    } else if (code == NativeKeyEvent.VC_F7) {
-                        Platform.runLater(() -> onImportScore(null));
-                    } else if (code == NativeKeyEvent.VC_F8) {
-                        Platform.runLater(() -> onUpdateRival(null));
-                    } else if (code == NativeKeyEvent.VC_F9) {
-                        Platform.runLater(() -> onStartRta(null));
-                    }
-                }
-            };
+            Map<Integer, Runnable> keyActions = new HashMap<>();
+            keyActions.put(NativeKeyEvent.VC_F4, () -> Platform.runLater(() -> onSaveVolforce(null)));
+            keyActions.put(NativeKeyEvent.VC_F5, () -> Platform.runLater(() -> onSaveSummary(null)));
+            keyActions.put(NativeKeyEvent.VC_F6, () -> Platform.runLater(() -> onSaveResult(null)));
+            keyActions.put(NativeKeyEvent.VC_F7, () -> Platform.runLater(() -> onImportScore(null)));
+            keyActions.put(NativeKeyEvent.VC_F8, () -> Platform.runLater(() -> onUpdateRival(null)));
+            keyActions.put(NativeKeyEvent.VC_F9, () -> Platform.runLater(() -> onStartRta(null)));
+            hotkeyListener = new SdvxNativeKeyListener(keyActions);
             GlobalScreen.addNativeKeyListener(hotkeyListener);
             log.info("Global hotkeys F4-F9 registered");
         } catch (NativeHookException e) {
@@ -651,10 +850,6 @@ public class MainController implements Initializable {
         }
     }
 
-    /**
-     * Unregisters the global hotkey listener and native hook. Should be called
-     * during cleanup to release resources.
-     */
     private void unregisterHotkeys() {
         if (hotkeyListener != null) {
             GlobalScreen.removeNativeKeyListener(hotkeyListener);
@@ -665,5 +860,20 @@ public class MainController implements Initializable {
         } catch (NativeHookException e) {
             log.debug("Error unregistering native hook", e);
         }
+    }
+
+    // -------------------------------------------------------------------------
+    // Miscellaneous private helpers
+    // -------------------------------------------------------------------------
+
+    private Maya2Client buildMaya2Client() {
+        String url = settings.getOrDefault("maya2_url", "");
+        String key = settings.getOrDefault("maya2_key", "");
+        if (url.isBlank() || key.isBlank()) {
+            log.debug("buildMaya2Client: maya2_url or maya2_key not configured (url blank={}, key blank={})",
+                    url.isBlank(), key.isBlank());
+            return null;
+        }
+        return new Maya2Client(url, key);
     }
 }

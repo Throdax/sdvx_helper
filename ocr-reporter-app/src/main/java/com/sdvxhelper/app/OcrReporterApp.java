@@ -10,6 +10,7 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 
+import com.sdvxhelper.app.controller.OcrReporterController;
 import com.sdvxhelper.i18n.LocaleManager;
 import com.sdvxhelper.repository.SettingsRepository;
 import com.sdvxhelper.ui.WindowPositionHelper;
@@ -43,24 +44,29 @@ public class OcrReporterApp extends Application {
     }
 
     private Stage primaryStage;
+    private OcrReporterController controller;
 
     @Override
     public void start(Stage stage) throws IOException {
         this.primaryStage = stage;
         SettingsRepository repo = new SettingsRepository();
         LocaleManager.getInstance().init(repo);
-        LocaleManager.getInstance().localeProperty()
-                .addListener((_, _, newLocale) -> Platform.runLater(() -> {
-                    try {
-                        buildScene(newLocale);
-                    } catch (IOException e) {
-                        log.error("Failed to rebuild scene after locale change", e);
-                    }
-                }));
+        LocaleManager.getInstance().localeProperty().addListener((_, _, newLocale) -> Platform.runLater(() -> {
+            try {
+                buildScene(newLocale);
+            } catch (IOException e) {
+                log.error("Failed to rebuild scene after locale change", e);
+            }
+        }));
         buildScene(LocaleManager.getInstance().getCurrentLocale());
         stage.setTitle("SDVX OCR Reporter " + VersionUtil.getVersion("ocr"));
         WindowPositionHelper.applyAndPersist(stage, repo, "ocr_lx", "ocr_ly");
         stage.setMaximized(true);
+        stage.setOnCloseRequest(_ -> {
+            if (controller != null) {
+                controller.onWindowClose();
+            }
+        });
         stage.show();
         log.info("OCR Reporter UI displayed");
     }
@@ -78,6 +84,7 @@ public class OcrReporterApp extends Application {
         ResourceBundle bundle = ResourceBundle.getBundle("i18n/messages", locale);
         FXMLLoader loader = new FXMLLoader(fxmlUrl, bundle);
         Scene scene = new Scene(loader.load());
+        controller = loader.getController();
         URL cssUrl = getClass().getResource("/styles/light.css");
         if (cssUrl != null) {
             scene.getStylesheets().add(cssUrl.toExternalForm());

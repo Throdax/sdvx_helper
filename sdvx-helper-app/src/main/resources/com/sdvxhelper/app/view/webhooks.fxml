@@ -27,7 +27,7 @@
         <!-- Player name -->
         <HBox spacing="8" alignment="CENTER_LEFT">
             <Label text="%text.webhook.playername" styleClass="muted"/>
-            <TextField fx:id="txtPlayerName" prefColumnCount="30" HBox.hgrow="ALWAYS"/>
+            <TextField fx:id="playerNameField" prefColumnCount="30" HBox.hgrow="ALWAYS"/>
         </HBox>
 
         <Separator/>
@@ -36,11 +36,11 @@
         <HBox spacing="10">
             <VBox spacing="6" HBox.hgrow="ALWAYS">
                 <Label text="Webhooks" styleClass="sub-heading"/>
-                <ListView fx:id="lstWebhooks" prefHeight="140"/>
+                <ListView fx:id="webhooksList" prefHeight="140"/>
             </VBox>
             <VBox spacing="6" alignment="TOP_CENTER">
-                <Button fx:id="btnAdd"    text="%button.webhook.add"    onAction="#onAdd"    styleClass="button-success"/>
-                <Button fx:id="btnDelete" text="%button.webhook.delete" onAction="#onDelete" styleClass="button-danger"/>
+                <Button fx:id="addButton"    text="%button.webhook.add"    onAction="#onAdd"    styleClass="button-success"/>
+                <Button fx:id="deleteButton" text="%button.webhook.delete" onAction="#onDelete" styleClass="button-danger"/>
             </VBox>
         </HBox>
 
@@ -52,22 +52,22 @@
             </columnConstraints>
 
             <Label text="%text.webhook.settings.name" GridPane.columnIndex="0" GridPane.rowIndex="0" styleClass="muted"/>
-            <TextField fx:id="txtName"               GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+            <TextField fx:id="nameField"               GridPane.columnIndex="1" GridPane.rowIndex="0"/>
 
             <Label text="%text.webhook.url"          GridPane.columnIndex="0" GridPane.rowIndex="1" styleClass="muted"/>
-            <TextField fx:id="txtUrl"                GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+            <TextField fx:id="urlField"                GridPane.columnIndex="1" GridPane.rowIndex="1"/>
         </GridPane>
 
         <HBox spacing="20" alignment="CENTER_LEFT">
-            <CheckBox fx:id="chkSendImages"   text="%checkbox.webhook.send.images"/>
-            <CheckBox fx:id="chkSendPlaylist" text="%text.weebhook.send.playlist"/>
+            <CheckBox fx:id="sendImagesCheck"   text="%checkbox.webhook.send.images"/>
+            <CheckBox fx:id="sendPlaylistCheck" text="%text.weebhook.send.playlist"/>
         </HBox>
 
         <!-- Target level -->
         <TitledPane text="%text.webhook.target.level" collapsible="true" expanded="true">
             <VBox spacing="6">
                 <padding><Insets top="8" right="8" bottom="8" left="8"/></padding>
-                <CheckBox fx:id="chkLevelAll" text="all"/>
+                <CheckBox fx:id="levelAllCheck" text="all"/>
                 <FlowPane fx:id="paneLevels" hgap="8" vgap="4"/>
             </VBox>
         </TitledPane>
@@ -76,13 +76,13 @@
         <TitledPane text="%text.webhook.target.lamp" collapsible="true" expanded="true">
             <FlowPane hgap="10" vgap="6">
                 <padding><Insets top="8" right="8" bottom="8" left="8"/></padding>
-                <CheckBox fx:id="chkLampAll"    text="all"/>
-                <CheckBox fx:id="chkLampPuc"    text="PUC"/>
-                <CheckBox fx:id="chkLampUc"     text="UC"/>
-                <CheckBox fx:id="chkLampExh"    text="MAXXIVE"/>
-                <CheckBox fx:id="chkLampHard"   text="EXC"/>
-                <CheckBox fx:id="chkLampClear"  text="COMP"/>
-                <CheckBox fx:id="chkLampFailed" text="Failed"/>
+                <CheckBox fx:id="lampAllCheck"    text="all"/>
+                <CheckBox fx:id="lampPucCheck"    text="PUC"/>
+                <CheckBox fx:id="lampUcCheck"     text="UC"/>
+                <CheckBox fx:id="lampExhCheck"    text="MAXXIVE"/>
+                <CheckBox fx:id="lampHardCheck"   text="EXC"/>
+                <CheckBox fx:id="lampClearCheck"  text="COMP"/>
+                <CheckBox fx:id="lampFailedCheck" text="Failed"/>
             </FlowPane>
         </TitledPane>
 

@@ -4,14 +4,24 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Path;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.ResourceBundle;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
@@ -22,12 +32,15 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 
+import com.sdvxhelper.app.controller.factories.PlayLogSyncThreadFactory;
 import com.sdvxhelper.i18n.LocaleManager;
 import com.sdvxhelper.model.OnePlayData;
 import com.sdvxhelper.model.PlayLog;
 import com.sdvxhelper.repository.PlayLogRepository;
 import com.sdvxhelper.repository.SettingsRepository;
+import com.sdvxhelper.repository.SpecialTitlesRepository;
 import com.sdvxhelper.service.XmlExportService;
+import com.sdvxhelper.util.SpecialTitles;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,54 +61,63 @@ public class PlayLogSyncController implements Initializable {
     private static final Logger log = LoggerFactory.getLogger(PlayLogSyncController.class);
 
     @FXML
-    private TextField txtPlayLogPath;
+    private TextField playLogPathField;
     @FXML
-    private TextField txtResultsFolder;
+    private TextField resultsFolderField;
     @FXML
-    private TextField txtOutputFolder;
+    private TextField outputFolderField;
     @FXML
-    private Button btnSync;
+    private Button syncButton;
     @FXML
-    private Button btnExport;
+    private Button exportButton;
     @FXML
-    private TableView<OnePlayData> tblPlays;
+    private TableView<OnePlayData> playsTable;
     @FXML
-    private TableColumn<OnePlayData, String> colDate;
+    private TableColumn<OnePlayData, String> dateColumn;
     @FXML
-    private TableColumn<OnePlayData, String> colTitle;
+    private TableColumn<OnePlayData, String> titleColumn;
     @FXML
-    private TableColumn<OnePlayData, String> colDiff;
+    private TableColumn<OnePlayData, String> difficultyColumn;
     @FXML
-    private TableColumn<OnePlayData, Integer> colScore;
+    private TableColumn<OnePlayData, Integer> scoreColumn;
     @FXML
-    private TableColumn<OnePlayData, String> colLamp;
+    private TableColumn<OnePlayData, String> lampColumn;
     @FXML
-    private TableColumn<OnePlayData, String> colStatus;
+    private TableColumn<OnePlayData, String> statusColumn;
     @FXML
-    private TextArea txtLog;
+    private TextArea logArea;
     @FXML
-    private Label lblStatus;
+    private Label statusLabel;
     @FXML
-    private ComboBox<String> cmbLanguage;
+    private ComboBox<String> languageCombo;
 
-    private final ObservableList<OnePlayData> plays = FXCollections.observableArrayList();
+    @FXML
+    private CheckBox rebuildCheck;
+    @FXML
+    private TextField timeOffsetField;
+
+    private static final DateTimeFormatter SCREENSHOT_DATE_FMT = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
+    private static final List<String> DIFFICULTIES = List.of("NOV", "ADV", "EXH", "APPEND");
+
+    private ObservableList<OnePlayData> plays = FXCollections.observableArrayList();
     private PlayLog currentPlayLog;
-    private final SettingsRepository settingsRepo = new SettingsRepository();
+    private SettingsRepository settingsRepo = new SettingsRepository();
     private Map<String, String> settings;
+    private ExecutorService bgExecutor = Executors.newSingleThreadExecutor(new PlayLogSyncThreadFactory());
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
-        colDate.setCellValueFactory(new PropertyValueFactory<>("date"));
-        colTitle.setCellValueFactory(new PropertyValueFactory<>("title"));
-        colDiff.setCellValueFactory(new PropertyValueFactory<>("difficulty"));
-        colScore.setCellValueFactory(new PropertyValueFactory<>("curScore"));
-        colLamp.setCellValueFactory(new PropertyValueFactory<>("lamp"));
-        tblPlays.setItems(plays);
-        tblPlays.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
+        dateColumn.setCellValueFactory(new PropertyValueFactory<>("date"));
+        titleColumn.setCellValueFactory(new PropertyValueFactory<>("title"));
+        difficultyColumn.setCellValueFactory(new PropertyValueFactory<>("difficulty"));
+        scoreColumn.setCellValueFactory(new PropertyValueFactory<>("curScore"));
+        lampColumn.setCellValueFactory(new PropertyValueFactory<>("lamp"));
+        playsTable.setItems(plays);
+        playsTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
 
-        cmbLanguage.setItems(LocaleManager.getInstance().getAvailableLocaleCodes());
-        cmbLanguage.setValue(LocaleManager.getInstance().getCurrentCode());
-        cmbLanguage.setOnAction(_ -> LocaleManager.getInstance().setLocale(cmbLanguage.getValue()));
+        languageCombo.setItems(LocaleManager.getInstance().getAvailableLocaleCodes());
+        languageCombo.setValue(LocaleManager.getInstance().getCurrentCode());
+        languageCombo.setOnAction(_ -> LocaleManager.getInstance().setLocale(languageCombo.getValue()));
 
         settings = settingsRepo.load();
         prefillFields();
@@ -106,21 +128,21 @@ public class PlayLogSyncController implements Initializable {
         if (savedLog == null || savedLog.isBlank()) {
             savedLog = Path.of(System.getProperty("user.dir"), "alllog.xml").toAbsolutePath().toString();
         }
-        txtPlayLogPath.setText(savedLog);
+        playLogPathField.setText(savedLog);
 
         String autosaveDir = settings.get("autosave_dir");
-        txtResultsFolder.setText(autosaveDir == null ? "" : autosaveDir);
+        resultsFolderField.setText(autosaveDir == null ? "" : autosaveDir);
 
         String savedOut = settings.get("play_log_sync.output_folder");
         if (savedOut == null || savedOut.isBlank()) {
             savedOut = System.getProperty("user.dir");
         }
-        txtOutputFolder.setText(savedOut);
+        outputFolderField.setText(savedOut);
     }
 
     private void persistFields() {
-        settings.put("play_log_sync.play_log_path", txtPlayLogPath.getText().trim());
-        settings.put("play_log_sync.output_folder", txtOutputFolder.getText().trim());
+        settings.put("play_log_sync.play_log_path", playLogPathField.getText().trim());
+        settings.put("play_log_sync.output_folder", outputFolderField.getText().trim());
         try {
             settingsRepo.save(settings);
         } catch (IOException e) {
@@ -139,9 +161,9 @@ public class PlayLogSyncController implements Initializable {
         FileChooser fc = new FileChooser();
         fc.setTitle("Select alllog.xml");
         fc.getExtensionFilters().add(new FileChooser.ExtensionFilter("XML Files", "*.xml"));
-        File f = fc.showOpenDialog(btnSync.getScene().getWindow());
+        File f = fc.showOpenDialog(syncButton.getScene().getWindow());
         if (f != null) {
-            txtPlayLogPath.setText(f.getAbsolutePath());
+            playLogPathField.setText(f.getAbsolutePath());
             persistFields();
         }
     }
@@ -156,9 +178,9 @@ public class PlayLogSyncController implements Initializable {
     public void onBrowseResults(ActionEvent event) {
         DirectoryChooser dc = new DirectoryChooser();
         dc.setTitle("Select Results Screenshot Folder");
-        File d = dc.showDialog(btnSync.getScene().getWindow());
+        File d = dc.showDialog(syncButton.getScene().getWindow());
         if (d != null) {
-            txtResultsFolder.setText(d.getAbsolutePath());
+            resultsFolderField.setText(d.getAbsolutePath());
         }
     }
 
@@ -172,36 +194,249 @@ public class PlayLogSyncController implements Initializable {
     public void onBrowseOutput(ActionEvent event) {
         DirectoryChooser dc = new DirectoryChooser();
         dc.setTitle("Select Output Folder");
-        File d = dc.showDialog(btnSync.getScene().getWindow());
+        File d = dc.showDialog(syncButton.getScene().getWindow());
         if (d != null) {
-            txtOutputFolder.setText(d.getAbsolutePath());
+            outputFolderField.setText(d.getAbsolutePath());
             persistFields();
         }
     }
 
     /**
-     * Loads the play log and displays it in the table.
+     * Starts the sync process: reads screenshot filenames from the results folder,
+     * parses each as a play record, and adds entries not already in the play log
+     * (with a 120-second timestamp tolerance). Applies special-titles handling.
      *
      * @param event
      *            action event
      */
     @FXML
     public void onSync(ActionEvent event) {
-        String logPath = txtPlayLogPath.getText().trim();
+        String logPath = playLogPathField.getText().trim();
+        String resultsPath = resultsFolderField.getText().trim();
         if (logPath.isBlank()) {
             appendLog("ERROR: Please select the play log file.");
             return;
         }
+        boolean rebuild = rebuildCheck.isSelected();
+        int timeOffset;
+        try {
+            timeOffset = Integer.parseInt(timeOffsetField.getText().trim());
+        } catch (NumberFormatException e) {
+            timeOffset = 0;
+        }
+        final int finalTimeOffset = timeOffset;
+
+        syncButton.setDisable(true);
+        appendLog("Starting sync…");
+
+        bgExecutor.submit(() -> runSync(logPath, resultsPath, rebuild, finalTimeOffset));
+    }
+
+    private void runSync(String logPath, String resultsPath, boolean rebuild, int timeOffsetSeconds) {
         try {
             PlayLogRepository repo = new PlayLogRepository(new File(logPath));
             currentPlayLog = repo.load();
-            plays.setAll(currentPlayLog.getPlays());
-            lblStatus.setText("Loaded " + plays.size() + " plays");
-            appendLog("Loaded play log: " + plays.size() + " plays from " + logPath);
-        } catch (Exception e) {
-            log.error("Failed to load play log", e);
+
+            if (rebuild) {
+                appendLog("Rebuild: clearing existing play log.");
+                currentPlayLog.getPlays().clear();
+            } else {
+                SpecialTitles st = new SpecialTitlesRepository().load();
+                List<String> directRemoves = st.getDirectRemoves();
+                currentPlayLog.getPlays().removeIf(p -> directRemoves.contains(p.getTitle()));
+                appendLog("Removed " + directRemoves.size() + " direct-remove entries.");
+            }
+
+            if (resultsPath.isBlank()) {
+                appendLog("No results folder specified — loading log only.");
+                showPlays();
+                return;
+            }
+
+            File resultsDir = new File(resultsPath);
+            if (!resultsDir.isDirectory()) {
+                appendLog("ERROR: Results folder not found: " + resultsPath);
+                showPlays();
+                return;
+            }
+
+            SpecialTitles st = new SpecialTitlesRepository().load();
+            File[] files = resultsDir.listFiles(f -> f.getName().toLowerCase().endsWith(".png")
+                    && f.getName().startsWith("sdvx") && !f.getName().contains("summary"));
+            if (files == null || files.length == 0) {
+                appendLog("No result screenshot files found in " + resultsPath);
+                showPlays();
+                return;
+            }
+            Arrays.sort(files, (a, b) -> Long.compare(a.lastModified(), b.lastModified()));
+            appendLog("Processing " + files.length + " screenshot files…");
+
+            int processed = 0;
+            int added = 0;
+            for (File f : files) {
+                OnePlayData parsed = parseScreenshotFilename(f.getName());
+                if (parsed == null) {
+                    processed++;
+                    continue;
+                }
+                if (st.getSpecialTitles().containsKey(parsed.getTitle())) {
+                    currentPlayLog.getPlays()
+                            .removeIf(p -> p.getTitle() != null && p.getTitle().equals(parsed.getTitle()));
+                    processed++;
+                    continue;
+                }
+                if (st.getIgnoredNames().contains(parsed.getTitle())) {
+                    processed++;
+                    continue;
+                }
+
+                if (!isSongInLog(currentPlayLog.getPlays(), parsed, timeOffsetSeconds)) {
+                    final String info = "[" + processed + "] " + parsed.getTitle() + " ["
+                            + parsed.getDifficulty().toUpperCase() + "] Adding…";
+                    appendLog(info);
+                    currentPlayLog.getPlays().add(parsed);
+                    added++;
+                }
+                processed++;
+                if (processed % 100 == 0) {
+                    final int progressCount = processed;
+                    final int total = files.length;
+                    appendLog(progressCount + " / " + total + " files processed");
+                }
+            }
+
+            repo.save(currentPlayLog);
+            final int finalAdded = added;
+            final int finalProcessed = processed;
+            appendLog("Sync complete: " + finalAdded + " songs added out of " + finalProcessed + " files.");
+            showPlays();
+        } catch (IOException e) {
+            log.error("Sync failed", e);
             appendLog("ERROR: " + e.getMessage());
+        } finally {
+            Platform.runLater(() -> syncButton.setDisable(false));
         }
+    }
+
+    /**
+     * Parses a result screenshot filename in the format
+     * {@code sdvx_{title}_{DIFF}_{lamp}_{score}_{date}_{time}.png} into a
+     * {@link OnePlayData} record, matching Python's filename-parse logic.
+     *
+     * @param filename
+     *            the screenshot filename (base name only)
+     * @return parsed play data, or {@code null} if the filename cannot be parsed
+     */
+    private OnePlayData parseScreenshotFilename(String filename) {
+        String name = filename.endsWith(".png") ? filename.substring(0, filename.length() - 4) : filename;
+        String[] parts = name.split("_", -1);
+        if (parts.length < 6) {
+            log.debug("parseScreenshotFilename: too few parts ({}) in filename '{}', skipping", parts.length, filename);
+            return null;
+        }
+        // parts[0] = "sdvx"; parts[1..n] = title chunks until a difficulty token
+        StringBuilder titleBuilder = new StringBuilder();
+        int lastTitleIndex = 1;
+        for (int i = 1; i < parts.length; i++) {
+            if (DIFFICULTIES.contains(parts[i].toUpperCase())) {
+                break;
+            }
+            if (titleBuilder.length() > 0) {
+                titleBuilder.append(' ');
+            }
+            titleBuilder.append(parts[i]);
+            lastTitleIndex = i;
+        }
+        String title = titleBuilder.toString().trim();
+        if (title.isEmpty()) {
+            log.debug("parseScreenshotFilename: title part is empty in filename '{}', skipping", filename);
+            return null;
+        }
+        try {
+            int diffIdx = lastTitleIndex + 1;
+            if (diffIdx >= parts.length) {
+                log.debug("parseScreenshotFilename: diffIdx ({}) out of range in filename '{}', skipping", diffIdx,
+                        filename);
+                return null;
+            }
+            String diff = parts[diffIdx].toLowerCase();
+
+            int lampIdx = diffIdx + 1;
+            if (lampIdx < parts.length && "class".equalsIgnoreCase(parts[lampIdx])) {
+                lampIdx++;
+            }
+            if (lampIdx >= parts.length) {
+                log.debug("parseScreenshotFilename: lampIdx ({}) out of range in filename '{}', skipping", lampIdx,
+                        filename);
+                return null;
+            }
+            String lamp = parts[lampIdx];
+
+            int scoreIdx = lampIdx + 1;
+            int scoreVal = 0;
+            if (scoreIdx < parts.length && !parts[scoreIdx].isEmpty()) {
+                try {
+                    scoreVal = Integer.parseInt(parts[scoreIdx]) * 10000;
+                } catch (NumberFormatException e) {
+                    scoreVal = 0;
+                }
+            }
+
+            int dateIdx = scoreIdx + 1;
+            int timeIdx = dateIdx + 1;
+            if (dateIdx >= parts.length || timeIdx >= parts.length) {
+                log.debug(
+                        "parseScreenshotFilename: dateIdx ({}) or timeIdx ({}) out of range in filename '{}', skipping",
+                        dateIdx, timeIdx, filename);
+                return null;
+            }
+            String dateStr = parts[dateIdx] + "_" + parts[timeIdx].replaceAll("\\.png.*$", "");
+            LocalDateTime date;
+            try {
+                date = LocalDateTime.parse(dateStr, SCREENSHOT_DATE_FMT);
+            } catch (DateTimeParseException e) {
+                return null;
+            }
+
+            return new OnePlayData(title, scoreVal, 0, lamp, diff, date.toString());
+        } catch (ArrayIndexOutOfBoundsException e) {
+            log.debug("Could not parse filename {}: {}", filename, e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Returns {@code true} if a matching play already exists in the log within 120
+     * seconds (adjusted for {@code timeOffsetSeconds}).
+     */
+    private static boolean isSongInLog(List<OnePlayData> logEntries, OnePlayData candidate, int timeOffsetSeconds) {
+        if (candidate.getDate() == null) {
+            return false;
+        }
+        for (OnePlayData entry : logEntries) {
+            if (entry.getTitle() == null || !entry.getTitle().equals(candidate.getTitle())) {
+                continue;
+            }
+            if (entry.getDifficulty() == null || !entry.getDifficulty().equalsIgnoreCase(candidate.getDifficulty())) {
+                continue;
+            }
+            if (entry.getDate() == null) {
+                continue;
+            }
+            LocalDateTime adjustedDate = entry.getDate().minusSeconds(timeOffsetSeconds);
+            long diffSeconds = Math.abs(ChronoUnit.SECONDS.between(adjustedDate, candidate.getDate()));
+            if (diffSeconds < 120) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void showPlays() {
+        Platform.runLater(() -> {
+            plays.setAll(currentPlayLog.getPlays());
+            statusLabel.setText(plays.size() + " plays in log");
+        });
     }
 
     /**
@@ -216,13 +451,13 @@ public class PlayLogSyncController implements Initializable {
             appendLog("No play log loaded. Run sync first.");
             return;
         }
-        String outDir = txtOutputFolder.getText().trim();
+        String outDir = outputFolderField.getText().trim();
         File outFolder = outDir.isBlank() ? new File("out") : new File(outDir);
         try {
             XmlExportService xmlService = new XmlExportService();
             xmlService.writeSdvxBattle(currentPlayLog.getPlays(), new File(outFolder, "sdvx_battle.xml"));
             appendLog("Exported sdvx_battle.xml to " + outFolder.getAbsolutePath());
-            lblStatus.setText("Export complete");
+            statusLabel.setText("Export complete");
         } catch (IOException e) {
             log.error("Failed to export XML", e);
             appendLog("ERROR: " + e.getMessage());
@@ -230,6 +465,6 @@ public class PlayLogSyncController implements Initializable {
     }
 
     private void appendLog(String line) {
-        txtLog.appendText(line + "\n");
+        logArea.appendText(line + "\n");
     }
 }

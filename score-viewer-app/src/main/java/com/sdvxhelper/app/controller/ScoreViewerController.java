@@ -2,13 +2,22 @@ package com.sdvxhelper.app.controller;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
 import java.net.URL;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.format.DateTimeFormatter;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.ResourceBundle;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
@@ -21,22 +30,30 @@ import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
-import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.stage.FileChooser;
 
+import com.sdvxhelper.app.controller.factories.LastPlaysCellFactory;
+import com.sdvxhelper.app.controller.factories.RivalsRowFactory;
+import com.sdvxhelper.app.controller.factories.ScoreRowFactory;
+import com.sdvxhelper.app.controller.factories.ScoreViewerThreadFactory;
+import com.sdvxhelper.app.controller.model.RivalScoreRow;
 import com.sdvxhelper.i18n.LocaleManager;
 import com.sdvxhelper.model.MusicInfo;
 import com.sdvxhelper.model.OnePlayData;
 import com.sdvxhelper.model.PlayLog;
+import com.sdvxhelper.model.RivalEntry;
+import com.sdvxhelper.model.RivalLog;
 import com.sdvxhelper.model.SongInfo;
 import com.sdvxhelper.repository.MusicListRepository;
+import com.sdvxhelper.repository.ParamsRepository;
 import com.sdvxhelper.repository.PlayLogRepository;
+import com.sdvxhelper.repository.RivalLogRepository;
+import com.sdvxhelper.repository.SettingsRepository;
 import com.sdvxhelper.service.CsvExportService;
 import com.sdvxhelper.service.SdvxLoggerService;
 import org.slf4j.Logger;
@@ -59,49 +76,82 @@ public class ScoreViewerController implements Initializable {
     private static final Logger log = LoggerFactory.getLogger(ScoreViewerController.class);
 
     @FXML
-    private TextField txtFilter;
-    @FXML
-    private ComboBox<String> cmbLevel;
-    @FXML
-    private ComboBox<String> cmbLamp;
-    @FXML
-    private Button btnExport;
-    @FXML
-    private Button btnDelete;
-    @FXML
-    private ComboBox<String> cmbColorMode;
-    @FXML
-    private ComboBox<String> cmbLanguage;
-    @FXML
-    private TableView<MusicInfo> tblScores;
-    @FXML
-    private TableColumn<MusicInfo, String> colTitle;
-    @FXML
-    private TableColumn<MusicInfo, String> colDiff;
-    @FXML
-    private TableColumn<MusicInfo, String> colLevel;
-    @FXML
-    private TableColumn<MusicInfo, Integer> colScore;
-    @FXML
-    private TableColumn<MusicInfo, String> colLamp;
-    @FXML
-    private TableColumn<MusicInfo, Integer> colVf;
-    @FXML
-    private TableColumn<MusicInfo, String> colDate;
-    @FXML
-    private TableColumn<MusicInfo, String> colSTier;
-    @FXML
-    private Label lblCount;
-    @FXML
-    private ListView<OnePlayData> lstPlays;
+    private TextField filterField;
 
-    private final ObservableList<MusicInfo> allScores = FXCollections.observableArrayList();
+    @FXML
+    private ComboBox<String> levelCombo;
+
+    @FXML
+    private ComboBox<String> lampCombo;
+
+    @FXML
+    private Button exportButton;
+
+    @FXML
+    private Button deleteButton;
+
+    @FXML
+    private ComboBox<String> colorModeCombo;
+
+    @FXML
+    private ComboBox<String> languageCombo;
+
+    @FXML
+    private TableView<MusicInfo> scoresTable;
+
+    @FXML
+    private TableColumn<MusicInfo, String> titleColumn;
+
+    @FXML
+    private TableColumn<MusicInfo, String> difficultyColumn;
+
+    @FXML
+    private TableColumn<MusicInfo, String> levelColumn;
+
+    @FXML
+    private TableColumn<MusicInfo, Integer> scoreColumn;
+
+    @FXML
+    private TableColumn<MusicInfo, String> lampColumn;
+
+    @FXML
+    private TableColumn<MusicInfo, Integer> vfColumn;
+
+    @FXML
+    private TableColumn<MusicInfo, String> dateColumn;
+
+    @FXML
+    private TableColumn<MusicInfo, String> sTierColumn;
+
+    @FXML
+    private Label countLabel;
+
+    @FXML
+    private ListView<OnePlayData> playsList;
+
+    @FXML
+    private TableView<RivalScoreRow> rivalsTable;
+
+    @FXML
+    private TableColumn<RivalScoreRow, String> rivalNameColumn;
+
+    @FXML
+    private TableColumn<RivalScoreRow, Integer> rivalScoreColumn;
+
+    @FXML
+    private TableColumn<RivalScoreRow, String> rivalLampColumn;
+
+    private ObservableList<MusicInfo> allScores = FXCollections.observableArrayList();
     private FilteredList<MusicInfo> filteredScores;
-    private final ObservableList<OnePlayData> selectedPlays = FXCollections.observableArrayList();
-    private SdvxLoggerService loggerService;
+    private ObservableList<OnePlayData> selectedPlays = FXCollections.observableArrayList();
+    private ObservableList<RivalScoreRow> rivalScores = FXCollections.observableArrayList();
+
     private PlayLogRepository playLogRepo;
     private PlayLog playLog;
-    private final CsvExportService csvExport = new CsvExportService();
+    private RivalLog rivalLog;
+    private CsvExportService csvExport = new CsvExportService();
+
+    private ExecutorService bgExecutor = Executors.newCachedThreadPool(new ScoreViewerThreadFactory());
 
     /**
      * Initializes the controller after the FXML fields have been injected.
@@ -117,66 +167,58 @@ public class ScoreViewerController implements Initializable {
      */
     @Override
     public void initialize(URL location, ResourceBundle resources) {
-        colTitle.setCellValueFactory(new PropertyValueFactory<>("title"));
-        colDiff.setCellValueFactory(new PropertyValueFactory<>("difficulty"));
-        colLevel.setCellValueFactory(new PropertyValueFactory<>("lv"));
-        colScore.setCellValueFactory(new PropertyValueFactory<>("bestScore"));
-        colLamp.setCellValueFactory(new PropertyValueFactory<>("bestLamp"));
-        colVf.setCellValueFactory(new PropertyValueFactory<>("vf"));
-        colDate.setCellValueFactory(new PropertyValueFactory<>("date"));
-        colSTier.setCellValueFactory(new PropertyValueFactory<>("sTier"));
+        titleColumn.setCellValueFactory(new PropertyValueFactory<>("title"));
+        difficultyColumn.setCellValueFactory(new PropertyValueFactory<>("difficulty"));
+        levelColumn.setCellValueFactory(new PropertyValueFactory<>("lv"));
+        scoreColumn.setCellValueFactory(new PropertyValueFactory<>("bestScore"));
+        lampColumn.setCellValueFactory(new PropertyValueFactory<>("bestLamp"));
+        vfColumn.setCellValueFactory(new PropertyValueFactory<>("vf"));
+        dateColumn.setCellValueFactory(new PropertyValueFactory<>("date"));
+        sTierColumn.setCellValueFactory(new PropertyValueFactory<>("sTier"));
 
         filteredScores = new FilteredList<>(allScores, _ -> true);
-        tblScores.setItems(filteredScores);
-        tblScores.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
+        scoresTable.setItems(filteredScores);
+        scoresTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
 
-        cmbLanguage.setItems(LocaleManager.getInstance().getAvailableLocaleCodes());
-        cmbLanguage.setValue(LocaleManager.getInstance().getCurrentCode());
-        cmbLanguage.setOnAction(_ -> LocaleManager.getInstance().setLocale(cmbLanguage.getValue()));
+        languageCombo.setItems(LocaleManager.getInstance().getAvailableLocaleCodes());
+        languageCombo.setValue(LocaleManager.getInstance().getCurrentCode());
+        languageCombo.setOnAction(_ -> LocaleManager.getInstance().setLocale(languageCombo.getValue()));
 
-        txtFilter.textProperty().addListener((_, _, _) -> applyFilter());
-        cmbLevel.valueProperty().addListener((_, _, _) -> applyFilter());
-        cmbLamp.valueProperty().addListener((_, _, _) -> applyFilter());
+        filterField.textProperty().addListener((_, _, _) -> applyFilter());
+        levelCombo.valueProperty().addListener((_, _, _) -> applyFilter());
+        lampCombo.valueProperty().addListener((_, _, _) -> applyFilter());
 
-        cmbLevel.getItems().add("All");
+        levelCombo.getItems().add("All");
         for (int i = 1; i <= 20; i++) {
-            cmbLevel.getItems().add(String.valueOf(i));
+            levelCombo.getItems().add(String.valueOf(i));
         }
-        cmbLevel.getSelectionModel().selectFirst();
+        levelCombo.getSelectionModel().selectFirst();
 
-        cmbLamp.getItems().addAll("All", "puc", "uc", "exh", "hard", "clear", "failed");
-        cmbLamp.getSelectionModel().selectFirst();
+        lampCombo.getItems().addAll("All", "puc", "uc", "exh", "hard", "clear", "failed");
+        lampCombo.getSelectionModel().selectFirst();
 
-        if (cmbColorMode != null) {
-            cmbColorMode.getItems().addAll("None", "By Difficulty", "By Lamp");
-            cmbColorMode.getSelectionModel().selectFirst();
-            cmbColorMode.valueProperty().addListener((_, _, _) -> applyRowColors());
-        }
+        colorModeCombo.getItems().addAll("None", "By Difficulty", "By Lamp");
+        colorModeCombo.getSelectionModel().selectFirst();
+        colorModeCombo.valueProperty().addListener((_, _, _) -> applyRowColors());
 
-        if (lstPlays != null) {
-            lstPlays.setItems(selectedPlays);
-            lstPlays.setCellFactory(_ -> new ListCell<OnePlayData>() {
-                private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
-                @Override
-                protected void updateItem(OnePlayData item, boolean empty) {
-                    super.updateItem(item, empty);
-                    if (empty || item == null) {
-                        setText(null);
-                    } else {
-                        String dateStr = item.getDate() != null ? item.getDate().format(FMT) : "";
-                        setText(String.format("%,d | %s | %s", item.getCurScore(), item.getLamp(), dateStr));
-                    }
-                }
-            });
-            tblScores.getSelectionModel().selectedItemProperty().addListener((_, _, nv) -> refreshPlaysFor(nv));
-        }
-        if (btnDelete != null) {
-            btnDelete.setDisable(true);
-            lstPlays.getSelectionModel().selectedItemProperty()
-                    .addListener((_, _, nv) -> btnDelete.setDisable(nv == null));
-        }
+        playsList.setItems(selectedPlays);
+        playsList.setCellFactory(new LastPlaysCellFactory());
+        scoresTable.getSelectionModel().selectedItemProperty().addListener((_, _, nv) -> refreshPlaysFor(nv));
+
+        deleteButton.setDisable(true);
+        playsList.getSelectionModel().selectedItemProperty()
+                .addListener((_, _, nv) -> deleteButton.setDisable(nv == null));
+
+        rivalNameColumn.setCellValueFactory(new PropertyValueFactory<>("rivalName"));
+        rivalScoreColumn.setCellValueFactory(new PropertyValueFactory<>("score"));
+        rivalLampColumn.setCellValueFactory(new PropertyValueFactory<>("lamp"));
+
+        rivalsTable.setItems(rivalScores);
+        rivalsTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
+        rivalsTable.setRowFactory(_ -> new RivalsRowFactory());
 
         loadData();
+        bgExecutor.submit(this::downloadMusiclistIfNeeded);
     }
 
     /**
@@ -190,7 +232,7 @@ public class ScoreViewerController implements Initializable {
         FileChooser chooser = new FileChooser();
         chooser.setTitle("Save Best CSV");
         chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("CSV Files", "*.csv"));
-        File file = chooser.showSaveDialog(tblScores.getScene().getWindow());
+        File file = chooser.showSaveDialog(scoresTable.getScene().getWindow());
         if (file != null) {
             try {
                 csvExport.writeBestCsv(allScores, file);
@@ -210,13 +252,17 @@ public class ScoreViewerController implements Initializable {
      */
     @FXML
     public void onDelete(ActionEvent event) {
-        OnePlayData selected = lstPlays == null ? null : lstPlays.getSelectionModel().getSelectedItem();
+        OnePlayData selected = playsList.getSelectionModel().getSelectedItem();
         if (selected == null || playLog == null || playLogRepo == null) {
+            log.warn("onDelete: selected={}, playLog={}, playLogRepo={} — cannot proceed",
+                    selected == null ? "null" : selected, playLog == null ? "null" : "present",
+                    playLogRepo == null ? "null" : "present");
             return;
         }
         Alert confirm = new Alert(AlertType.CONFIRMATION, "Delete this play?\n" + selected.getTitle() + " ["
                 + selected.getDifficulty() + "] " + selected.getCurScore(), ButtonType.YES, ButtonType.NO);
         confirm.setHeaderText("Confirm Delete");
+
         confirm.showAndWait().filter(bt -> bt == ButtonType.YES).ifPresent(_ -> {
             playLog.getPlays().remove(selected);
             try {
@@ -231,21 +277,83 @@ public class ScoreViewerController implements Initializable {
     }
 
     /**
+     * Downloads {@code musiclist.xml} from {@code url_musiclist} in
+     * {@code params.json} if the {@code autoload_musiclist} setting is
+     * {@code true}.
+     *
+     * <p>
+     * The URL from Python's {@code params.json} points to a {@code .pkl} file. Java
+     * instead expects a {@code .xml} file at the same base URL. The {@code .pkl}
+     * suffix is replaced with {@code .xml} before downloading.
+     * </p>
+     *
+     * <p>
+     * Mirrors Python's {@code update_musiclist()} in {@code manage_score.py}.
+     * </p>
+     */
+    private void downloadMusiclistIfNeeded() {
+        SettingsRepository settingsRepo = new SettingsRepository();
+        Map<String, String> settings = settingsRepo.load();
+
+        if (!settings.get("autoload_musiclist").equalsIgnoreCase("true")) {
+            log.debug("autoload musiclist disabled by setting, skipping");
+            return;
+        }
+        String paramsPath = settings.getOrDefault("params_json", "resources/params.json");
+        Map<String, String> params = new ParamsRepository().load(paramsPath);
+        String urlStr = params.get("url_musiclist");
+
+        if (urlStr == null || urlStr.isBlank()) {
+            log.debug("musiclist URL not configured in settings, skipping download");
+            return;
+        }
+        if (urlStr.endsWith(".pkl")) {
+            urlStr = urlStr.substring(0, urlStr.length() - 4) + ".xml";
+        }
+        try {
+            HttpClient http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(15))
+                    .followRedirects(HttpClient.Redirect.NORMAL).build();
+
+            HttpRequest req = HttpRequest.newBuilder().uri(URI.create(urlStr)).timeout(Duration.ofSeconds(30))
+                    .header("User-Agent", "sdvx-helper/2.0").GET().build();
+            HttpResponse<byte[]> resp = http.send(req, HttpResponse.BodyHandlers.ofByteArray());
+
+            if (resp.statusCode() == 200) {
+                File resourcesDir = new File("resources");
+                if (!resourcesDir.exists()) {
+                    resourcesDir.mkdirs();
+                }
+                Files.write(Path.of("resources/musiclist.xml"), resp.body());
+                log.info("musiclist.xml downloaded from {}", urlStr);
+                Platform.runLater(this::loadData);
+            } else {
+                log.warn("Failed to download musiclist.xml: HTTP {}", resp.statusCode());
+            }
+        } catch (IOException e) {
+            log.warn("Could not download musiclist.xml: {}", e.getMessage());
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    /**
      * Loads the personal-best list from the play log and populates the table.
      */
     private void loadData() {
         File logFile = Path.of(System.getProperty("user.dir"), "resources", "alllog.xml").toFile();
+
         if (!logFile.exists()) {
-            lblCount.setText("No play log found at resources/alllog.xml");
+            countLabel.setText("No play log found at resources/alllog.xml");
             allScores.clear();
             return;
         }
         playLogRepo = new PlayLogRepository(logFile);
         MusicListRepository musicListRepo = new MusicListRepository(new File("resources/musiclist.xml"));
-        loggerService = new SdvxLoggerService(playLogRepo, musicListRepo);
+        SdvxLoggerService loggerService = new SdvxLoggerService(playLogRepo, musicListRepo);
         playLog = loggerService.getPlayLog();
 
         List<MusicInfo> best = loggerService.getBestAllFumen();
+
         for (MusicInfo mi : best) {
             if (mi.getLv() == null || "??".equals(mi.getLv())) {
                 SongInfo si = musicListRepo.findSongInfo(mi.getTitle());
@@ -255,15 +363,38 @@ public class ScoreViewerController implements Initializable {
             }
         }
         allScores.setAll(best);
-        lblCount.setText(best.size() + " charts");
+        countLabel.setText(best.size() + " charts");
         log.info("Loaded {} charts into score viewer", best.size());
+
+        RivalLogRepository rivalLogRepo = new RivalLogRepository();
+        rivalLog = rivalLogRepo.load();
+        log.info("Loaded rival log with {} rivals", rivalLog.getRivals().size());
     }
 
+    /**
+     * Refreshes the list of plays and rival scores for the selected chart.
+     *
+     * <p>
+     * When a chart is selected in the main table, this method filters the play log
+     * to find all plays that match the chart's title and difficulty. The matching
+     * plays are displayed in {@code playsList}. Additionally, if a rival log is
+     * available, it populates the rival scores for the same chart and displays them
+     * in {@code rivalsTable}.
+     * </p>
+     *
+     * @param chart
+     *            the selected music chart for which to refresh plays and rival
+     *            scores
+     */
     private void refreshPlaysFor(MusicInfo chart) {
         selectedPlays.clear();
+        rivalScores.clear();
         if (chart == null || playLog == null) {
+            log.warn("Cannot show play details: chart={}, playLog={}", chart == null ? "null" : chart,
+                    playLog == null ? "null" : "present");
             return;
         }
+
         List<OnePlayData> matches = new ArrayList<>();
         for (OnePlayData p : playLog.getPlays()) {
             if (p.getTitle() != null && p.getTitle().equals(chart.getTitle()) && p.getDifficulty() != null
@@ -274,12 +405,42 @@ public class ScoreViewerController implements Initializable {
         Collections.sort(matches);
         Collections.reverse(matches);
         selectedPlays.setAll(matches);
+
+        if (rivalLog != null) {
+            List<RivalScoreRow> rows = populateRivalsScore(chart);
+            rows.sort((a, b) -> Integer.compare(b.getScore(), a.getScore()));
+            rivalScores.setAll(rows);
+        }
     }
 
+    /**
+     * Populates the rival scores for a given chart.
+     *
+     * @param chart
+     *            the music chart for which to collect rival scores
+     * @return list of rival score rows corresponding to the given chart
+     */
+    private List<RivalScoreRow> populateRivalsScore(MusicInfo chart) {
+        List<RivalScoreRow> rows = new ArrayList<>();
+        for (RivalEntry rival : rivalLog.getRivals()) {
+            for (MusicInfo ri : rival.getScores()) {
+                if (ri.getTitle() != null && ri.getTitle().equals(chart.getTitle()) && ri.getDifficulty() != null
+                        && ri.getDifficulty().equalsIgnoreCase(chart.getDifficulty())) {
+                    rows.add(new RivalScoreRow(rival.getName(), ri.getBestScore(), ri.getBestLamp()));
+                    break;
+                }
+            }
+        }
+        return rows;
+    }
+
+    /**
+     * Applies the current filter settings to the score list.
+     */
     private void applyFilter() {
-        String titleFilter = txtFilter.getText().toLowerCase();
-        String levelFilter = cmbLevel.getValue();
-        String lampFilter = cmbLamp.getValue();
+        String titleFilter = filterField.getText().toLowerCase();
+        String levelFilter = levelCombo.getValue();
+        String lampFilter = lampCombo.getValue();
 
         filteredScores.setPredicate(m -> {
             boolean titleOk = titleFilter.isBlank() || m.getTitle().toLowerCase().contains(titleFilter);
@@ -288,46 +449,22 @@ public class ScoreViewerController implements Initializable {
             return titleOk && levelOk && lampOk;
         });
 
-        lblCount.setText(filteredScores.size() + " / " + allScores.size() + " charts");
+        countLabel.setText(filteredScores.size() + " / " + allScores.size() + " charts");
     }
 
+    /**
+     * Applies row colors based on the selected color mode.
+     */
     private void applyRowColors() {
-        tblScores.setRowFactory(tv -> new TableRow<MusicInfo>() {
-            @Override
-            protected void updateItem(MusicInfo item, boolean empty) {
-                super.updateItem(item, empty);
-                setStyle(item == null || empty ? "" : computeStyle(item));
-            }
-        });
-        tblScores.refresh();
+        scoresTable.setRowFactory(_ -> new ScoreRowFactory(this));
+        scoresTable.refresh();
     }
 
-    private String computeStyle(MusicInfo item) {
-        String mode = cmbColorMode == null ? "None" : cmbColorMode.getValue();
-        if (mode == null || "None".equals(mode)) {
-            return "";
-        }
-        if ("By Difficulty".equals(mode)) {
-            String diff = item.getDifficulty() == null ? "" : item.getDifficulty().toLowerCase();
-            return switch (diff) {
-                case "nov" -> "-fx-background-color: #7979D4; -fx-text-fill: white;";
-                case "adv" -> "-fx-background-color: #E8B81C; -fx-text-fill: white;";
-                case "exh" -> "-fx-background-color: #BD5E5E; -fx-text-fill: white;";
-                case "mxm", "inf", "grv", "hvn", "vvd", "xcd" -> "-fx-background-color: #D6D6D6; -fx-text-fill: white;";
-                default -> "";
-            };
-        }
-        if ("By Lamp".equals(mode)) {
-            String lamp = item.getBestLamp() == null ? "" : item.getBestLamp().toLowerCase();
-            return switch (lamp) {
-                case "puc" -> "-fx-background-color: #ffff66; -fx-text-fill: black;";
-                case "uc" -> "-fx-background-color: #ffaaaa; -fx-text-fill: black;";
-                case "hard" -> "-fx-background-color: #ffccff; -fx-text-fill: black;";
-                case "clear" -> "-fx-background-color: #77ff77; -fx-text-fill: black;";
-                case "failed" -> "-fx-background-color: #aaaaaa; -fx-text-fill: black;";
-                default -> "";
-            };
-        }
-        return "";
+    /**
+     * @return the colorModeCombo
+     */
+    public ComboBox<String> getColorModeCombo() {
+        return colorModeCombo;
     }
+
 }

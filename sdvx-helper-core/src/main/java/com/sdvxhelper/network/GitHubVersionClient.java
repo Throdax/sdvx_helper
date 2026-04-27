@@ -72,6 +72,26 @@ public class GitHubVersionClient {
     }
 
     /**
+     * Returns the direct download URL for the distribution ZIP of the given release
+     * tag.
+     *
+     * <p>
+     * The URL follows the GitHub releases asset convention and points to the
+     * {@code sdvx_helper_en_all.zip} file produced by the {@code native} Maven
+     * profile.
+     * </p>
+     *
+     * @param tag
+     *            release tag string (e.g. {@code "2.1.0"} or {@code "v2.1.0"})
+     * @return direct download URL for the distribution ZIP
+     */
+    public String getDownloadUrl(String tag) {
+        String normalizedTag = tag.startsWith("v") ? tag : "v" + tag;
+        return "https://github.com/" + repoOwner + "/" + repoName + "/releases/download/" + normalizedTag
+                + "/sdvx_helper_en_all.zip";
+    }
+
+    /**
      * Returns {@code true} if a newer version is available on GitHub than the given
      * current version.
      *

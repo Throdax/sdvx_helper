@@ -160,6 +160,36 @@
                     </files>
                 </configuration>
             </plugin>
+
+            <!-- Exclude secrets.properties from the packaged JAR -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <configuration>
+                    <excludes>
+                        <exclude>secrets.properties</exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+
+            <!-- XOR-obfuscate secrets at build time into GeneratedSecrets.java -->
+            <plugin>
+                <groupId>org.codehaus.gmaven</groupId>
+                <artifactId>groovy-maven-plugin</artifactId>
+                <version>2.1.1</version>
+                <executions>
+                    <execution>
+                        <id>generate-secrets</id>
+                        <goals>
+                            <goal>execute</goal>
+                        </goals>
+                        <phase>generate-sources</phase>
+                        <configuration>
+                            <source>${project.basedir}/src/build/GenerateSecrets.groovy</source>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 </project>

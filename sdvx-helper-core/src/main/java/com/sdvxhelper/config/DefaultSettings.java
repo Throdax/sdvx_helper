@@ -63,7 +63,8 @@ public final class DefaultSettings {
         defaults.put("autosave_prewait", "0.0");
         defaults.put("detect_wait", "2.7");
         defaults.put("obs_source", "");
-        defaults.put("orientation_top", "left");
+        defaults.put("orientation", "top");
+        defaults.put("orientation_top", "top");
 
         // Language
         defaults.put("ui_language", "jp");
@@ -117,6 +118,7 @@ public final class DefaultSettings {
 
         // Webhooks
         defaults.put("webhook_player_name", "");
+        defaults.put("webhook_reg_url", "");
         defaults.put("webhook_names", Collections.emptyList().toString());
         defaults.put("webhook_urls", Collections.emptyList().toString());
         defaults.put("webhook_enable_pics", Collections.emptyList().toString());

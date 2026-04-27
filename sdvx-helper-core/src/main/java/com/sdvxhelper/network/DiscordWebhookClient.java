@@ -85,6 +85,35 @@ public class DiscordWebhookClient {
         return ok;
     }
 
+    /**
+     * Sends a text message with a generic file attachment via multipart form data.
+     *
+     * @param webhookUrl
+     *            Discord webhook URL
+     * @param content
+     *            message text (max 2000 characters)
+     * @param fileBytes
+     *            raw file bytes
+     * @param filename
+     *            filename to use in the attachment (e.g. {@code "musiclist.xml"})
+     * @param mimeType
+     *            MIME type of the attachment (e.g. {@code "application/xml"})
+     * @return {@code true} if accepted
+     * @throws IOException
+     *             if the request fails
+     */
+    public boolean sendMessageWithFile(String webhookUrl, String content, byte[] fileBytes, String filename,
+            String mimeType) throws IOException {
+        HttpService.MultipartBody body = new HttpService.MultipartBody()
+                .addField("payload_json", toJsonString(buildContentPayload(content)))
+                .addFile("files[0]", filename, mimeType, fileBytes);
+
+        HttpResponse<String> resp = http.postMultipart(URI.create(webhookUrl), body);
+        boolean ok = HttpService.isSuccess(resp.statusCode());
+        log.info("Discord webhook (with file): HTTP {}", resp.statusCode());
+        return ok;
+    }
+
     // -------------------------------------------------------------------------
     // Private helpers
     // -------------------------------------------------------------------------

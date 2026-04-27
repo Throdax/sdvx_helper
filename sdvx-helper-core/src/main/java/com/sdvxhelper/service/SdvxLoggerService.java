@@ -117,8 +117,10 @@ public class SdvxLoggerService {
      * a new music list.
      */
     public void refreshBestAndVf() {
-        if (musicListRepo == null)
+        if (musicListRepo == null) {
+            log.warn("refreshBestAndVf: musicListRepo is null, cannot refresh best/VF data");
             return;
+        }
 
         // Rebuild best per (title, difficulty) from play log
         java.util.Map<String, OnePlayData> bestMap = new java.util.LinkedHashMap<>();
@@ -244,6 +246,64 @@ public class SdvxLoggerService {
      */
     public PlayLog getPlayLog() {
         return playLog;
+    }
+
+    /**
+     * Parses a rival score CSV downloaded from Google Drive and cross-references it
+     * against the current best-score list.
+     *
+     * <p>
+     * The expected CSV format has one row per chart:
+     * {@code title,difficulty,score,lamp}. Rows that cannot be parsed are silently
+     * skipped. After parsing, {@link #refreshBestAndVf()} is called to recompute VF
+     * with the new data.
+     * </p>
+     *
+     * @param csv
+     *            CSV content as a string; {@code null} or blank input is a no-op
+     */
+    public void applyRivalCsv(String csv) {
+        if (csv == null || csv.isBlank()) {
+            log.warn("applyRivalCsv: empty CSV, skipping");
+            return;
+        }
+        int parsed = 0;
+        int skipped = 0;
+        for (String line : csv.split("\\R")) {
+            String trimmed = line.trim();
+            if (trimmed.isEmpty() || trimmed.startsWith("#")) {
+                continue;
+            }
+            String[] parts = trimmed.split(",", -1);
+            if (parts.length < 4) {
+                skipped++;
+                continue;
+            }
+            try {
+                String title = parts[0].trim();
+                String difficulty = parts[1].trim();
+                int score = Integer.parseInt(parts[2].trim());
+                String lamp = parts[3].trim();
+
+                String key = title + "___" + difficulty;
+                boolean newBest = true;
+                for (OnePlayData p : playLog.getPlays()) {
+                    if ((p.getTitle() + "___" + p.getDifficulty()).equals(key) && p.getCurScore() >= score) {
+                        newBest = false;
+                        break;
+                    }
+                }
+                if (newBest) {
+                    OnePlayData rivalPlay = new OnePlayData(title, score, 0, lamp, difficulty, "");
+                    playLog.getPlays().add(rivalPlay);
+                    parsed++;
+                }
+            } catch (NumberFormatException e) {
+                skipped++;
+            }
+        }
+        log.info("applyRivalCsv: {} entries applied, {} skipped", parsed, skipped);
+        refreshBestAndVf();
     }
 
     // -------------------------------------------------------------------------

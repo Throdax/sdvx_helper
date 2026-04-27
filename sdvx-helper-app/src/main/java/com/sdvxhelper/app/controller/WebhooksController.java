@@ -40,45 +40,45 @@ public class WebhooksController implements Initializable {
     private static final Logger log = LoggerFactory.getLogger(WebhooksController.class);
 
     @FXML
-    private TextField txtPlayerName;
+    private TextField playerNameField;
     @FXML
-    private ListView<String> lstWebhooks;
+    private ListView<String> webhooksList;
     @FXML
-    private Button btnAdd;
+    private Button addButton;
     @FXML
-    private Button btnDelete;
+    private Button deleteButton;
     @FXML
-    private TextField txtName;
+    private TextField nameField;
     @FXML
-    private TextField txtUrl;
+    private TextField urlField;
     @FXML
-    private CheckBox chkSendImages;
+    private CheckBox sendImagesCheck;
     @FXML
-    private CheckBox chkSendPlaylist;
+    private CheckBox sendPlaylistCheck;
     @FXML
-    private CheckBox chkLevelAll;
+    private CheckBox levelAllCheck;
     @FXML
-    private CheckBox chkLampAll;
+    private CheckBox lampAllCheck;
     @FXML
-    private CheckBox chkLampPuc;
+    private CheckBox lampPucCheck;
     @FXML
-    private CheckBox chkLampUc;
+    private CheckBox lampUcCheck;
     @FXML
-    private CheckBox chkLampExh;
+    private CheckBox lampExhCheck;
     @FXML
-    private CheckBox chkLampHard;
+    private CheckBox lampHardCheck;
     @FXML
-    private CheckBox chkLampClear;
+    private CheckBox lampClearCheck;
     @FXML
-    private CheckBox chkLampFailed;
+    private CheckBox lampFailedCheck;
     @FXML
     private FlowPane paneLevels;
 
     private final List<CheckBox> levelBoxes = new ArrayList<>();
-    private final SettingsRepository settingsRepo = new SettingsRepository();
+    private SettingsRepository settingsRepo = new SettingsRepository();
     private Map<String, String> settings;
 
-    private final ObservableList<String> webhookNames = FXCollections.observableArrayList();
+    private ObservableList<String> webhookNames = FXCollections.observableArrayList();
     private List<String> webhookUrls = new ArrayList<>();
     private List<Boolean> webhookEnablePics = new ArrayList<>();
     private List<Boolean> webhookPlaylist = new ArrayList<>();
@@ -92,21 +92,13 @@ public class WebhooksController implements Initializable {
         settings = settingsRepo.load();
         buildLevelCheckBoxes();
         wireAllToggles();
-        if (lstWebhooks != null) {
-            lstWebhooks.setItems(webhookNames);
-            lstWebhooks.getSelectionModel().selectedIndexProperty()
-                    .addListener((_, _, idx) -> onSelect(idx.intValue()));
-        }
+        webhooksList.setItems(webhookNames);
+        webhooksList.getSelectionModel().selectedIndexProperty().addListener((_, _, idx) -> onSelect(idx.intValue()));
         loadFromSettings();
-        if (txtPlayerName != null) {
-            txtPlayerName.setText(settings.getOrDefault("webhook_player_name", ""));
-        }
+        playerNameField.setText(settings.getOrDefault("webhook_player_name", ""));
     }
 
     private void buildLevelCheckBoxes() {
-        if (paneLevels == null) {
-            return;
-        }
         paneLevels.getChildren().clear();
         levelBoxes.clear();
         for (int lv = 1; lv <= 20; lv++) {
@@ -117,24 +109,18 @@ public class WebhooksController implements Initializable {
     }
 
     private void wireAllToggles() {
-        if (chkLevelAll != null) {
-            chkLevelAll.setOnAction(_ -> {
-                for (CheckBox cb : levelBoxes) {
-                    cb.setSelected(chkLevelAll.isSelected());
-                }
-            });
-        }
-        if (chkLampAll != null) {
-            chkLampAll.setOnAction(_ -> {
-                boolean v = chkLampAll.isSelected();
-                for (CheckBox cb : new CheckBox[]{chkLampPuc, chkLampUc, chkLampExh, chkLampHard, chkLampClear,
-                        chkLampFailed}) {
-                    if (cb != null) {
-                        cb.setSelected(v);
-                    }
-                }
-            });
-        }
+        levelAllCheck.setOnAction(_ -> {
+            for (CheckBox cb : levelBoxes) {
+                cb.setSelected(levelAllCheck.isSelected());
+            }
+        });
+        lampAllCheck.setOnAction(_ -> {
+            boolean v = lampAllCheck.isSelected();
+            for (CheckBox cb : new CheckBox[]{lampPucCheck, lampUcCheck, lampExhCheck, lampHardCheck, lampClearCheck,
+                    lampFailedCheck}) {
+                cb.setSelected(v);
+            }
+        });
     }
 
     /**
@@ -142,9 +128,7 @@ public class WebhooksController implements Initializable {
      */
     public void save() {
         captureCurrent();
-        if (txtPlayerName != null) {
-            settings.put("webhook_player_name", txtPlayerName.getText().trim());
-        }
+        settings.put("webhook_player_name", playerNameField.getText().trim());
         settings.put("webhook_names", String.join("|", webhookNames));
         settings.put("webhook_urls", String.join("|", webhookUrls));
         settings.put("webhook_enable_pics", joinBools(webhookEnablePics));
@@ -172,6 +156,7 @@ public class WebhooksController implements Initializable {
         dlg.showAndWait().ifPresent(name -> {
             String nm = name.trim();
             if (nm.isEmpty()) {
+                log.debug("onAdd: webhook name is blank, ignoring");
                 return;
             }
             webhookNames.add(nm);
@@ -180,7 +165,7 @@ public class WebhooksController implements Initializable {
             webhookPlaylist.add(Boolean.FALSE);
             webhookEnableLvs.add(newBoolList(20, true));
             webhookEnableLamps.add(newBoolList(6, true));
-            lstWebhooks.getSelectionModel().select(webhookNames.size() - 1);
+            webhooksList.getSelectionModel().select(webhookNames.size() - 1);
         });
     }
 
@@ -192,8 +177,9 @@ public class WebhooksController implements Initializable {
      */
     @FXML
     public void onDelete(ActionEvent event) {
-        int idx = lstWebhooks == null ? -1 : lstWebhooks.getSelectionModel().getSelectedIndex();
+        int idx = webhooksList.getSelectionModel().getSelectedIndex();
         if (idx < 0 || idx >= webhookNames.size()) {
+            log.warn("onDelete: selected index {} out of range [0,{})", idx, webhookNames.size());
             return;
         }
         selectedIndex = -1;
@@ -212,61 +198,50 @@ public class WebhooksController implements Initializable {
             clearFields();
             return;
         }
-        txtName.setText(webhookNames.get(idx));
-        txtUrl.setText(webhookUrls.get(idx));
-        chkSendImages.setSelected(webhookEnablePics.get(idx));
-        chkSendPlaylist.setSelected(webhookPlaylist.get(idx));
+        nameField.setText(webhookNames.get(idx));
+        urlField.setText(webhookUrls.get(idx));
+        sendImagesCheck.setSelected(webhookEnablePics.get(idx));
+        sendPlaylistCheck.setSelected(webhookPlaylist.get(idx));
         List<Boolean> lvs = webhookEnableLvs.get(idx);
         for (int i = 0; i < levelBoxes.size() && i < lvs.size(); i++) {
             levelBoxes.get(i).setSelected(lvs.get(i));
         }
         List<Boolean> lamps = webhookEnableLamps.get(idx);
-        CheckBox[] lampBoxes = {chkLampPuc, chkLampUc, chkLampExh, chkLampHard, chkLampClear, chkLampFailed};
+        CheckBox[] lampBoxes = {lampPucCheck, lampUcCheck, lampExhCheck, lampHardCheck, lampClearCheck,
+                lampFailedCheck};
         for (int i = 0; i < lampBoxes.length && i < lamps.size(); i++) {
-            if (lampBoxes[i] != null) {
-                lampBoxes[i].setSelected(lamps.get(i));
-            }
+            lampBoxes[i].setSelected(lamps.get(i));
         }
     }
 
     private void captureCurrent() {
         if (selectedIndex < 0 || selectedIndex >= webhookNames.size()) {
+            log.debug("captureCurrent: no webhook selected (index={}), skipping", selectedIndex);
             return;
         }
-        if (txtName != null) {
-            webhookNames.set(selectedIndex, txtName.getText().trim());
-        }
-        if (txtUrl != null) {
-            webhookUrls.set(selectedIndex, txtUrl.getText().trim());
-        }
-        if (chkSendImages != null) {
-            webhookEnablePics.set(selectedIndex, chkSendImages.isSelected());
-        }
-        if (chkSendPlaylist != null) {
-            webhookPlaylist.set(selectedIndex, chkSendPlaylist.isSelected());
-        }
+        webhookNames.set(selectedIndex, nameField.getText().trim());
+        webhookUrls.set(selectedIndex, urlField.getText().trim());
+        webhookEnablePics.set(selectedIndex, sendImagesCheck.isSelected());
+        webhookPlaylist.set(selectedIndex, sendPlaylistCheck.isSelected());
         List<Boolean> lvs = new ArrayList<>();
         for (CheckBox cb : levelBoxes) {
             lvs.add(cb.isSelected());
         }
         webhookEnableLvs.set(selectedIndex, lvs);
         List<Boolean> lamps = new ArrayList<>();
-        CheckBox[] lampBoxes = {chkLampPuc, chkLampUc, chkLampExh, chkLampHard, chkLampClear, chkLampFailed};
+        CheckBox[] lampBoxes = {lampPucCheck, lampUcCheck, lampExhCheck, lampHardCheck, lampClearCheck,
+                lampFailedCheck};
         for (CheckBox cb : lampBoxes) {
-            lamps.add(cb != null && cb.isSelected());
+            lamps.add(cb.isSelected());
         }
         webhookEnableLamps.set(selectedIndex, lamps);
     }
 
     private void clearFields() {
-        if (txtName != null)
-            txtName.clear();
-        if (txtUrl != null)
-            txtUrl.clear();
-        if (chkSendImages != null)
-            chkSendImages.setSelected(false);
-        if (chkSendPlaylist != null)
-            chkSendPlaylist.setSelected(false);
+        nameField.clear();
+        urlField.clear();
+        sendImagesCheck.setSelected(false);
+        sendPlaylistCheck.setSelected(false);
     }
 
     private void loadFromSettings() {
@@ -277,16 +252,21 @@ public class WebhooksController implements Initializable {
         webhookPlaylist = new ArrayList<>(splitBools(settings.get("webhook_playlist"), webhookNames.size(), false));
         webhookEnableLvs = splitListOfBools(settings.get("webhook_enable_lvs"), webhookNames.size(), 20, true);
         webhookEnableLamps = splitListOfBools(settings.get("webhook_enable_lamps"), webhookNames.size(), 6, true);
-        while (webhookUrls.size() < webhookNames.size())
+        while (webhookUrls.size() < webhookNames.size()) {
             webhookUrls.add("");
-        while (webhookEnablePics.size() < webhookNames.size())
+        }
+        while (webhookEnablePics.size() < webhookNames.size()) {
             webhookEnablePics.add(Boolean.FALSE);
-        while (webhookPlaylist.size() < webhookNames.size())
+        }
+        while (webhookPlaylist.size() < webhookNames.size()) {
             webhookPlaylist.add(Boolean.FALSE);
-        while (webhookEnableLvs.size() < webhookNames.size())
+        }
+        while (webhookEnableLvs.size() < webhookNames.size()) {
             webhookEnableLvs.add(newBoolList(20, true));
-        while (webhookEnableLamps.size() < webhookNames.size())
+        }
+        while (webhookEnableLamps.size() < webhookNames.size()) {
             webhookEnableLamps.add(newBoolList(6, true));
+        }
     }
 
     private static List<String> splitPipe(String s) {
@@ -303,8 +283,9 @@ public class WebhooksController implements Initializable {
                 out.add(Boolean.parseBoolean(p.trim()));
             }
         }
-        while (out.size() < minSize)
+        while (out.size() < minSize) {
             out.add(defaultVal);
+        }
         return out;
     }
 
@@ -316,28 +297,32 @@ public class WebhooksController implements Initializable {
                 for (String p : group.split(",")) {
                     inner.add(Boolean.parseBoolean(p.trim()));
                 }
-                while (inner.size() < innerSize)
+                while (inner.size() < innerSize) {
                     inner.add(defaultVal);
+                }
                 out.add(inner);
             }
         }
-        while (out.size() < outerSize)
+        while (out.size() < outerSize) {
             out.add(newBoolList(innerSize, defaultVal));
+        }
         return out;
     }
 
     private static List<Boolean> newBoolList(int size, boolean val) {
         List<Boolean> l = new ArrayList<>(size);
-        for (int i = 0; i < size; i++)
+        for (int i = 0; i < size; i++) {
             l.add(val);
+        }
         return l;
     }
 
     private static String joinBools(List<Boolean> bools) {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < bools.size(); i++) {
-            if (i > 0)
+            if (i > 0) {
                 sb.append(",");
+            }
             sb.append(bools.get(i));
         }
         return sb.toString();
@@ -346,8 +331,9 @@ public class WebhooksController implements Initializable {
     private static String joinListOfBools(List<List<Boolean>> lol) {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < lol.size(); i++) {
-            if (i > 0)
+            if (i > 0) {
                 sb.append(";");
+            }
             sb.append(joinBools(lol.get(i)));
         }
         return sb.toString();

@@ -211,6 +211,7 @@ public class DiscordPresenceClient implements Closeable {
      */
     public void clearPresence() {
         if (!connected) {
+            log.debug("clearPresence: not connected to Discord, skipping");
             return;
         }
         log.debug("clearPresence");
@@ -231,6 +232,7 @@ public class DiscordPresenceClient implements Closeable {
     @Override
     public void close() {
         if (!connected) {
+            log.debug("close: not connected to Discord, nothing to close");
             return;
         }
         log.info("Disconnecting from Discord IPC");

@@ -49,14 +49,14 @@ public class ScoreViewerApp extends Application {
         this.primaryStage = stage;
         SettingsRepository repo = new SettingsRepository();
         LocaleManager.getInstance().init(repo);
-        LocaleManager.getInstance().localeProperty()
-                .addListener((obs, oldLocale, newLocale) -> Platform.runLater(() -> {
-                    try {
-                        buildScene(newLocale);
-                    } catch (IOException e) {
-                        log.error("Failed to rebuild scene after locale change", e);
-                    }
-                }));
+
+        LocaleManager.getInstance().localeProperty().addListener((_, _, newLocale) -> Platform.runLater(() -> {
+            try {
+                buildScene(newLocale);
+            } catch (IOException e) {
+                log.error("Failed to rebuild scene after locale change", e);
+            }
+        }));
         buildScene(LocaleManager.getInstance().getCurrentLocale());
         stage.setTitle("SDVX Score Viewer " + VersionUtil.getVersion("manager"));
         WindowPositionHelper.applyAndPersist(stage, repo, "score_lx", "score_ly");

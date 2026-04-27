@@ -95,14 +95,18 @@ public class GoogleDriveClient {
     private static String extractConfirmUrl(String body, String originalUrl) {
         // Look for the confirmation URL in the page body
         int idx = body.indexOf("confirm=");
-        if (idx == -1)
+        if (idx == -1) {
+            log.debug("extractConfirmUrl: confirm marker not found in response HTML");
             return null;
+        }
         // Extract the confirm token value
         int end = body.indexOf("&", idx);
         if (end == -1)
             end = body.indexOf("\"", idx);
-        if (end == -1)
+        if (end == -1) {
+            log.debug("extractConfirmUrl: end marker not found in response HTML");
             return null;
+        }
         String confirmParam = body.substring(idx, end);
         return originalUrl + "&" + confirmParam;
     }

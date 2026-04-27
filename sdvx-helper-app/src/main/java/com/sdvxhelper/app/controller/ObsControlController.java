@@ -41,52 +41,52 @@ public class ObsControlController implements Initializable {
     private static final Logger log = LoggerFactory.getLogger(ObsControlController.class);
 
     @FXML
-    private Label lblConnStatus;
+    private Label connStatusLabel;
     @FXML
-    private Button btnConnect;
+    private Button connectButton;
     @FXML
-    private Button btnDisconnect;
+    private Button disconnectButton;
 
     @FXML
-    private ComboBox<String> cmbBootScene;
+    private ComboBox<String> bootSceneCombo;
     @FXML
-    private ListView<String> lstBootEnable;
+    private ListView<String> bootEnableList;
     @FXML
-    private ListView<String> lstBootDisable;
+    private ListView<String> bootDisableList;
 
     @FXML
-    private ComboBox<String> cmbSelectScene;
+    private ComboBox<String> selectSceneCombo;
     @FXML
-    private ListView<String> lstSelectEnable;
+    private ListView<String> selectEnableList;
     @FXML
-    private ListView<String> lstSelectDisable;
+    private ListView<String> selectDisableList;
 
     @FXML
-    private ComboBox<String> cmbPlayScene;
+    private ComboBox<String> playSceneCombo;
     @FXML
-    private ListView<String> lstPlayEnable;
+    private ListView<String> playEnableList;
     @FXML
-    private ListView<String> lstPlayDisable;
+    private ListView<String> playDisableList;
 
     @FXML
-    private ComboBox<String> cmbResultScene;
+    private ComboBox<String> resultSceneCombo;
     @FXML
-    private ListView<String> lstResultEnable;
+    private ListView<String> resultEnableList;
     @FXML
-    private ListView<String> lstResultDisable;
+    private ListView<String> resultDisableList;
 
     @FXML
-    private ComboBox<String> cmbQuitScene;
+    private ComboBox<String> quitSceneCombo;
     @FXML
-    private ListView<String> lstQuitEnable;
+    private ListView<String> quitEnableList;
     @FXML
-    private ListView<String> lstQuitDisable;
+    private ListView<String> quitDisableList;
 
-    private final SettingsRepository settingsRepo = new SettingsRepository();
+    private SettingsRepository settingsRepo = new SettingsRepository();
     private Map<String, String> settings;
     private ObsWebSocketClient obsClient;
 
-    private final Map<String, BooleanProperty> checkStates = new java.util.HashMap<>();
+    private Map<String, BooleanProperty> checkStates = new java.util.HashMap<>();
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -130,7 +130,7 @@ public class ObsControlController implements Initializable {
             discoverScenes();
         } catch (IOException e) {
             log.error("Failed to connect to OBS", e);
-            lblConnStatus.setText("Error: " + e.getMessage());
+            connStatusLabel.setText("Error: " + e.getMessage());
         }
     }
 
@@ -152,6 +152,7 @@ public class ObsControlController implements Initializable {
 
     private void discoverScenes() {
         if (obsClient == null) {
+            log.warn("discoverScenes: obsClient is null, cannot perform action");
             return;
         }
         try {
@@ -160,12 +161,10 @@ public class ObsControlController implements Initializable {
             withEmpty.add("");
             withEmpty.addAll(scenes);
             for (ComboBox<String> cb : allSceneCombos()) {
-                if (cb != null) {
-                    String current = cb.getValue();
-                    cb.getItems().setAll(withEmpty);
-                    if (current != null && withEmpty.contains(current)) {
-                        cb.setValue(current);
-                    }
+                String current = cb.getValue();
+                cb.getItems().setAll(withEmpty);
+                if (current != null && withEmpty.contains(current)) {
+                    cb.setValue(current);
                 }
             }
         } catch (IOException e) {
@@ -174,34 +173,27 @@ public class ObsControlController implements Initializable {
     }
 
     private List<ComboBox<String>> allSceneCombos() {
-        return List.of(cmbBootScene, cmbSelectScene, cmbPlayScene, cmbResultScene, cmbQuitScene);
+        return List.of(bootSceneCombo, selectSceneCombo, playSceneCombo, resultSceneCombo, quitSceneCombo);
     }
 
     private void wireSceneChangeListeners() {
-        wire(cmbBootScene, lstBootEnable, lstBootDisable, "obs_enable_boot", "obs_disable_boot");
-        wire(cmbSelectScene, lstSelectEnable, lstSelectDisable, "obs_enable_select0", "obs_disable_select0");
-        wire(cmbPlayScene, lstPlayEnable, lstPlayDisable, "obs_enable_play0", "obs_disable_play0");
-        wire(cmbResultScene, lstResultEnable, lstResultDisable, "obs_enable_result0", "obs_disable_result0");
-        wire(cmbQuitScene, lstQuitEnable, lstQuitDisable, "obs_enable_quit", "obs_disable_quit");
+        wire(bootSceneCombo, bootEnableList, bootDisableList, "obs_enable_boot", "obs_disable_boot");
+        wire(selectSceneCombo, selectEnableList, selectDisableList, "obs_enable_select0", "obs_disable_select0");
+        wire(playSceneCombo, playEnableList, playDisableList, "obs_enable_play0", "obs_disable_play0");
+        wire(resultSceneCombo, resultEnableList, resultDisableList, "obs_enable_result0", "obs_disable_result0");
+        wire(quitSceneCombo, quitEnableList, quitDisableList, "obs_enable_quit", "obs_disable_quit");
     }
 
     private void wire(ComboBox<String> cb, ListView<String> enable, ListView<String> disable, String enKey,
             String disKey) {
-        if (cb == null) {
-            return;
-        }
         cb.valueProperty().addListener((_, _, scene) -> loadSources(scene, enable, disable, enKey, disKey));
     }
 
     private void loadSources(String scene, ListView<String> enable, ListView<String> disable, String enKey,
             String disKey) {
         if (obsClient == null || scene == null || scene.isBlank()) {
-            if (enable != null) {
-                enable.getItems().clear();
-            }
-            if (disable != null) {
-                disable.getItems().clear();
-            }
+            enable.getItems().clear();
+            disable.getItems().clear();
             return;
         }
         try {
@@ -216,9 +208,6 @@ public class ObsControlController implements Initializable {
     }
 
     private void populateCheckList(ListView<String> lv, List<String> items, List<String> selected, String key) {
-        if (lv == null) {
-            return;
-        }
         lv.getItems().setAll(items);
         Callback<String, javafx.beans.value.ObservableValue<Boolean>> cb = item -> {
             BooleanProperty prop = checkStates.computeIfAbsent(key + ":" + item,
@@ -230,17 +219,14 @@ public class ObsControlController implements Initializable {
     }
 
     private void populateFields() {
-        setValue(cmbBootScene, "obs_scene_boot");
-        setValue(cmbSelectScene, "obs_scene_select");
-        setValue(cmbPlayScene, "obs_scene_play");
-        setValue(cmbResultScene, "obs_scene_result");
-        setValue(cmbQuitScene, "obs_scene_quit");
+        setValue(bootSceneCombo, "obs_scene_boot");
+        setValue(selectSceneCombo, "obs_scene_select");
+        setValue(playSceneCombo, "obs_scene_play");
+        setValue(resultSceneCombo, "obs_scene_result");
+        setValue(quitSceneCombo, "obs_scene_quit");
     }
 
     private void setValue(ComboBox<String> cb, String key) {
-        if (cb == null) {
-            return;
-        }
         String v = settings.get(key);
         cb.getItems().clear();
         cb.getItems().add("");
@@ -253,11 +239,11 @@ public class ObsControlController implements Initializable {
     }
 
     private void collectFields() {
-        putScene("obs_scene_boot", cmbBootScene);
-        putScene("obs_scene_select", cmbSelectScene);
-        putScene("obs_scene_play", cmbPlayScene);
-        putScene("obs_scene_result", cmbResultScene);
-        putScene("obs_scene_quit", cmbQuitScene);
+        putScene("obs_scene_boot", bootSceneCombo);
+        putScene("obs_scene_select", selectSceneCombo);
+        putScene("obs_scene_play", playSceneCombo);
+        putScene("obs_scene_result", resultSceneCombo);
+        putScene("obs_scene_quit", quitSceneCombo);
 
         collectChecked("obs_enable_boot");
         collectChecked("obs_disable_boot");
@@ -272,9 +258,6 @@ public class ObsControlController implements Initializable {
     }
 
     private void putScene(String key, ComboBox<String> cb) {
-        if (cb == null) {
-            return;
-        }
         String v = cb.getValue();
         settings.put(key, v == null ? "" : v);
     }
@@ -293,11 +276,11 @@ public class ObsControlController implements Initializable {
     }
 
     private void updateConnectionUi(boolean connected) {
-        lblConnStatus.setText(connected ? "Connected" : "Disconnected");
-        lblConnStatus.getStyleClass().removeAll("obs-connected", "obs-disconnected");
-        lblConnStatus.getStyleClass().add(connected ? "obs-connected" : "obs-disconnected");
-        btnConnect.setDisable(connected);
-        btnDisconnect.setDisable(!connected);
+        connStatusLabel.setText(connected ? "Connected" : "Disconnected");
+        connStatusLabel.getStyleClass().removeAll("obs-connected", "obs-disconnected");
+        connStatusLabel.getStyleClass().add(connected ? "obs-connected" : "obs-disconnected");
+        connectButton.setDisable(connected);
+        disconnectButton.setDisable(!connected);
     }
 
     private static int parseInt(String s, int fallback) {

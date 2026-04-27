@@ -28,7 +28,7 @@ public class PlayLogRepository extends JaxbRepository<PlayLog> {
     private static final Logger log = LoggerFactory.getLogger(PlayLogRepository.class);
     private static final String DEFAULT_PATH = "alllog.xml";
 
-    private final File file;
+    private File file;
 
     /**
      * Constructs a repository backed by the default file ({@code alllog.xml} in the

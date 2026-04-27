@@ -24,10 +24,10 @@
 
     <HBox spacing="12" alignment="CENTER_LEFT">
         <Label text="%label.obs.control.status" styleClass="muted"/>
-        <Label fx:id="lblConnStatus" text="%label.obs.control.disconnected" styleClass="obs-disconnected"/>
+        <Label fx:id="connStatusLabel" text="%label.obs.control.disconnected" styleClass="obs-disconnected"/>
         <Region HBox.hgrow="ALWAYS"/>
-        <Button text="%button.obs.connect"    fx:id="btnConnect"    onAction="#onConnect"    styleClass="button-success"/>
-        <Button text="%button.obs.disconnect" fx:id="btnDisconnect" onAction="#onDisconnect" styleClass="button-danger" disable="true"/>
+        <Button text="%button.obs.connect"    fx:id="connectButton"    onAction="#onConnect"    styleClass="button-success"/>
+        <Button text="%button.obs.disconnect" fx:id="disconnectButton" onAction="#onDisconnect" styleClass="button-danger" disable="true"/>
     </HBox>
 
     <Separator/>
@@ -43,13 +43,13 @@
                 </columnConstraints>
 
                 <Label text="%label.obs.scene"   GridPane.columnIndex="0" GridPane.rowIndex="0" styleClass="muted"/>
-                <ComboBox fx:id="cmbBootScene"   GridPane.columnIndex="1" GridPane.rowIndex="0" maxWidth="Infinity"/>
+                <ComboBox fx:id="bootSceneCombo"   GridPane.columnIndex="1" GridPane.rowIndex="0" maxWidth="Infinity"/>
 
                 <Label text="%label.obs.enable"  GridPane.columnIndex="0" GridPane.rowIndex="1" styleClass="muted"/>
-                <ListView fx:id="lstBootEnable"  GridPane.columnIndex="1" GridPane.rowIndex="1" prefHeight="140"/>
+                <ListView fx:id="bootEnableList"  GridPane.columnIndex="1" GridPane.rowIndex="1" prefHeight="140"/>
 
                 <Label text="%label.obs.disable" GridPane.columnIndex="0" GridPane.rowIndex="2" styleClass="muted"/>
-                <ListView fx:id="lstBootDisable" GridPane.columnIndex="1" GridPane.rowIndex="2" prefHeight="140"/>
+                <ListView fx:id="bootDisableList" GridPane.columnIndex="1" GridPane.rowIndex="2" prefHeight="140"/>
             </GridPane>
         </Tab>
 
@@ -62,13 +62,13 @@
                 </columnConstraints>
 
                 <Label text="%label.obs.scene"     GridPane.columnIndex="0" GridPane.rowIndex="0" styleClass="muted"/>
-                <ComboBox fx:id="cmbSelectScene"   GridPane.columnIndex="1" GridPane.rowIndex="0" maxWidth="Infinity"/>
+                <ComboBox fx:id="selectSceneCombo"   GridPane.columnIndex="1" GridPane.rowIndex="0" maxWidth="Infinity"/>
 
                 <Label text="%label.obs.enable"    GridPane.columnIndex="0" GridPane.rowIndex="1" styleClass="muted"/>
-                <ListView fx:id="lstSelectEnable"  GridPane.columnIndex="1" GridPane.rowIndex="1" prefHeight="140"/>
+                <ListView fx:id="selectEnableList"  GridPane.columnIndex="1" GridPane.rowIndex="1" prefHeight="140"/>
 
                 <Label text="%label.obs.disable"   GridPane.columnIndex="0" GridPane.rowIndex="2" styleClass="muted"/>
-                <ListView fx:id="lstSelectDisable" GridPane.columnIndex="1" GridPane.rowIndex="2" prefHeight="140"/>
+                <ListView fx:id="selectDisableList" GridPane.columnIndex="1" GridPane.rowIndex="2" prefHeight="140"/>
             </GridPane>
         </Tab>
 
@@ -81,13 +81,13 @@
                 </columnConstraints>
 
                 <Label text="%label.obs.scene"   GridPane.columnIndex="0" GridPane.rowIndex="0" styleClass="muted"/>
-                <ComboBox fx:id="cmbPlayScene"   GridPane.columnIndex="1" GridPane.rowIndex="0" maxWidth="Infinity"/>
+                <ComboBox fx:id="playSceneCombo"   GridPane.columnIndex="1" GridPane.rowIndex="0" maxWidth="Infinity"/>
 
                 <Label text="%label.obs.enable"  GridPane.columnIndex="0" GridPane.rowIndex="1" styleClass="muted"/>
-                <ListView fx:id="lstPlayEnable"  GridPane.columnIndex="1" GridPane.rowIndex="1" prefHeight="140"/>
+                <ListView fx:id="playEnableList"  GridPane.columnIndex="1" GridPane.rowIndex="1" prefHeight="140"/>
 
                 <Label text="%label.obs.disable" GridPane.columnIndex="0" GridPane.rowIndex="2" styleClass="muted"/>
-                <ListView fx:id="lstPlayDisable" GridPane.columnIndex="1" GridPane.rowIndex="2" prefHeight="140"/>
+                <ListView fx:id="playDisableList" GridPane.columnIndex="1" GridPane.rowIndex="2" prefHeight="140"/>
             </GridPane>
         </Tab>
 
@@ -100,13 +100,13 @@
                 </columnConstraints>
 
                 <Label text="%label.obs.scene"     GridPane.columnIndex="0" GridPane.rowIndex="0" styleClass="muted"/>
-                <ComboBox fx:id="cmbResultScene"   GridPane.columnIndex="1" GridPane.rowIndex="0" maxWidth="Infinity"/>
+                <ComboBox fx:id="resultSceneCombo"   GridPane.columnIndex="1" GridPane.rowIndex="0" maxWidth="Infinity"/>
 
                 <Label text="%label.obs.enable"    GridPane.columnIndex="0" GridPane.rowIndex="1" styleClass="muted"/>
-                <ListView fx:id="lstResultEnable"  GridPane.columnIndex="1" GridPane.rowIndex="1" prefHeight="140"/>
+                <ListView fx:id="resultEnableList"  GridPane.columnIndex="1" GridPane.rowIndex="1" prefHeight="140"/>
 
                 <Label text="%label.obs.disable"   GridPane.columnIndex="0" GridPane.rowIndex="2" styleClass="muted"/>
-                <ListView fx:id="lstResultDisable" GridPane.columnIndex="1" GridPane.rowIndex="2" prefHeight="140"/>
+                <ListView fx:id="resultDisableList" GridPane.columnIndex="1" GridPane.rowIndex="2" prefHeight="140"/>
             </GridPane>
         </Tab>
 
@@ -119,13 +119,13 @@
                 </columnConstraints>
 
                 <Label text="%label.obs.scene"   GridPane.columnIndex="0" GridPane.rowIndex="0" styleClass="muted"/>
-                <ComboBox fx:id="cmbQuitScene"   GridPane.columnIndex="1" GridPane.rowIndex="0" maxWidth="Infinity"/>
+                <ComboBox fx:id="quitSceneCombo"   GridPane.columnIndex="1" GridPane.rowIndex="0" maxWidth="Infinity"/>
 
                 <Label text="%label.obs.enable"  GridPane.columnIndex="0" GridPane.rowIndex="1" styleClass="muted"/>
-                <ListView fx:id="lstQuitEnable"  GridPane.columnIndex="1" GridPane.rowIndex="1" prefHeight="140"/>
+                <ListView fx:id="quitEnableList"  GridPane.columnIndex="1" GridPane.rowIndex="1" prefHeight="140"/>
 
                 <Label text="%label.obs.disable" GridPane.columnIndex="0" GridPane.rowIndex="2" styleClass="muted"/>
-                <ListView fx:id="lstQuitDisable" GridPane.columnIndex="1" GridPane.rowIndex="2" prefHeight="140"/>
+                <ListView fx:id="quitDisableList" GridPane.columnIndex="1" GridPane.rowIndex="2" prefHeight="140"/>
             </GridPane>
         </Tab>
     </TabPane>

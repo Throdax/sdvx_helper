@@ -37,7 +37,7 @@ public class MusicListRepository extends JaxbRepository<MusicList> {
     private static final Logger log = LoggerFactory.getLogger(MusicListRepository.class);
     private static final String DEFAULT_PATH = "resources/musiclist.xml";
 
-    private final File file;
+    private File file;
 
     /** In-memory index: perceptual hash → (difficulty, title). */
     private Map<String, String[]> jacketHashIndex = new HashMap<>();
@@ -281,5 +281,84 @@ public class MusicListRepository extends JaxbRepository<MusicList> {
 
         save(cached);
         log.info("Registered hash {} for {} [{}]", hash, title, difficulty);
+    }
+
+    /**
+     * Merges all jacket hashes from another {@code musiclist.xml} file into this
+     * repository, skipping duplicates, then persists the merged list to disk.
+     *
+     * <p>
+     * Mirrors the Python {@code merge_musiclist()} function in
+     * {@code ocr_reporter.py}.
+     * </p>
+     *
+     * @param sourceFile
+     *            path to the external musiclist.xml to import from
+     * @return number of new entries imported
+     * @throws IOException
+     *             if either file cannot be read or the merged list cannot be saved
+     */
+    public int merge(File sourceFile) throws IOException {
+        MusicList source;
+        try {
+            source = load(sourceFile);
+        } catch (JAXBException e) {
+            throw new IOException("Failed to parse source musiclist: " + e.getMessage(), e);
+        }
+        if (source == null) {
+            return 0;
+        }
+
+        if (cached == null) {
+            MusicList ml = load();
+            if (ml == null) {
+                throw new IOException("Cannot merge: local musiclist.xml not loaded");
+            }
+        }
+
+        // Build set of existing hashes for deduplication
+        java.util.Set<String> existingHashes = new java.util.HashSet<>();
+        for (DifficultyHashGroup g : cached.getJacket()) {
+            if (g.getHashes() != null) {
+                for (HashEntry e : g.getHashes().getEntries()) {
+                    existingHashes.add(e.getHash());
+                }
+            }
+        }
+
+        int added = 0;
+        for (DifficultyHashGroup srcGroup : source.getJacket()) {
+            if (srcGroup.getHashes() == null) {
+                continue;
+            }
+            // Find or create matching group in cached
+            DifficultyHashGroup destGroup = null;
+            for (DifficultyHashGroup g : cached.getJacket()) {
+                if (srcGroup.getDifficulty().equals(g.getDifficulty())) {
+                    destGroup = g;
+                    break;
+                }
+            }
+            if (destGroup == null) {
+                destGroup = new DifficultyHashGroup();
+                destGroup.setDifficulty(srcGroup.getDifficulty());
+                destGroup.setHashes(new DifficultyHashes());
+                cached.getJacket().add(destGroup);
+            }
+            for (HashEntry srcEntry : srcGroup.getHashes().getEntries()) {
+                if (!existingHashes.contains(srcEntry.getHash())) {
+                    HashEntry newEntry = new HashEntry();
+                    newEntry.setTitle(srcEntry.getTitle());
+                    newEntry.setHash(srcEntry.getHash());
+                    destGroup.getHashes().getEntries().add(newEntry);
+                    existingHashes.add(srcEntry.getHash());
+                    added++;
+                }
+            }
+        }
+
+        save(cached);
+        log.info("Merged {} new hashes from {}", added, sourceFile.getName());
+        return added;
     }
 }

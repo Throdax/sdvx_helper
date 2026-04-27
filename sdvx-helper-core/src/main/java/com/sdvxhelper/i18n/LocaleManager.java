@@ -78,6 +78,7 @@ public final class LocaleManager {
      */
     public void init(SettingsRepository settingsRepo) {
         if (initialized) {
+            log.debug("LocaleManager.init: already initialized, skipping");
             return;
         }
         initialized = true;

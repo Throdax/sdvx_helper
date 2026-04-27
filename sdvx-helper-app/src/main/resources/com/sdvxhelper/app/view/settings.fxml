@@ -5,9 +5,13 @@
 <?import javafx.scene.control.CheckBox?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.PasswordField?>
+<?import javafx.scene.control.RadioButton?>
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.control.TitledPane?>
+<?import javafx.scene.control.ToggleGroup?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.ColumnConstraints?>
 <?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.HBox?>
@@ -32,15 +36,15 @@
                 </columnConstraints>
 
                 <Label text="%label.settings.player.name" GridPane.columnIndex="0" GridPane.rowIndex="0" styleClass="muted"/>
-                <TextField fx:id="txtPlayerName"          GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+                <TextField fx:id="playerNameField"         GridPane.columnIndex="1" GridPane.rowIndex="0"/>
 
-                <CheckBox fx:id="chkAutoUpdate" text="%label.settings.auto.update"
+                <CheckBox fx:id="autoUpdateCheck"    text="%label.settings.auto.update"
                           GridPane.columnIndex="0" GridPane.rowIndex="1" GridPane.columnSpan="2"/>
-                <CheckBox fx:id="chkIgnoreRankD" text="%label.settings.ignore.rankd"
+                <CheckBox fx:id="ignoreRankDCheck"   text="%label.settings.ignore.rankd"
                           GridPane.columnIndex="0" GridPane.rowIndex="2" GridPane.columnSpan="2"/>
-                <CheckBox fx:id="chkClipLxly" text="%label.settings.clip.lxly"
+                <CheckBox fx:id="clipLxlyCheck"      text="%label.settings.clip.lxly"
                           GridPane.columnIndex="0" GridPane.rowIndex="3" GridPane.columnSpan="2"/>
-                <CheckBox fx:id="chkAlwaysUpdateVf" text="%label.settings.always.update.vf"
+                <CheckBox fx:id="alwaysUpdateVfCheck" text="%label.settings.always.update.vf"
                           GridPane.columnIndex="0" GridPane.rowIndex="4" GridPane.columnSpan="2"/>
             </GridPane>
         </TitledPane>
@@ -55,16 +59,16 @@
                 </columnConstraints>
 
                 <Label text="%label.settings.obs.host"     GridPane.columnIndex="0" GridPane.rowIndex="0" styleClass="muted"/>
-                <TextField fx:id="txtObsHost"              GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+                <TextField fx:id="obsHostField"            GridPane.columnIndex="1" GridPane.rowIndex="0"/>
 
                 <Label text="%label.settings.obs.port"     GridPane.columnIndex="0" GridPane.rowIndex="1" styleClass="muted"/>
-                <TextField fx:id="txtObsPort"              GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+                <TextField fx:id="obsPortField"            GridPane.columnIndex="1" GridPane.rowIndex="1"/>
 
                 <Label text="%label.settings.obs.password" GridPane.columnIndex="0" GridPane.rowIndex="2" styleClass="muted"/>
-                <PasswordField fx:id="txtObsPassword"      GridPane.columnIndex="1" GridPane.rowIndex="2"/>
+                <PasswordField fx:id="obsPasswordField"    GridPane.columnIndex="1" GridPane.rowIndex="2"/>
 
                 <Label text="%label.settings.obs.source"   GridPane.columnIndex="0" GridPane.rowIndex="3" styleClass="muted"/>
-                <TextField fx:id="txtObsSource"            GridPane.columnIndex="1" GridPane.rowIndex="3"/>
+                <TextField fx:id="obsSourceField"          GridPane.columnIndex="1" GridPane.rowIndex="3"/>
             </GridPane>
         </TitledPane>
 
@@ -78,23 +82,23 @@
                 </columnConstraints>
 
                 <Label text="%label.settings.detect.wait"  GridPane.columnIndex="0" GridPane.rowIndex="0" styleClass="muted"/>
-                <TextField fx:id="txtDetectWait"           GridPane.columnIndex="1" GridPane.rowIndex="0" prefColumnCount="10" maxWidth="120"/>
+                <TextField fx:id="detectWaitField"         GridPane.columnIndex="1" GridPane.rowIndex="0" prefColumnCount="10" maxWidth="120"/>
 
                 <Label text="%label.settings.autosave.dir" GridPane.columnIndex="0" GridPane.rowIndex="1" styleClass="muted"/>
                 <HBox spacing="6" GridPane.columnIndex="1" GridPane.rowIndex="1">
-                    <TextField fx:id="txtAutosaveDir" prefColumnCount="100" HBox.hgrow="ALWAYS"/>
+                    <TextField fx:id="autosaveDirField" prefColumnCount="100" HBox.hgrow="ALWAYS"/>
                     <Button text="%button.settings.browse" onAction="#onBrowseAutosaveDir"/>
                 </HBox>
 
                 <Label text="%label.settings.autosave.int" GridPane.columnIndex="0" GridPane.rowIndex="2" styleClass="muted"/>
-                <TextField fx:id="txtAutosaveInterval"     GridPane.columnIndex="1" GridPane.rowIndex="2" prefColumnCount="10" maxWidth="120"/>
+                <TextField fx:id="autosaveIntervalField"   GridPane.columnIndex="1" GridPane.rowIndex="2" prefColumnCount="10" maxWidth="120"/>
 
                 <Label text="%label.settings.autosave.prewait" GridPane.columnIndex="0" GridPane.rowIndex="3" styleClass="muted"/>
-                <TextField fx:id="txtAutosavePrewait" GridPane.columnIndex="1" GridPane.rowIndex="3" prefColumnCount="10" maxWidth="120"/>
+                <TextField fx:id="autosavePrewaitField"    GridPane.columnIndex="1" GridPane.rowIndex="3" prefColumnCount="10" maxWidth="120"/>
 
-                <CheckBox fx:id="chkAutosaveAlways" text="%label.settings.autosave.always"
+                <CheckBox fx:id="autosaveAlwaysCheck"  text="%label.settings.autosave.always"
                           GridPane.columnIndex="0" GridPane.rowIndex="4" GridPane.columnSpan="2"/>
-                <CheckBox fx:id="chkSaveJacketImg" text="%label.settings.save.jacket"
+                <CheckBox fx:id="saveJacketImgCheck"   text="%label.settings.save.jacket"
                           GridPane.columnIndex="0" GridPane.rowIndex="5" GridPane.columnSpan="2"/>
             </GridPane>
         </TitledPane>
@@ -108,12 +112,49 @@
                     <ColumnConstraints hgrow="ALWAYS"/>
                 </columnConstraints>
 
-                <CheckBox fx:id="chkDiscordEnable" text="%label.settings.discord.enable"
+                <CheckBox fx:id="discordEnableCheck"   text="%label.settings.discord.enable"
                           GridPane.columnIndex="0" GridPane.rowIndex="0" GridPane.columnSpan="2"/>
 
                 <Label text="%label.settings.rta.target.vf" GridPane.columnIndex="0" GridPane.rowIndex="1" styleClass="muted"/>
-                <TextField fx:id="txtRtaTargetVf" GridPane.columnIndex="1" GridPane.rowIndex="1" prefColumnCount="10" maxWidth="120"/>
+                <TextField fx:id="rtaTargetVfField" GridPane.columnIndex="1" GridPane.rowIndex="1" prefColumnCount="10" maxWidth="120"/>
             </GridPane>
+        </TitledPane>
+
+        <!-- Screen orientation group -->
+        <TitledPane text="%text.settings.screenOrientation.title" collapsible="true" expanded="true">
+            <VBox spacing="6">
+                <padding><Insets top="10" right="10" bottom="10" left="10"/></padding>
+                <GridPane hgap="16" vgap="12">
+                    <!-- Row 0: Top | Bottom -->
+                    <VBox spacing="4" alignment="CENTER" GridPane.columnIndex="0" GridPane.rowIndex="0">
+                        <ImageView fitWidth="159" fitHeight="89" preserveRatio="false">
+                            <image><Image url="@../images/orientation_top.jpg"/></image>
+                        </ImageView>
+                        <RadioButton fx:id="orientationTopRadio" text="%text.settings.screenOrientation.top">
+                            <toggleGroup><ToggleGroup fx:id="tgOrientation"/></toggleGroup>
+                        </RadioButton>
+                    </VBox>
+                    <VBox spacing="4" alignment="CENTER" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                        <ImageView fitWidth="159" fitHeight="89" preserveRatio="false">
+                            <image><Image url="@../images/orientation_bottom.jpg"/></image>
+                        </ImageView>
+                        <RadioButton fx:id="orientationBottomRadio" text="%text.settings.screenOrientation.bottom" toggleGroup="$tgOrientation"/>
+                    </VBox>
+                    <!-- Row 1: Left | Right -->
+                    <VBox spacing="4" alignment="CENTER" GridPane.columnIndex="0" GridPane.rowIndex="1">
+                        <ImageView fitWidth="159" fitHeight="89" preserveRatio="false">
+                            <image><Image url="@../images/orientation_left.jpg"/></image>
+                        </ImageView>
+                        <RadioButton fx:id="orientationLeftRadio" text="%text.settings.screenOrientation.left" toggleGroup="$tgOrientation"/>
+                    </VBox>
+                    <VBox spacing="4" alignment="CENTER" GridPane.columnIndex="1" GridPane.rowIndex="1">
+                        <ImageView fitWidth="159" fitHeight="89" preserveRatio="false">
+                            <image><Image url="@../images/orientation_right.jpg"/></image>
+                        </ImageView>
+                        <RadioButton fx:id="orientationRightRadio" text="%text.settings.screenOrientation.right" toggleGroup="$tgOrientation"/>
+                    </VBox>
+                </GridPane>
+            </VBox>
         </TitledPane>
 
         <!-- Webhooks group -->
@@ -126,10 +167,10 @@
                 </columnConstraints>
 
                 <Label text="%label.settings.webhook.name" GridPane.columnIndex="0" GridPane.rowIndex="0" styleClass="muted"/>
-                <TextField fx:id="txtWebhookName"          GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+                <TextField fx:id="webhookNameField"        GridPane.columnIndex="1" GridPane.rowIndex="0"/>
 
                 <Label text="%label.settings.webhook.url"  GridPane.columnIndex="0" GridPane.rowIndex="1" styleClass="muted"/>
-                <TextField fx:id="txtWebhookUrl"           GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+                <TextField fx:id="webhookUrlField"         GridPane.columnIndex="1" GridPane.rowIndex="1"/>
 
                 <Label text="(Multiple webhooks managed via the Webhooks menu)"
                        GridPane.columnIndex="0" GridPane.rowIndex="2" GridPane.columnSpan="2" styleClass="muted"/>

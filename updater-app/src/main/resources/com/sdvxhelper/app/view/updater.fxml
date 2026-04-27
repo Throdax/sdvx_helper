@@ -15,20 +15,20 @@
                 <Label text="%label.updater.app.title" styleClass="section-heading"/>
                 <Region HBox.hgrow="ALWAYS"/>
                 <Label text="%label.language" styleClass="muted"/>
-                <ComboBox fx:id="cmbLanguage" styleClass="lang-combo"/>
+                <ComboBox fx:id="languageCombo" styleClass="lang-combo"/>
             </HBox>
             <HBox spacing="24">
                 <VBox spacing="4">
                     <Label text="%label.updater.current.ver" styleClass="muted"/>
-                    <Label fx:id="lblCurrentVersion" text="—" styleClass="value-label"/>
+                    <Label fx:id="currentVersionLabel" text="—" styleClass="value-label"/>
                 </VBox>
                 <VBox spacing="4">
                     <Label text="%label.updater.latest.ver" styleClass="muted"/>
-                    <Label fx:id="lblLatestVersion" text="—" styleClass="value-label"/>
+                    <Label fx:id="latestVersionLabel" text="—" styleClass="value-label"/>
                 </VBox>
                 <VBox spacing="4">
                     <Label text="%label.updater.status" styleClass="muted"/>
-                    <Label fx:id="lblUpdateStatus" text="—" styleClass="highlight-label"/>
+                    <Label fx:id="updateStatusLabel" text="—" styleClass="highlight-label"/>
                 </VBox>
             </HBox>
         </VBox>
@@ -38,19 +38,19 @@
         <VBox spacing="12">
                 <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
             <ProgressBar fx:id="progressBar" prefWidth="500" progress="0"/>
-            <Label fx:id="lblProgress" text="" styleClass="muted"/>
-            <TextArea fx:id="txtChangeLog" prefRowCount="8" editable="false" wrapText="true"
+            <Label fx:id="progressLabel" text="" styleClass="muted"/>
+            <TextArea fx:id="changeLogArea" prefRowCount="8" editable="false" wrapText="true"
                       promptText="Change log will appear here…"/>
         </VBox>
     </center>
 
     <bottom>
         <HBox spacing="12" styleClass="toolbar-bar">
-            <Button text="%button.updater.check"    fx:id="btnCheck"  onAction="#onCheck"
+            <Button text="%button.updater.check"    fx:id="checkButton"  onAction="#onCheck"
                     styleClass="button-primary"/>
-            <Button text="%button.updater.download" fx:id="btnUpdate" onAction="#onUpdate"
+            <Button text="%button.updater.download" fx:id="updateButton" onAction="#onUpdate"
                     disable="true" styleClass="button-success"/>
-            <Button text="%button.updater.close"    fx:id="btnClose"  onAction="#onClose"/>
+            <Button text="%button.updater.close"    fx:id="closeButton"  onAction="#onClose"/>
         </HBox>
     </bottom>
 </BorderPane>

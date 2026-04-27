@@ -4,6 +4,8 @@ import java.util.List;
 
 import com.sdvxhelper.repository.SpecialTitlesRepository;
 import com.sdvxhelper.util.SpecialTitles;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Normalises song title strings for consistent lookup and display.
@@ -19,6 +21,8 @@ import com.sdvxhelper.util.SpecialTitles;
  * @since 2.0.0
  */
 public class TitleNormalizer {
+
+    private static final Logger log = LoggerFactory.getLogger(TitleNormalizer.class);
 
     private final SpecialTitles specialTitles;
 
@@ -52,8 +56,10 @@ public class TitleNormalizer {
      *         exists
      */
     public String restoreTitle(String fsafeTitle) {
-        if (fsafeTitle == null)
+        if (fsafeTitle == null) {
+            log.debug("restoreTitle: fsafeTitle is null, returning null");
             return null;
+        }
         return specialTitles.restoreTitle(fsafeTitle);
     }
 

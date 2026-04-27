@@ -1,9 +1,23 @@
 package com.sdvxhelper.app.controller;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URI;
 import java.net.URL;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.time.Duration;
 import java.util.ResourceBundle;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 import javafx.application.Platform;
 import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
@@ -40,26 +54,26 @@ public class UpdaterController implements Initializable {
     private static final String REPO_NAME = "sdvx-helper";
 
     @FXML
-    private Label lblCurrentVersion;
+    private Label currentVersionLabel;
     @FXML
-    private Label lblLatestVersion;
+    private Label latestVersionLabel;
     @FXML
-    private Label lblUpdateStatus;
+    private Label updateStatusLabel;
     @FXML
     private ProgressBar progressBar;
     @FXML
-    private Label lblProgress;
+    private Label progressLabel;
     @FXML
-    private TextArea txtChangeLog;
+    private TextArea changeLogArea;
     @FXML
-    private Button btnCheck;
+    private Button checkButton;
     @FXML
-    private Button btnUpdate;
+    private Button updateButton;
     @FXML
-    private ComboBox<String> cmbLanguage;
+    private ComboBox<String> languageCombo;
 
-    private final GitHubVersionClient versionClient = new GitHubVersionClient(REPO_OWNER, REPO_NAME);
-    private final ExecutorService executor = Executors.newSingleThreadExecutor(r -> {
+    private GitHubVersionClient versionClient = new GitHubVersionClient(REPO_OWNER, REPO_NAME);
+    private ExecutorService executor = Executors.newSingleThreadExecutor(r -> {
         Thread t = new Thread(r, "updater-bg");
         t.setDaemon(true);
         return t;
@@ -69,10 +83,10 @@ public class UpdaterController implements Initializable {
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
-        lblCurrentVersion.setText(VersionUtil.getCurrentVersion());
-        cmbLanguage.setItems(LocaleManager.getInstance().getAvailableLocaleCodes());
-        cmbLanguage.setValue(LocaleManager.getInstance().getCurrentCode());
-        cmbLanguage.setOnAction(_ -> LocaleManager.getInstance().setLocale(cmbLanguage.getValue()));
+        currentVersionLabel.setText(VersionUtil.getCurrentVersion());
+        languageCombo.setItems(LocaleManager.getInstance().getAvailableLocaleCodes());
+        languageCombo.setValue(LocaleManager.getInstance().getCurrentCode());
+        languageCombo.setOnAction(_ -> LocaleManager.getInstance().setLocale(languageCombo.getValue()));
     }
 
     /**
@@ -83,9 +97,9 @@ public class UpdaterController implements Initializable {
      */
     @FXML
     public void onCheck(ActionEvent event) {
-        btnCheck.setDisable(true);
+        checkButton.setDisable(true);
         progressBar.setProgress(ProgressBar.INDETERMINATE_PROGRESS);
-        lblProgress.setText("Checking for updates…");
+        progressLabel.setText("Checking for updates…");
 
         Task<String> task = new Task<>() {
             @Override
@@ -96,29 +110,29 @@ public class UpdaterController implements Initializable {
 
         task.setOnSucceeded(_ -> {
             latestVersion = task.getValue();
-            lblLatestVersion.setText(latestVersion != null ? latestVersion : "Unknown");
+            latestVersionLabel.setText(latestVersion != null ? latestVersion : "Unknown");
             progressBar.setProgress(0);
-            lblProgress.setText("");
+            progressLabel.setText("");
             boolean updateAvailable = latestVersion != null
                     && versionClient.isUpdateAvailable(VersionUtil.getCurrentVersion());
             if (updateAvailable) {
-                lblUpdateStatus.setText("Update available!");
-                lblUpdateStatus.setStyle("-fx-text-fill: #f85149;");
-                btnUpdate.setDisable(false);
+                updateStatusLabel.setText("Update available!");
+                updateStatusLabel.setStyle("-fx-text-fill: #f85149;");
+                updateButton.setDisable(false);
             } else {
-                lblUpdateStatus.setText("Up to date");
-                lblUpdateStatus.setStyle("-fx-text-fill: #4ecdc4;");
+                updateStatusLabel.setText("Up to date");
+                updateStatusLabel.setStyle("-fx-text-fill: #4ecdc4;");
             }
-            btnCheck.setDisable(false);
+            checkButton.setDisable(false);
         });
 
         task.setOnFailed(_ -> {
             log.error("Version check failed", task.getException());
             Platform.runLater(() -> {
-                lblUpdateStatus.setText("Check failed");
+                updateStatusLabel.setText("Check failed");
                 progressBar.setProgress(0);
-                lblProgress.setText("Error: " + task.getException().getMessage());
-                btnCheck.setDisable(false);
+                progressLabel.setText("Error: " + task.getException().getMessage());
+                checkButton.setDisable(false);
             });
         });
 
@@ -126,7 +140,9 @@ public class UpdaterController implements Initializable {
     }
 
     /**
-     * Downloads and installs the latest release.
+     * Downloads the latest release ZIP from GitHub, extracts it to a temporary
+     * directory, copies files over the current installation, and prompts the user
+     * to restart.
      *
      * @param event
      *            action event
@@ -134,15 +150,117 @@ public class UpdaterController implements Initializable {
     @FXML
     public void onUpdate(ActionEvent event) {
         if (latestVersion == null) {
+            log.warn("onUpdate: latestVersion is null, cannot update — check version must be run first");
             return;
         }
-        btnUpdate.setDisable(true);
+        updateButton.setDisable(true);
         progressBar.setProgress(ProgressBar.INDETERMINATE_PROGRESS);
-        lblProgress.setText("Downloading " + latestVersion + "…");
+        progressLabel.setText("Downloading " + latestVersion + "…");
         log.info("Starting update download for version {}", latestVersion);
-        // Download implementation to be provided by a separate TODO task.
-        lblProgress.setText("Download complete – please restart the application.");
-        progressBar.setProgress(1.0);
+
+        executor.submit(() -> {
+            try {
+                String downloadUrl = versionClient.getDownloadUrl(latestVersion);
+                log.info("Downloading update from {}", downloadUrl);
+
+                HttpClient http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(30))
+                        .followRedirects(HttpClient.Redirect.ALWAYS).build();
+                HttpRequest req = HttpRequest.newBuilder().uri(URI.create(downloadUrl)).timeout(Duration.ofMinutes(5))
+                        .GET().build();
+                HttpResponse<InputStream> response = http.send(req, HttpResponse.BodyHandlers.ofInputStream());
+
+                if (response.statusCode() != 200) {
+                    String msg = "Download failed: HTTP " + response.statusCode();
+                    log.error(msg);
+                    Platform.runLater(() -> {
+                        progressLabel.setText(msg);
+                        progressBar.setProgress(0);
+                        updateButton.setDisable(false);
+                    });
+                    return;
+                }
+
+                Platform.runLater(() -> {
+                    progressLabel.setText("Extracting…");
+                    progressBar.setProgress(0.5);
+                });
+
+                Path tempDir = Files.createTempDirectory("sdvx_helper_update_");
+                Path currentDir = Path.of(System.getProperty("user.dir"));
+
+                try (ZipInputStream zis = new ZipInputStream(response.body())) {
+                    ZipEntry entry;
+                    while ((entry = zis.getNextEntry()) != null) {
+                        if (entry.isDirectory()) {
+                            zis.closeEntry();
+                            continue;
+                        }
+                        String name = entry.getName();
+                        // Strip leading distribution folder name if present
+                        int slash = name.indexOf('/');
+                        if (slash >= 0) {
+                            name = name.substring(slash + 1);
+                        }
+                        if (name.isBlank()) {
+                            zis.closeEntry();
+                            continue;
+                        }
+                        Path dest = tempDir.resolve(name);
+                        Files.createDirectories(dest.getParent());
+                        try (FileOutputStream fos = new FileOutputStream(dest.toFile())) {
+                            zis.transferTo(fos);
+                        }
+                        zis.closeEntry();
+                    }
+                }
+
+                // Copy extracted files over the current directory
+                Files.walk(tempDir).filter(p -> !Files.isDirectory(p)).forEach(src -> {
+                    try {
+                        Path relative = tempDir.relativize(src);
+                        Path target = currentDir.resolve(relative);
+                        Files.createDirectories(target.getParent());
+                        Files.copy(src, target, StandardCopyOption.REPLACE_EXISTING);
+                    } catch (IOException e) {
+                        log.warn("Could not copy update file {}: {}", src, e.getMessage());
+                    }
+                });
+
+                deleteDirectory(tempDir.toFile());
+
+                Platform.runLater(() -> {
+                    progressBar.setProgress(1.0);
+                    progressLabel.setText("Update complete – please restart the application.");
+                    updateStatusLabel.setText("Restart required");
+                });
+                log.info("Update {} installed successfully", latestVersion);
+
+            } catch (IOException | InterruptedException e) {
+                log.error("Update failed", e);
+                Platform.runLater(() -> {
+                    progressLabel.setText("Update failed: " + e.getMessage());
+                    progressBar.setProgress(0);
+                    updateButton.setDisable(false);
+                });
+                if (e instanceof InterruptedException) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+        });
+    }
+
+    private static void deleteDirectory(File dir) {
+        File[] files = dir.listFiles();
+        if (files != null) {
+            for (File f : files) {
+                if (f.isDirectory()) {
+                    deleteDirectory(f);
+                } else {
+                    f.delete();
+                }
+            }
+        }
+        dir.delete();
     }
 
     /**
@@ -154,6 +272,6 @@ public class UpdaterController implements Initializable {
     @FXML
     public void onClose(ActionEvent event) {
         executor.shutdownNow();
-        ((javafx.stage.Stage) btnCheck.getScene().getWindow()).close();
+        ((javafx.stage.Stage) checkButton.getScene().getWindow()).close();
     }
 }

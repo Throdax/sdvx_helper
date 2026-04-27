@@ -33,8 +33,8 @@ public abstract class JaxbRepository<T> {
 
     private static final Logger log = LoggerFactory.getLogger(JaxbRepository.class);
 
-    private final JAXBContext context;
-    private final Class<T> rootType;
+    private JAXBContext context;
+    private Class<T> rootType;
 
     /**
      * Constructs a repository for the given root type.

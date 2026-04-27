@@ -24,21 +24,25 @@
                     <MenuItem text="%menu.tools.google.drive" fx:id="menuGoogleDrive" onAction="#onGoogleDrive"/>
                     <MenuItem text="%menu.tools.webhooks"     fx:id="menuWebhooks"    onAction="#onWebhooks"/>
                 </Menu>
+                <Menu text="%menu.analysis">
+                    <MenuItem text="%menu.analysis.csv"     fx:id="menuExportAllCsv"  onAction="#onExportAllCsv"/>
+                    <MenuItem text="%menu.analysis.csvBest" fx:id="menuExportBestCsv" onAction="#onExportBestCsv"/>
+                </Menu>
             </MenuBar>
 
             <!-- Status / indicator bar -->
             <HBox spacing="10" styleClass="toolbar-bar" alignment="CENTER_LEFT">
                 <Label text="%label.main.obs" styleClass="muted"/>
-                <Label fx:id="lblObsStatus" text="%label.main.obs.disconnected" styleClass="obs-disconnected"/>
+                <Label fx:id="obsStatusLabel" text="%label.main.obs.disconnected" styleClass="obs-disconnected"/>
                 <Label text="  |  " styleClass="muted"/>
                 <Label text="%label.main.vf" styleClass="muted"/>
-                <Label fx:id="lblTotalVf" text="0.000" styleClass="highlight-label"/>
+                <Label fx:id="totalVfLabel" text="0.000" styleClass="highlight-label"/>
                 <Label text="  |  " styleClass="muted"/>
                 <Label text="%label.main.plays" styleClass="muted"/>
-                <Label fx:id="lblPlayCount" text="0" styleClass="value-label"/>
+                <Label fx:id="playCountLabel" text="0" styleClass="value-label"/>
                 <Region HBox.hgrow="ALWAYS"/>
                 <Label text="%label.language" styleClass="muted"/>
-                <ComboBox fx:id="cmbLanguage" styleClass="lang-combo"/>
+                <ComboBox fx:id="languageCombo" styleClass="lang-combo"/>
             </HBox>
 
             <!-- F1-F3 reserved keys hint bar -->
@@ -53,27 +57,27 @@
 
             <!-- F4-F9 function key toolbar (text-only keybind labels) -->
             <HBox spacing="6" styleClass="shortcut-toolbar" alignment="CENTER_LEFT">
-                <Button fx:id="btnF4" text="F4: %text.main.shortcut.f4" styleClass="shortcut-key-button"
+                <Button fx:id="f4Button" text="F4: %text.main.shortcut.f4" styleClass="shortcut-key-button"
                         onAction="#onSaveVolforce">
                     <tooltip><Tooltip text="F4: %text.main.shortcut.f4"/></tooltip>
                 </Button>
-                <Button fx:id="btnF5" text="F5: %text.main.shortcut.f5" styleClass="shortcut-key-button"
+                <Button fx:id="f5Button" text="F5: %text.main.shortcut.f5" styleClass="shortcut-key-button"
                         onAction="#onSaveSummary">
                     <tooltip><Tooltip text="F5: %text.main.shortcut.f5"/></tooltip>
                 </Button>
-                <Button fx:id="btnF6" text="F6: %text.main.shortcut.f6" styleClass="shortcut-key-button"
+                <Button fx:id="f6Button" text="F6: %text.main.shortcut.f6" styleClass="shortcut-key-button"
                         onAction="#onSaveResult">
                     <tooltip><Tooltip text="F6: %text.main.shortcut.f6"/></tooltip>
                 </Button>
-                <Button fx:id="btnF7" text="F7: %text.main.shortcut.f7" styleClass="shortcut-key-button"
+                <Button fx:id="f7Button" text="F7: %text.main.shortcut.f7" styleClass="shortcut-key-button"
                         onAction="#onImportScore">
                     <tooltip><Tooltip text="F7: %text.main.shortcut.f7"/></tooltip>
                 </Button>
-                <Button fx:id="btnF8" text="F8: %text.main.shortcut.f8" styleClass="shortcut-key-button"
+                <Button fx:id="f8Button" text="F8: %text.main.shortcut.f8" styleClass="shortcut-key-button"
                         onAction="#onUpdateRival">
                     <tooltip><Tooltip text="F8: %text.main.shortcut.f8"/></tooltip>
                 </Button>
-                <Button fx:id="btnF9" text="F9: %text.main.shortcut.f9" styleClass="shortcut-key-button"
+                <Button fx:id="f9Button" text="F9: %text.main.shortcut.f9" styleClass="shortcut-key-button"
                         onAction="#onStartRta">
                     <tooltip><Tooltip text="F9: %text.main.shortcut.f9"/></tooltip>
                 </Button>
@@ -90,25 +94,25 @@
                 <Label text="%label.main.current.song" styleClass="section-heading"/>
                 <GridPane hgap="8" vgap="6">
                     <Label text="%label.main.title"      GridPane.columnIndex="0" GridPane.rowIndex="0" styleClass="muted"/>
-                    <Label fx:id="lblTitle"              GridPane.columnIndex="1" GridPane.rowIndex="0" text="-" styleClass="value-label"/>
+                    <Label fx:id="titleLabel"            GridPane.columnIndex="1" GridPane.rowIndex="0" text="-" styleClass="value-label"/>
                     <Label text="%label.main.diff"       GridPane.columnIndex="0" GridPane.rowIndex="1" styleClass="muted"/>
-                    <Label fx:id="lblDiff"               GridPane.columnIndex="1" GridPane.rowIndex="1" text="-" styleClass="value-label"/>
+                    <Label fx:id="diffLabel"             GridPane.columnIndex="1" GridPane.rowIndex="1" text="-" styleClass="value-label"/>
                     <Label text="%label.main.level"      GridPane.columnIndex="0" GridPane.rowIndex="2" styleClass="muted"/>
-                    <Label fx:id="lblLevel"              GridPane.columnIndex="1" GridPane.rowIndex="2" text="-" styleClass="value-label"/>
+                    <Label fx:id="levelLabel"            GridPane.columnIndex="1" GridPane.rowIndex="2" text="-" styleClass="value-label"/>
                     <Label text="%label.main.best.score" GridPane.columnIndex="0" GridPane.rowIndex="3" styleClass="muted"/>
-                    <Label fx:id="lblBest"               GridPane.columnIndex="1" GridPane.rowIndex="3" text="-" styleClass="value-label"/>
+                    <Label fx:id="bestLabel"             GridPane.columnIndex="1" GridPane.rowIndex="3" text="-" styleClass="value-label"/>
                     <Label text="%label.main.best.lamp"  GridPane.columnIndex="0" GridPane.rowIndex="4" styleClass="muted"/>
-                    <Label fx:id="lblLamp"               GridPane.columnIndex="1" GridPane.rowIndex="4" text="-" styleClass="value-label"/>
+                    <Label fx:id="lampLabel"             GridPane.columnIndex="1" GridPane.rowIndex="4" text="-" styleClass="value-label"/>
                     <Label text="%label.main.best.vf"    GridPane.columnIndex="0" GridPane.rowIndex="5" styleClass="muted"/>
-                    <Label fx:id="lblVf"                 GridPane.columnIndex="1" GridPane.rowIndex="5" text="-" styleClass="value-label"/>
+                    <Label fx:id="vfLabel"               GridPane.columnIndex="1" GridPane.rowIndex="5" text="-" styleClass="value-label"/>
                 </GridPane>
                 <Separator/>
                 <Label text="%label.main.detection.state" styleClass="sub-heading"/>
-                <Label fx:id="lblDetectMode" text="INIT" styleClass="status-label"/>
+                <Label fx:id="detectModeLabel" text="INIT" styleClass="status-label"/>
                 <HBox spacing="8">
-                    <Button fx:id="btnStartStop" text="%button.main.start.detection"
+                    <Button fx:id="startStopButton" text="%button.main.start.detection"
                             onAction="#onStartStop" styleClass="button-success"/>
-                    <Button fx:id="btnPopPlay"   text="%button.main.undo.play"
+                    <Button fx:id="popPlayButton"   text="%button.main.undo.play"
                             onAction="#onPopPlay"  styleClass="button-danger"/>
                 </HBox>
             </VBox>
@@ -117,16 +121,16 @@
             <VBox spacing="8">
                 <padding><Insets top="12" right="12" bottom="12" left="12"/></padding>
                 <Label text="%label.main.session.log" styleClass="section-heading"/>
-                <TableView fx:id="tblSessionLog" VBox.vgrow="ALWAYS">
+                <TableView fx:id="sessionLogTable" VBox.vgrow="ALWAYS">
                     <columns>
-                        <TableColumn fx:id="colLogTitle" text="%table.header.title"      prefWidth="220"/>
-                        <TableColumn fx:id="colLogDiff"  text="%table.header.difficulty" prefWidth="60"/>
-                        <TableColumn fx:id="colLogScore" text="%table.header.score"      prefWidth="90"/>
-                        <TableColumn fx:id="colLogLamp"  text="%table.header.lamp"       prefWidth="60"/>
-                        <TableColumn fx:id="colLogDate"  text="%table.header.date"       prefWidth="120"/>
+                        <TableColumn fx:id="logTitleColumn" text="%table.header.title"      prefWidth="220"/>
+                        <TableColumn fx:id="logDiffColumn"  text="%table.header.difficulty" prefWidth="60"/>
+                        <TableColumn fx:id="logScoreColumn" text="%table.header.score"      prefWidth="90"/>
+                        <TableColumn fx:id="logLampColumn"  text="%table.header.lamp"       prefWidth="60"/>
+                        <TableColumn fx:id="logDateColumn"  text="%table.header.date"       prefWidth="120"/>
                     </columns>
                 </TableView>
-                <TextArea fx:id="txtOutput" prefRowCount="10" editable="false"
+                <TextArea fx:id="outputArea" prefRowCount="10" editable="false"
                           style="-fx-font-family: monospace;"/>
             </VBox>
         </SplitPane>
@@ -135,7 +139,7 @@
     <!-- Bottom: status bar -->
     <bottom>
         <HBox styleClass="toolbar-bar">
-            <Label fx:id="lblStatus" text="Ready" styleClass="status-label"/>
+            <Label fx:id="statusLabel" text="Ready" styleClass="status-label"/>
         </HBox>
     </bottom>
 </BorderPane>

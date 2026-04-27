@@ -10,6 +10,7 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.PasswordField;
+import javafx.scene.control.RadioButton;
 import javafx.scene.control.TextField;
 import javafx.stage.DirectoryChooser;
 
@@ -35,49 +36,58 @@ public class SettingsController implements Initializable {
     private static final Logger log = LoggerFactory.getLogger(SettingsController.class);
 
     @FXML
-    private TextField txtPlayerName;
+    private TextField playerNameField;
     @FXML
-    private CheckBox chkAutoUpdate;
+    private CheckBox autoUpdateCheck;
     @FXML
-    private CheckBox chkIgnoreRankD;
+    private CheckBox ignoreRankDCheck;
 
     @FXML
-    private TextField txtObsHost;
+    private TextField obsHostField;
     @FXML
-    private TextField txtObsPort;
+    private TextField obsPortField;
     @FXML
-    private PasswordField txtObsPassword;
+    private PasswordField obsPasswordField;
     @FXML
-    private TextField txtObsSource;
+    private TextField obsSourceField;
 
     @FXML
-    private TextField txtDetectWait;
+    private TextField detectWaitField;
     @FXML
-    private TextField txtAutosaveDir;
+    private TextField autosaveDirField;
     @FXML
-    private TextField txtAutosaveInterval;
+    private TextField autosaveIntervalField;
 
     @FXML
-    private TextField txtWebhookName;
+    private TextField webhookNameField;
     @FXML
-    private TextField txtWebhookUrl;
+    private TextField webhookUrlField;
 
     @FXML
-    private CheckBox chkClipLxly;
+    private CheckBox clipLxlyCheck;
     @FXML
-    private CheckBox chkAlwaysUpdateVf;
+    private CheckBox alwaysUpdateVfCheck;
     @FXML
-    private CheckBox chkSaveJacketImg;
+    private CheckBox saveJacketImgCheck;
     @FXML
-    private CheckBox chkAutosaveAlways;
+    private CheckBox autosaveAlwaysCheck;
     @FXML
-    private TextField txtAutosavePrewait;
+    private TextField autosavePrewaitField;
     @FXML
-    private CheckBox chkDiscordEnable;
+    private CheckBox discordEnableCheck;
     @FXML
-    private TextField txtRtaTargetVf;
+    private TextField rtaTargetVfField;
 
-    private final SettingsRepository settingsRepo = new SettingsRepository();
+    @FXML
+    private RadioButton orientationTopRadio;
+    @FXML
+    private RadioButton orientationBottomRadio;
+    @FXML
+    private RadioButton orientationLeftRadio;
+    @FXML
+    private RadioButton orientationRightRadio;
+
+    private SettingsRepository settingsRepo = new SettingsRepository();
     private Map<String, String> settings;
 
     @Override
@@ -110,92 +120,93 @@ public class SettingsController implements Initializable {
     public void onBrowseAutosaveDir(ActionEvent event) {
         DirectoryChooser dc = new DirectoryChooser();
         dc.setTitle("Select Auto-save Folder");
-        String current = txtAutosaveDir.getText();
+        String current = autosaveDirField.getText();
         if (!current.isBlank()) {
             File existing = new File(current);
             if (existing.isDirectory()) {
                 dc.setInitialDirectory(existing);
             }
         }
-        File chosen = dc.showDialog(txtAutosaveDir.getScene().getWindow());
+        File chosen = dc.showDialog(autosaveDirField.getScene().getWindow());
         if (chosen != null) {
-            txtAutosaveDir.setText(chosen.getAbsolutePath());
+            autosaveDirField.setText(chosen.getAbsolutePath());
         }
     }
 
     private void populateFields() {
-        setText(txtPlayerName, settings.get("player_name"));
-        setCheck(chkAutoUpdate, settings.get("auto_update"));
-        setCheck(chkIgnoreRankD, settings.get("ignore_rankD"));
+        playerNameField.setText(settings.getOrDefault("player_name", ""));
+        autoUpdateCheck.setSelected(Boolean.parseBoolean(settings.get("auto_update")));
+        ignoreRankDCheck.setSelected(Boolean.parseBoolean(settings.get("ignore_rankD")));
 
-        setText(txtObsHost, settings.get("host"));
-        setText(txtObsPort, settings.get("port"));
-        setText(txtObsPassword, settings.get("passwd"));
-        setText(txtObsSource, settings.get("obs_source"));
+        obsHostField.setText(settings.getOrDefault("host", ""));
+        obsPortField.setText(settings.getOrDefault("port", ""));
+        obsPasswordField.setText(settings.getOrDefault("passwd", ""));
+        obsSourceField.setText(settings.getOrDefault("obs_source", ""));
 
-        setText(txtDetectWait, settings.get("detect_wait"));
-        setText(txtAutosaveDir, settings.get("autosave_dir"));
-        setText(txtAutosaveInterval, settings.get("autosave_interval"));
+        detectWaitField.setText(settings.getOrDefault("detect_wait", ""));
+        autosaveDirField.setText(settings.getOrDefault("autosave_dir", ""));
+        autosaveIntervalField.setText(settings.getOrDefault("autosave_interval", ""));
 
-        setText(txtWebhookName, settings.get("webhook_player_name"));
+        webhookNameField.setText(settings.getOrDefault("webhook_player_name", ""));
 
-        setCheck(chkClipLxly, settings.get("clip_lxly"));
-        setCheck(chkAlwaysUpdateVf, settings.get("always_update_vf"));
-        setCheck(chkSaveJacketImg, settings.get("save_jacketimg"));
-        setCheck(chkAutosaveAlways, settings.get("autosave_always"));
-        setText(txtAutosavePrewait, settings.get("autosave_prewait"));
-        setCheck(chkDiscordEnable, settings.get("discord_enable"));
-        setText(txtRtaTargetVf, settings.get("rta_target_vf"));
+        clipLxlyCheck.setSelected(Boolean.parseBoolean(settings.get("clip_lxly")));
+        alwaysUpdateVfCheck.setSelected(Boolean.parseBoolean(settings.get("always_update_vf")));
+        saveJacketImgCheck.setSelected(Boolean.parseBoolean(settings.get("save_jacketimg")));
+        autosaveAlwaysCheck.setSelected(Boolean.parseBoolean(settings.get("autosave_always")));
+        autosavePrewaitField.setText(settings.getOrDefault("autosave_prewait", ""));
+        discordEnableCheck.setSelected(Boolean.parseBoolean(settings.get("discord_enable")));
+        rtaTargetVfField.setText(settings.getOrDefault("rta_target_vf", ""));
+
+        String orientation = settings.getOrDefault("orientation", "top");
+        setRadioOrientation(orientation);
     }
 
     private void collectFields() {
-        putIf(txtPlayerName, "player_name");
-        putIf(chkAutoUpdate, "auto_update");
-        putIf(chkIgnoreRankD, "ignore_rankD");
+        settings.put("player_name", playerNameField.getText().trim());
+        settings.put("auto_update", Boolean.toString(autoUpdateCheck.isSelected()));
+        settings.put("ignore_rankD", Boolean.toString(ignoreRankDCheck.isSelected()));
 
-        putIf(txtObsHost, "host");
-        putIf(txtObsPort, "port");
-        if (txtObsPassword != null) {
-            settings.put("passwd", txtObsPassword.getText());
-        }
-        putIf(txtObsSource, "obs_source");
+        settings.put("host", obsHostField.getText().trim());
+        settings.put("port", obsPortField.getText().trim());
+        settings.put("passwd", obsPasswordField.getText());
+        settings.put("obs_source", obsSourceField.getText().trim());
 
-        putIf(txtDetectWait, "detect_wait");
-        putIf(txtAutosaveDir, "autosave_dir");
-        putIf(txtAutosaveInterval, "autosave_interval");
+        settings.put("detect_wait", detectWaitField.getText().trim());
+        settings.put("autosave_dir", autosaveDirField.getText().trim());
+        settings.put("autosave_interval", autosaveIntervalField.getText().trim());
 
-        putIf(txtWebhookName, "webhook_player_name");
+        settings.put("webhook_player_name", webhookNameField.getText().trim());
 
-        putIf(chkClipLxly, "clip_lxly");
-        putIf(chkAlwaysUpdateVf, "always_update_vf");
-        putIf(chkSaveJacketImg, "save_jacketimg");
-        putIf(chkAutosaveAlways, "autosave_always");
-        putIf(txtAutosavePrewait, "autosave_prewait");
-        putIf(chkDiscordEnable, "discord_enable");
-        putIf(txtRtaTargetVf, "rta_target_vf");
+        settings.put("clip_lxly", Boolean.toString(clipLxlyCheck.isSelected()));
+        settings.put("always_update_vf", Boolean.toString(alwaysUpdateVfCheck.isSelected()));
+        settings.put("save_jacketimg", Boolean.toString(saveJacketImgCheck.isSelected()));
+        settings.put("autosave_always", Boolean.toString(autosaveAlwaysCheck.isSelected()));
+        settings.put("autosave_prewait", autosavePrewaitField.getText().trim());
+        settings.put("discord_enable", Boolean.toString(discordEnableCheck.isSelected()));
+        settings.put("rta_target_vf", rtaTargetVfField.getText().trim());
+
+        settings.put("orientation", getSelectedOrientation());
     }
 
-    private void setText(TextField f, String v) {
-        if (f != null) {
-            f.setText(v != null ? v : "");
-        }
-    }
-
-    private void setCheck(CheckBox c, String v) {
-        if (c != null) {
-            c.setSelected(Boolean.parseBoolean(v));
+    private void setRadioOrientation(String value) {
+        switch (value) {
+            case "bottom" -> orientationBottomRadio.setSelected(true);
+            case "left" -> orientationLeftRadio.setSelected(true);
+            case "right" -> orientationRightRadio.setSelected(true);
+            default -> orientationTopRadio.setSelected(true);
         }
     }
 
-    private void putIf(TextField f, String key) {
-        if (f != null) {
-            settings.put(key, f.getText() == null ? "" : f.getText().trim());
+    private String getSelectedOrientation() {
+        if (orientationBottomRadio.isSelected()) {
+            return "bottom";
         }
-    }
-
-    private void putIf(CheckBox c, String key) {
-        if (c != null) {
-            settings.put(key, Boolean.toString(c.isSelected()));
+        if (orientationLeftRadio.isSelected()) {
+            return "left";
         }
+        if (orientationRightRadio.isSelected()) {
+            return "right";
+        }
+        return "top";
     }
 }

@@ -25,7 +25,7 @@ public class RivalLogRepository extends JaxbRepository<RivalLog> {
     private static final Logger log = LoggerFactory.getLogger(RivalLogRepository.class);
     private static final String DEFAULT_PATH = "out/rival_log.xml";
 
-    private final File file;
+    private File file;
 
     /**
      * Constructs a repository backed by the default file.

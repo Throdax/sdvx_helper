@@ -39,8 +39,8 @@ public class SpecialTitlesRepository {
     private static final String DEFAULT_PATH = "special_titles.json";
     private static final String CLASSPATH_RESOURCE = "special_titles.json";
 
-    private final File file;
-    private final Jsonb jsonb;
+    private File file;
+    private Jsonb jsonb;
 
     /**
      * Constructs a repository backed by the default file
@@ -123,7 +123,7 @@ public class SpecialTitlesRepository {
         try (FileWriter writer = new FileWriter(file, StandardCharsets.UTF_8)) {
             jsonb.toJson(specialTitles, writer);
             log.info("Saved special_titles.json to {}", file.getAbsolutePath());
-        } catch (Exception e) {
+        } catch (IOException | jakarta.json.bind.JsonbException e) {
             throw new IOException("Failed to write special_titles.json", e);
         }
     }
