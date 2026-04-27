@@ -2,40 +2,53 @@ package com.sdvxhelper.repository;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import com.sdvxhelper.util.SpecialTitles;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 
 /**
  * Unit tests for {@link SpecialTitlesRepository}.
  */
 class SpecialTitlesRepositoryTest {
 
-    @TempDir
-    Path tempDir;
+    private static final Path TEST_DIR = Paths.get("target", "test-work", "SpecialTitlesRepositoryTest");
 
-    private File tempFile() {
-        return tempDir.resolve("special_titles.json").toFile();
+    @BeforeAll
+    static void createTestDir() throws IOException {
+        Files.createDirectories(TEST_DIR);
+    }
+
+    @AfterEach
+    void cleanTestDir() throws IOException {
+        try (Stream<Path> files = Files.list(TEST_DIR)) {
+            files.forEach(p -> p.toFile().delete());
+        }
+    }
+
+    private File testFile(String name) {
+        return TEST_DIR.resolve(name).toFile();
     }
 
     @Test
     void loadFromClasspathFallbackWhenFileAbsent() {
-        // File does not exist -- should load bundled default from classpath
-        SpecialTitlesRepository repo = new SpecialTitlesRepository(tempFile());
+        SpecialTitlesRepository repo = new SpecialTitlesRepository(testFile("special_titles.json"));
         SpecialTitles st = repo.load();
         Assertions.assertNotNull(st);
-        // The bundled default should contain "archivezip"
         Assertions.assertEquals("archive::zip", st.restoreTitle("archivezip"));
     }
 
     @Test
     void saveAndLoadRoundTrip() throws IOException {
-        SpecialTitlesRepository repo = new SpecialTitlesRepository(tempFile());
+        SpecialTitlesRepository repo = new SpecialTitlesRepository(testFile("special_titles.json"));
 
         SpecialTitles original = new SpecialTitles();
         original.setSpecialTitles(Map.of("testkey", "test value"));
@@ -44,7 +57,7 @@ class SpecialTitlesRepositoryTest {
         original.setDirectOverrides(Map.of("Override", List.of("EXH:20")));
 
         repo.save(original);
-        Assertions.assertTrue(tempFile().exists());
+        Assertions.assertTrue(testFile("special_titles.json").exists());
 
         SpecialTitles loaded = repo.load();
         Assertions.assertEquals("test value", loaded.restoreTitle("testkey"));
@@ -55,12 +68,8 @@ class SpecialTitlesRepositoryTest {
 
     @Test
     void loadReturnsNonNullWhenBothFileAndClasspathMissing() {
-        // Point to a nonexistent classpath resource effectively by using a nonexistent
-        // file
-        // We can only test that it doesn't throw and returns non-null
-        File nonExistent = tempDir.resolve("does_not_exist.json").toFile();
+        File nonExistent = testFile("does_not_exist.json");
         SpecialTitlesRepository repo = new SpecialTitlesRepository(nonExistent);
-        // Should fall through to classpath resource (which exists in test classpath)
         SpecialTitles st = repo.load();
         Assertions.assertNotNull(st);
     }

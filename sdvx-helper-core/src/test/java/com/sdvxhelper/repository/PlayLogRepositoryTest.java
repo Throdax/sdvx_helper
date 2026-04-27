@@ -2,31 +2,46 @@ package com.sdvxhelper.repository;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Stream;
 
 import com.sdvxhelper.model.OnePlayData;
 import com.sdvxhelper.model.PlayLog;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 
 /**
  * Unit tests for {@link PlayLogRepository}.
  */
 class PlayLogRepositoryTest {
 
-    @TempDir
-    Path tempDir;
+    private static final Path TEST_DIR = Paths.get("target", "test-work", "PlayLogRepositoryTest");
 
-    private File tempFile() {
-        return tempDir.resolve("alllog.xml").toFile();
+    @BeforeAll
+    static void createTestDir() throws IOException {
+        Files.createDirectories(TEST_DIR);
+    }
+
+    @AfterEach
+    void cleanTestDir() throws IOException {
+        try (Stream<Path> files = Files.list(TEST_DIR)) {
+            files.forEach(p -> p.toFile().delete());
+        }
+    }
+
+    private File testFile(String name) {
+        return TEST_DIR.resolve(name).toFile();
     }
 
     @Test
     void loadReturnsEmptyLogWhenFileAbsent() {
-        PlayLogRepository repo = new PlayLogRepository(tempFile());
+        PlayLogRepository repo = new PlayLogRepository(testFile("alllog.xml"));
         PlayLog log = repo.load();
         Assertions.assertNotNull(log);
         Assertions.assertTrue(log.getPlays().isEmpty());
@@ -34,7 +49,7 @@ class PlayLogRepositoryTest {
 
     @Test
     void saveAndLoadRoundTrip() throws IOException {
-        PlayLogRepository repo = new PlayLogRepository(tempFile());
+        PlayLogRepository repo = new PlayLogRepository(testFile("alllog.xml"));
 
         PlayLog original = new PlayLog();
         original.setPlays(
@@ -42,7 +57,7 @@ class PlayLogRepositoryTest {
                         new OnePlayData("Song B", 9_900_000, 9_800_000, "puc", "mxm", "2024-01-02 18:30:00")));
 
         repo.save(original);
-        Assertions.assertTrue(tempFile().exists());
+        Assertions.assertTrue(testFile("alllog.xml").exists());
 
         PlayLog loaded = repo.load();
         Assertions.assertEquals(2, loaded.getPlays().size());
@@ -56,7 +71,7 @@ class PlayLogRepositoryTest {
 
     @Test
     void loadedListIsSortedByDate() throws IOException {
-        PlayLogRepository repo = new PlayLogRepository(tempFile());
+        PlayLogRepository repo = new PlayLogRepository(testFile("alllog.xml"));
 
         PlayLog pl = new PlayLog();
         pl.setPlays(List.of(new OnePlayData("X", 100, 0, "clear", "exh", "2024-01-03 10:00:00"),

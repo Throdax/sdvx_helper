@@ -21,6 +21,7 @@ python/.settings/
 *.log
 .project
 .pydevproject
+*.gz
 
 # Java / Maven build artifacts
 target/

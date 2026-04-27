@@ -17,8 +17,6 @@ import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -85,9 +83,6 @@ public class OcrReporterController implements Initializable {
     // + "/SOUND+VOLTEX+EXCEED+GEAR/%B3%DA%B6%CA%A5%EA%A5%B9%A5%C8";
     private static final String WIKI_URL_OLD = "https://bemaniwiki.com/index.php?SOUND+VOLTEX+EXCEED+GEAR/%E6%97%A7%E6%9B%B2%E3%83%AA%E3%82%B9%E3%83%88";
     private static final String WIKI_URL_NEW = "https://bemaniwiki.com/index.php?SOUND+VOLTEX+EXCEED+GEAR/%E6%96%B0%E6%9B%B2%E3%83%AA%E3%82%B9%E3%83%88";
-    private static final String STOP_PREFIX = "[STOP]";
-    private static final Pattern DIGIT_PATTERN = Pattern.compile("\\d+");
-
     private ExecutorService bgExecutor = Executors.newCachedThreadPool(new OcrReporterThreadFactory());
 
     // -------------------------------------------------------------------------
@@ -417,16 +412,7 @@ public class OcrReporterController implements Initializable {
     // }
 
     private String lastDigits(String text) {
-        if (text == null || text.isBlank()) {
-            return "??";
-        }
-        String clean = text.startsWith(STOP_PREFIX) ? text.substring(STOP_PREFIX.length()).trim() : text;
-        Matcher m = DIGIT_PATTERN.matcher(clean);
-        String last = "??";
-        while (m.find()) {
-            last = m.group();
-        }
-        return last;
+        return OcrReporterHelper.lastDigits(text);
     }
 
     private String fetchUrl(HttpClient http, String url) {
@@ -782,13 +768,8 @@ public class OcrReporterController implements Initializable {
         Platform.runLater(() -> filesLoadingLabel.setText(imageFiles.size() + " file(s) in folder"));
     }
 
-    /**
-     * Returns {@code true} if {@code filename} matches the result screenshot naming
-     * pattern ({@code sdvx_*}) used by the main application, indicating it was
-     * auto-saved from the result screen.
-     */
     private static boolean isResultFilename(String filename) {
-        return filename != null && filename.toLowerCase().startsWith("sdvx_");
+        return OcrReporterHelper.isResultFilename(filename);
     }
 
     private void showCurrentImage(File f) {
@@ -858,23 +839,8 @@ public class OcrReporterController implements Initializable {
         }
     }
 
-    /**
-     * Crops a region from {@code src} and scales it to the requested output size,
-     * clamping the crop rectangle to image bounds to avoid exceptions.
-     */
     private BufferedImage cropAndScale(BufferedImage src, int x, int y, int w, int h, int outW, int outH) {
-        int sx = Math.max(0, Math.min(x, src.getWidth() - 1));
-        int sy = Math.max(0, Math.min(y, src.getHeight() - 1));
-        int sw = Math.max(1, Math.min(w, src.getWidth() - sx));
-        int sh = Math.max(1, Math.min(h, src.getHeight() - sy));
-        BufferedImage cropped = src.getSubimage(sx, sy, sw, sh);
-        if (sw == outW && sh == outH) {
-            return cropped;
-        }
-        BufferedImage scaled = new BufferedImage(outW, outH, BufferedImage.TYPE_INT_ARGB);
-        scaled.createGraphics().drawImage(cropped.getScaledInstance(outW, outH, java.awt.Image.SCALE_SMOOTH), 0, 0,
-                null);
-        return scaled;
+        return OcrReporterHelper.cropAndScale(src, x, y, w, h, outW, outH);
     }
 
     private Image toFxImage(BufferedImage awt) {

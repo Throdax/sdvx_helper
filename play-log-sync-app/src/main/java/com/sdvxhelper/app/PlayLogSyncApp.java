@@ -49,14 +49,13 @@ public class PlayLogSyncApp extends Application {
         this.primaryStage = stage;
         SettingsRepository repo = new SettingsRepository();
         LocaleManager.getInstance().init(repo);
-        LocaleManager.getInstance().localeProperty()
-                .addListener((obs, oldLocale, newLocale) -> Platform.runLater(() -> {
-                    try {
-                        buildScene(newLocale);
-                    } catch (IOException e) {
-                        log.error("Failed to rebuild scene after locale change", e);
-                    }
-                }));
+        LocaleManager.getInstance().localeProperty().addListener((_, _, newLocale) -> Platform.runLater(() -> {
+            try {
+                buildScene(newLocale);
+            } catch (IOException e) {
+                log.error("Failed to rebuild scene after locale change", e);
+            }
+        }));
         buildScene(LocaleManager.getInstance().getCurrentLocale());
         stage.setTitle("SDVX Play Log Sync " + VersionUtil.getVersion("sync"));
         WindowPositionHelper.applyAndPersist(stage, repo, "sync_lx", "sync_ly");
