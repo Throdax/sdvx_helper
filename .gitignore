@@ -42,3 +42,7 @@ __pycache__
 secrets.properties
 *.md
 !README*.md
+
+# MemPalace per-project files (issue #185)
+mempalace.yaml
+entities.json

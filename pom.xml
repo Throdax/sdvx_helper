@@ -336,8 +336,24 @@
                     <configuration>
                         <type>APP_IMAGE</type>
                         <destination>${project.build.directory}/jpackage</destination>
-                        <input>${project.build.directory}</input>
+                        <!--
+                          Use the clean staging directory produced by the stage-fat-jar
+                          antrun execution instead of target/ directly.  This prevents
+                          jpackage from picking up build sub-directories, duplicate
+                          shaded JARs, extracted native DLLs, and other build artifacts.
+                        -->
+                        <input>${project.build.directory}/dist-input</input>
                         <icon>${project.basedir}/../sdvx-helper-core/src/main/resources/icon.ico</icon>
+                        <!--
+                          Java 24+ restricts native-access from unnamed modules.
+                          JavaFX's NativeLibLoader uses System::load to extract bundled
+                          native DLLs (glass.dll, prism_d3d.dll, etc.) from the fat JAR.
+                          Without this flag the JVM refuses to execute those calls and the
+                          launcher reports "Failed to launch JVM".
+                        -->
+                        <javaOptions>
+                            <option>--enable-native-access=ALL-UNNAMED</option>
+                        </javaOptions>
                     </configuration>
                 </plugin>
             </plugins>
@@ -443,8 +459,47 @@
                 <pluginManagement>
                     <plugins>
                         <!--
+                          Copy only the fat JAR into a clean staging directory so that
+                          jpackage does not accidentally bundle the entire target/ folder
+                          (build sub-directories, duplicate shaded JARs, extracted DLLs,
+                          etc.) into the app image.
+                        -->
+                        <plugin>
+                            <groupId>org.apache.maven.plugins</groupId>
+                            <artifactId>maven-antrun-plugin</artifactId>
+                            <version>3.1.0</version>
+                            <executions>
+                                <execution>
+                                    <id>stage-fat-jar</id>
+                                    <goals>
+                                        <goal>run</goal>
+                                    </goals>
+                                    <phase>prepare-package</phase>
+                                    <configuration>
+                                        <target>
+                                            <mkdir dir="${project.build.directory}/dist-input" />
+                                            <copy file="${project.build.directory}/${configuration-finalName}.jar" overwrite="true" todir="${project.build.directory}/dist-input" />
+                                        </target>
+                                    </configuration>
+                                </execution>
+                                <!--
+                                  Per-module <target> content for this execution is provided
+                                  in each app module's pom.xml (e.g. the attrib command that
+                                  makes the generated .exe writable).
+                                -->
+                                <execution>
+                                    <id>post-jpackage</id>
+                                    <goals>
+                                        <goal>run</goal>
+                                    </goals>
+                                    <phase>package</phase>
+                                </execution>
+                            </executions>
+                        </plugin>
+                        <!--
                           Re-add the jpackage execution so it is bound to the
                           package phase in all 5 app modules when this profile is active.
+                          Input is the clean staging directory, not the whole target/.
                         -->
                         <plugin>
                             <groupId>org.panteleyev</groupId>
@@ -455,19 +510,6 @@
                                     <id>jpackage-app-image</id>
                                     <goals>
                                         <goal>jpackage</goal>
-                                    </goals>
-                                    <phase>package</phase>
-                                </execution>
-                            </executions>
-                        </plugin>
-                        <plugin>
-                            <groupId>org.apache.maven.plugins</groupId>
-                            <artifactId>maven-antrun-plugin</artifactId>
-                            <version>3.1.0</version>
-                            <executions>
-                                <execution>
-                                    <goals>
-                                        <goal>run</goal>
                                     </goals>
                                     <phase>package</phase>
                                 </execution>
