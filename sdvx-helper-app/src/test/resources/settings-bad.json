@@ -1,0 +1,149 @@
+{
+  "lx": 2983,
+  "ly": 32,
+  "host": "localhost",
+  "port": "4455",
+  "passwd": "not a real passwoordx",
+  "autosave_dir": "D:/Tools/SoundVoltex/results",
+  "autosave_always": true,
+  "autosave_interval": 60,
+  "play0_interval": 10,
+  "autosave_prewait": "0.0",
+  "detect_wait": 2.2,
+  "obs_source": "SDVX Game Window - Main",
+  "obs_enable_boot": [],
+  "obs_disable_boot": [],
+  "obs_scene_boot": "",
+  "obs_enable_select0": [
+    "Volforce",
+    "Song List Full",
+    "Class",
+    "MilkDrop"
+  ],
+  "obs_disable_select0": [
+    "Now Playing"
+  ],
+  "obs_scene_select": "SDVX",
+  "obs_enable_play0": [
+    "Volforce",
+    "Song List Full",
+    "Class",
+    "Now Playing"
+  ],
+  "obs_disable_play0": [
+    "MilkDrop"
+  ],
+  "obs_scene_play": "SDVX",
+  "obs_enable_result0": [
+    "Volforce",
+    "Song List Full",
+    "Class",
+    "MilkDrop"
+  ],
+  "obs_disable_result0": [
+    "Now Playing"
+  ],
+  "obs_scene_result": "SDVX",
+  "obs_enable_select1": [],
+  "obs_disable_select1": [],
+  "obs_enable_play1": [],
+  "obs_disable_play1": [],
+  "obs_enable_result1": [],
+  "obs_disable_result1": [],
+  "obs_enable_quit": [],
+  "obs_disable_quit": [],
+  "obs_scene_quit": "",
+  "obs_txt_plays": "sdvx_helper_playcount",
+  "obs_txt_plays_header": "Plays: ",
+  "obs_txt_plays_footer": " songs",
+  "obs_txt_vf_with_diff": "sdvx_helper_vf_with_diff",
+  "obs_txt_vf_header": "VF: ",
+  "obs_txt_vf_footer": "",
+  "obs_txt_playtime": "sdvx_helper_playtime",
+  "obs_txt_playtime_header": "playtime: ",
+  "obs_txt_playtime_footer": "",
+  "obs_txt_blastermax": "sdvx_helper_blastermax",
+  "alert_blastermax": false,
+  "obs_scene_collection": "Sound Voltex",
+  "webhook_player_name": "Throdax",
+  "webhook_names": [
+    "SDVX"
+  ],
+  "webhook_urls": [
+    "dummy_url"
+  ],
+  "webhook_enable_pics": [
+    true
+  ],
+  "webhook_enable_lvs": [
+    [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  ],
+  "webhook_enable_lamps": [
+    [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  ],
+  "get_rival_score": false,
+  "my_googledrive": "",
+  "rival_names": [],
+  "rival_googledrive": [],
+  "import_from_select": false,
+  "import_arcade_score": false,
+  "rta_target_vf": "10.000",
+  "ignore_rankD": false,
+  "auto_update": true,
+  "params_json": "resources/params.json",
+  "logpic_offset_time": 2,
+  "logpic_bg_alpha": 0,
+  "autoload_musiclist": false,
+  "player_name": "Throdax",
+  "save_on_capture": false,
+  "save_jacketimg": true,
+  "update_rival_on_result": false,
+  "send_webhook": true,
+  "dbg_enable_output": true,
+  "orientation_top": "left",
+  "ui_language": "en",
+  "clip_lxly": false,
+  "always_update_vf": true,
+  "play_log_sync": {
+    "play_log_path": "D:/Tools/SoundVoltex/sdvx_helper/",
+    "results_folder": "D:/Tools/SoundVoltex/results/",
+    "song_list": "D:/Tools/SoundVoltex/sdvx_helper/resources/",
+    "dump_output_folder": "D:/Tools/SoundVoltex/sdvx_helper/"
+  },
+  "webhook_playlist": [
+    true,
+    false
+  ],
+  "discord_presence_enable": true,
+  "discord_presence_song_as_title": false,
+  "discord_presence_upload_jacket": false,
+  "discord_presence_ocr_titles": true
+}

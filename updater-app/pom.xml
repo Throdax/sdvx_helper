@@ -53,16 +53,11 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-antrun-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>post-jpackage</id>
-                        <configuration>
-                            <target>
-                                <attrib file="${project.build.directory}/jpackage/${configuration-finalName}/${configuration-finalName}.exe" readonly="false" verbose="true" />
-                            </target>
-                        </configuration>
-                    </execution>
-                </executions>
+                <configuration>
+                    <target>
+                        <attrib file="${project.build.directory}/jpackage/${configuration-finalName}/${configuration-finalName}.exe" readonly="false" verbose="true" />
+                    </target>
+                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>

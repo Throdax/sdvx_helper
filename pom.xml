@@ -482,11 +482,6 @@
                                         </target>
                                     </configuration>
                                 </execution>
-                                <!--
-                                  Per-module <target> content for this execution is provided
-                                  in each app module's pom.xml (e.g. the attrib command that
-                                  makes the generated .exe writable).
-                                -->
                                 <execution>
                                     <id>post-jpackage</id>
                                     <goals>

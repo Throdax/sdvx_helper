@@ -4,7 +4,9 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.Reader;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import jakarta.json.bind.Jsonb;
@@ -58,19 +60,23 @@ public class SettingsRepository {
     /**
      * Loads user settings from disk, merging any missing keys from the defaults.
      *
+     * <p>
+     * All JSON values — regardless of whether they are strings, numbers, booleans,
+     * arrays, or nested objects — are converted to their {@link String}
+     * representation. This ensures that settings files produced by the Python
+     * version of SDVX Helper (which uses native JSON types instead of all-string
+     * values) can be loaded without causing {@link ClassCastException} at runtime.
+     * </p>
+     *
      * @return settings map; never {@code null}
      */
-    @SuppressWarnings("unchecked")
     public Map<String, String> load() {
         Map<String, String> settings = new LinkedHashMap<>();
         boolean firstRun = !file.exists();
 
         if (file.exists()) {
             try (FileReader reader = new FileReader(file, StandardCharsets.UTF_8)) {
-                Map<String, String> loaded = jsonb.fromJson(reader, LinkedHashMap.class);
-                if (loaded != null) {
-                    settings.putAll(loaded);
-                }
+                settings.putAll(parseToStringMap(reader));
                 log.info("Loaded settings from {}", file.getAbsolutePath());
             } catch (IOException | jakarta.json.bind.JsonbException e) {
                 log.warn("Failed to load settings.json; using defaults", e);
@@ -132,5 +138,37 @@ public class SettingsRepository {
      */
     public File getFile() {
         return file;
+    }
+
+    /**
+     * Parses JSON from the given reader into a raw map and converts every value to
+     * its {@link String} representation.
+     *
+     * <p>
+     * Using the raw {@link LinkedHashMap} type instructs JSON-B to store each JSON
+     * value as its natural Java counterpart ({@code BigDecimal} for numbers,
+     * {@code Boolean} for booleans, {@code List} for arrays, {@code Map} for nested
+     * objects). We then normalise every value to a {@code String} so the rest of
+     * the application always receives a uniform {@code Map<String, String>}
+     * regardless of how the file was originally written (Java or Python format).
+     * </p>
+     *
+     * @param reader
+     *            source of the JSON content
+     * @return string-valued map; empty if the reader yields {@code null}
+     */
+    @SuppressWarnings("unchecked")
+    private Map<String, String> parseToStringMap(Reader reader) {
+        Map<Object, Object> raw = jsonb.fromJson(reader, LinkedHashMap.class);
+        if (raw == null) {
+            return Collections.emptyMap();
+        }
+        Map<String, String> result = new LinkedHashMap<>();
+        for (Map.Entry<Object, Object> entry : raw.entrySet()) {
+            String key = String.valueOf(entry.getKey());
+            String value = entry.getValue() != null ? String.valueOf(entry.getValue()) : "";
+            result.put(key, value);
+        }
+        return result;
     }
 }

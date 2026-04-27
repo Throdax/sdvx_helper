@@ -57,29 +57,29 @@
 
             <!-- F4-F9 function key toolbar (text-only keybind labels) -->
             <HBox spacing="6" styleClass="shortcut-toolbar" alignment="CENTER_LEFT">
-                <Button fx:id="f4Button" text="F4: %text.main.shortcut.f4" styleClass="shortcut-key-button"
+                <Button fx:id="f4Button" text="%text.main.shortcut.f4" styleClass="shortcut-key-button"
                         onAction="#onSaveVolforce">
-                    <tooltip><Tooltip text="F4: %text.main.shortcut.f4"/></tooltip>
+                    <tooltip><Tooltip text="%text.main.shortcut.f4"/></tooltip>
                 </Button>
-                <Button fx:id="f5Button" text="F5: %text.main.shortcut.f5" styleClass="shortcut-key-button"
+                <Button fx:id="f5Button" text="%text.main.shortcut.f5" styleClass="shortcut-key-button"
                         onAction="#onSaveSummary">
-                    <tooltip><Tooltip text="F5: %text.main.shortcut.f5"/></tooltip>
+                    <tooltip><Tooltip text="%text.main.shortcut.f5"/></tooltip>
                 </Button>
-                <Button fx:id="f6Button" text="F6: %text.main.shortcut.f6" styleClass="shortcut-key-button"
+                <Button fx:id="f6Button" text="%text.main.shortcut.f6" styleClass="shortcut-key-button"
                         onAction="#onSaveResult">
-                    <tooltip><Tooltip text="F6: %text.main.shortcut.f6"/></tooltip>
+                    <tooltip><Tooltip text="%text.main.shortcut.f6"/></tooltip>
                 </Button>
-                <Button fx:id="f7Button" text="F7: %text.main.shortcut.f7" styleClass="shortcut-key-button"
+                <Button fx:id="f7Button" text="%text.main.shortcut.f7" styleClass="shortcut-key-button"
                         onAction="#onImportScore">
-                    <tooltip><Tooltip text="F7: %text.main.shortcut.f7"/></tooltip>
+                    <tooltip><Tooltip text="%text.main.shortcut.f7"/></tooltip>
                 </Button>
-                <Button fx:id="f8Button" text="F8: %text.main.shortcut.f8" styleClass="shortcut-key-button"
+                <Button fx:id="f8Button" text="%text.main.shortcut.f8" styleClass="shortcut-key-button"
                         onAction="#onUpdateRival">
-                    <tooltip><Tooltip text="F8: %text.main.shortcut.f8"/></tooltip>
+                    <tooltip><Tooltip text="%text.main.shortcut.f8"/></tooltip>
                 </Button>
-                <Button fx:id="f9Button" text="F9: %text.main.shortcut.f9" styleClass="shortcut-key-button"
+                <Button fx:id="f9Button" text="%text.main.shortcut.f9" styleClass="shortcut-key-button"
                         onAction="#onStartRta">
-                    <tooltip><Tooltip text="F9: %text.main.shortcut.f9"/></tooltip>
+                    <tooltip><Tooltip text="%text.main.shortcut.f9"/></tooltip>
                 </Button>
             </HBox>
         </VBox>
