@@ -59,21 +59,16 @@
                 </configuration>
             </plugin>
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+            </plugin>
+            <plugin>
                 <groupId>org.panteleyev</groupId>
                 <artifactId>jpackage-maven-plugin</artifactId>
                 <configuration>
                     <name>${configuration-finalName}</name>
                     <mainJar>${configuration-finalName}.jar</mainJar>
                     <appVersion>${manager}</appVersion>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-antrun-plugin</artifactId>
-                <configuration>
-                    <target>
-                        <attrib file="${project.build.directory}/jpackage/${configuration-finalName}/${configuration-finalName}.exe" readonly="false" verbose="true" />
-                    </target>
                 </configuration>
             </plugin>
             <plugin>

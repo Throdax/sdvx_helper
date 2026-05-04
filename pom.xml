@@ -17,11 +17,7 @@
         <module>ocr-reporter-app</module>
         <module>play-log-sync-app</module>
         <module>updater-app</module>
-        <!--
-          sdvx-helper-dist is intentionally NOT listed here.
-          It is only included when building with the "native" profile
-          (mvn package -Pnative) because it depends on JPackage output.
-        -->
+        <module>sdvx-helper-dist</module>
     </modules>
 
     <properties>
@@ -52,6 +48,7 @@
         <maven.surefire.version>3.5.2</maven.surefire.version>
         <maven.javadoc.version>3.11.2</maven.javadoc.version>
         <maven.assembly.version>3.7.1</maven.assembly.version>
+
     </properties>
 
     <dependencyManagement>
@@ -263,11 +260,6 @@
                     <artifactId>maven-surefire-plugin</artifactId>
                     <version>${maven.surefire.version}</version>
                     <configuration>
-                        <!--
-                          Byte Buddy (used by Mockito for mocking) requires this flag
-                          to instrument classes compiled for Java versions newer than its
-                          highest officially supported version.
-                        -->
                         <argLine>-Dnet.bytebuddy.experimental=true</argLine>
                     </configuration>
                 </plugin>
@@ -296,15 +288,6 @@
                                     <exclude>META-INF/*.SF</exclude>
                                     <exclude>META-INF/*.DSA</exclude>
                                     <exclude>META-INF/*.RSA</exclude>
-                                    <!--
-                                      Drop module descriptors from every dependency JAR.
-                                      JavaFX win-classifier JARs are proper Java modules; keeping
-                                      their module-info.class in the fat JAR triggers a split-package
-                                      conflict and the "JavaFX runtime components are missing" check
-                                      at JVM startup.  Removing them makes the fat JAR non-modular,
-                                      allowing JavaFX's NativeLibLoader to extract the embedded DLLs
-                                      at runtime without any module-path configuration.
-                                    -->
                                     <exclude>module-info.class</exclude>
                                 </excludes>
                             </filter>
@@ -319,42 +302,76 @@
                         </execution>
                     </executions>
                 </plugin>
-                <!--
-                  jpackage: creates a self-contained app-image (EXE + bundled JRE).
-                  No execution is declared here by default — the execution is only
-                  added in the "native" profile (see below).  Shared configuration
-                  (type, destination, input) is inherited by all 5 app modules.
-                  No module-path or add-modules flags for JavaFX: the fat JAR produced
-                  by Shade already contains the native DLLs (from the win-classifier
-                  dependencies), so JavaFX's NativeLibLoader extracts and loads them at
-                  runtime without any module-path configuration.
-                -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-antrun-plugin</artifactId>
+                    <version>3.1.0</version>
+                    <executions>
+                        <execution>
+                            <id>stage-fat-jar</id>
+                            <goals>
+                                <goal>run</goal>
+                            </goals>
+                            <phase>package</phase>
+                            <configuration>
+                                <target>
+                                    <mkdir dir="${project.build.directory}/dist-input" />
+                                    <copy file="${project.build.directory}/${configuration-finalName}.jar" overwrite="true" todir="${project.build.directory}/dist-input" />
+                                </target>
+                            </configuration>
+                        </execution>
+                        <execution>
+                            <id>post-jpackage</id>
+                            <goals>
+                                <goal>run</goal>
+                            </goals>
+                            <phase>verify</phase>
+                            <configuration>
+                                <target>
+                                    <attrib readonly="false" verbose="true">
+                                        <fileset dir="${project.build.directory}" includes="**/${configuration-finalName}.exe" />
+                                    </attrib>
+                                </target>
+                            </configuration>
+                        </execution>
+                        <execution>
+                            <id>pre-clean-ant</id>
+                            <goals>
+                                <goal>run</goal>
+                            </goals>
+                            <phase>pre-clean</phase>
+                            <configuration>
+                                <target>
+                                    <attrib readonly="false" verbose="true">
+                                        <fileset dir="${project.build.directory}" includes="**/${configuration-finalName}.exe" />
+                                    </attrib>
+                                </target>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
                 <plugin>
                     <groupId>org.panteleyev</groupId>
                     <artifactId>jpackage-maven-plugin</artifactId>
                     <version>${jpackage.plugin.version}</version>
-                    <configuration>
-                        <type>APP_IMAGE</type>
-                        <destination>${project.build.directory}/jpackage</destination>
-                        <!--
-                          Use the clean staging directory produced by the stage-fat-jar
-                          antrun execution instead of target/ directly.  This prevents
-                          jpackage from picking up build sub-directories, duplicate
-                          shaded JARs, extracted native DLLs, and other build artifacts.
-                        -->
-                        <input>${project.build.directory}/dist-input</input>
-                        <icon>${project.basedir}/../sdvx-helper-core/src/main/resources/icon.ico</icon>
-                        <!--
-                          Java 24+ restricts native-access from unnamed modules.
-                          JavaFX's NativeLibLoader uses System::load to extract bundled
-                          native DLLs (glass.dll, prism_d3d.dll, etc.) from the fat JAR.
-                          Without this flag the JVM refuses to execute those calls and the
-                          launcher reports "Failed to launch JVM".
-                        -->
-                        <javaOptions>
-                            <option>--enable-native-access=ALL-UNNAMED</option>
-                        </javaOptions>
-                    </configuration>
+                    <executions>
+                        <execution>
+                            <id>jpackage-app-image</id>
+                            <goals>
+                                <goal>jpackage</goal>
+                            </goals>
+                            <phase>package</phase>
+                            <configuration>
+                                <type>APP_IMAGE</type>
+                                <destination>${project.build.directory}/jpackage</destination>
+                                <input>${project.build.directory}/dist-input</input>
+                                <icon>${project.basedir}/../sdvx-helper-core/src/main/resources/icon.ico</icon>
+                                <javaOptions>
+                                    <option>--enable-native-access=ALL-UNNAMED</option>
+                                </javaOptions>
+                            </configuration>
+                        </execution>
+                    </executions>
                 </plugin>
             </plugins>
         </pluginManagement>
@@ -448,71 +465,4 @@
             </plugin>
         </plugins>
     </build>
-
-    <profiles>
-        <profile>
-            <id>dist</id>
-            <modules>
-                <module>sdvx-helper-dist</module>
-            </modules>
-            <build>
-                <pluginManagement>
-                    <plugins>
-                        <!--
-                          Copy only the fat JAR into a clean staging directory so that
-                          jpackage does not accidentally bundle the entire target/ folder
-                          (build sub-directories, duplicate shaded JARs, extracted DLLs,
-                          etc.) into the app image.
-                        -->
-                        <plugin>
-                            <groupId>org.apache.maven.plugins</groupId>
-                            <artifactId>maven-antrun-plugin</artifactId>
-                            <version>3.1.0</version>
-                            <executions>
-                                <execution>
-                                    <id>stage-fat-jar</id>
-                                    <goals>
-                                        <goal>run</goal>
-                                    </goals>
-                                    <phase>prepare-package</phase>
-                                    <configuration>
-                                        <target>
-                                            <mkdir dir="${project.build.directory}/dist-input" />
-                                            <copy file="${project.build.directory}/${configuration-finalName}.jar" overwrite="true" todir="${project.build.directory}/dist-input" />
-                                        </target>
-                                    </configuration>
-                                </execution>
-                                <execution>
-                                    <id>post-jpackage</id>
-                                    <goals>
-                                        <goal>run</goal>
-                                    </goals>
-                                    <phase>package</phase>
-                                </execution>
-                            </executions>
-                        </plugin>
-                        <!--
-                          Re-add the jpackage execution so it is bound to the
-                          package phase in all 5 app modules when this profile is active.
-                          Input is the clean staging directory, not the whole target/.
-                        -->
-                        <plugin>
-                            <groupId>org.panteleyev</groupId>
-                            <artifactId>jpackage-maven-plugin</artifactId>
-                            <version>${jpackage.plugin.version}</version>
-                            <executions>
-                                <execution>
-                                    <id>jpackage-app-image</id>
-                                    <goals>
-                                        <goal>jpackage</goal>
-                                    </goals>
-                                    <phase>package</phase>
-                                </execution>
-                            </executions>
-                        </plugin>
-                    </plugins>
-                </pluginManagement>
-            </build>
-        </profile>
-    </profiles>
 </project>
