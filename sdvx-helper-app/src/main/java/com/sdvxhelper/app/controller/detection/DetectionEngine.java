@@ -276,8 +276,11 @@ public class DetectionEngine {
             int port = ParamUtils.parseIntParam(currentSettings.get("obs_port"),
                     ParamUtils.parseIntParam(currentSettings.get("port"), 4455));
             String pass = currentSettings.getOrDefault("obs_password", currentSettings.getOrDefault("passwd", ""));
+
             ObsWebSocketClient client = new ObsWebSocketClient(host, port, pass);
+
             client.connect();
+
             obsClient = client;
             obsOverlayService.setObsClient(obsClient);
             Platform.runLater(() -> listener.onObsStatusChanged("OBS: connected"));

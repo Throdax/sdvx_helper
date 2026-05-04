@@ -5,13 +5,11 @@ import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -30,17 +28,12 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.cell.PropertyValueFactory;
 
-import com.github.kwhat.jnativehook.GlobalScreen;
-import com.github.kwhat.jnativehook.NativeHookException;
-import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent;
-import com.github.kwhat.jnativehook.keyboard.NativeKeyListener;
 import com.sdvxhelper.app.controller.detection.DetectionEngine;
 import com.sdvxhelper.app.controller.detection.DetectionListener;
 import com.sdvxhelper.app.controller.detection.ObsOverlayService;
 import com.sdvxhelper.app.controller.detection.ScreenHandler;
 import com.sdvxhelper.app.controller.detection.WebhookDispatcher;
 import com.sdvxhelper.app.controller.factories.DetectionThreadFactory;
-import com.sdvxhelper.app.controller.listeners.SdvxNativeKeyListener;
 import com.sdvxhelper.i18n.LocaleManager;
 import com.sdvxhelper.model.OnePlayData;
 import com.sdvxhelper.model.enums.DetectMode;
@@ -155,7 +148,7 @@ public class MainController implements Initializable, DetectionListener {
 
     private ObservableList<OnePlayData> sessionLogData = FXCollections.observableArrayList();
     private ExecutorService executor;
-    private NativeKeyListener hotkeyListener;
+    // private NativeKeyListener hotkeyListener;
     private Map<String, String> settings = Collections.emptyMap();
 
     // -------------------------------------------------------------------------
@@ -177,7 +170,7 @@ public class MainController implements Initializable, DetectionListener {
         languageCombo.setOnAction(_ -> LocaleManager.getInstance().setLocale(languageCombo.getValue()));
 
         executor = Executors.newSingleThreadExecutor(new DetectionThreadFactory());
-        registerHotkeys();
+        // registerHotkeys();
         executor.submit(this::initialise);
     }
 
@@ -210,6 +203,7 @@ public class MainController implements Initializable, DetectionListener {
 
         ScreenHandler screenHandler = new ScreenHandler(imageAnalysisService, loggerService, xmlExportService,
                 csvExportService, perceptualHasher, params, settings);
+
         ObsOverlayService obsOverlayService = new ObsOverlayService(settings);
         WebhookDispatcher webhookDispatcher = new WebhookDispatcher(discordWebhookClient, loggerService, settings);
 
@@ -799,7 +793,7 @@ public class MainController implements Initializable, DetectionListener {
         if (executor != null) {
             executor.shutdownNow();
         }
-        unregisterHotkeys();
+        // unregisterHotkeys();
     }
 
     /**
@@ -833,45 +827,52 @@ public class MainController implements Initializable, DetectionListener {
     // Hotkeys
     // -------------------------------------------------------------------------
 
-    private void registerHotkeys() {
-        try {
-            // JNativeHook's default event-dispatch thread is a non-daemon thread.
-            // Replacing it with a daemon-thread executor ensures the JVM can exit
-            // naturally when the window is closed, without waiting for JNativeHook
-            // to fully finish its internal teardown.
-            ThreadFactory daemonFactory = r -> {
-                Thread t = new Thread(r, "jnativehook-dispatch");
-                t.setDaemon(true);
-                return t;
-            };
-            GlobalScreen.setEventDispatcher(Executors.newSingleThreadExecutor(daemonFactory));
-            GlobalScreen.registerNativeHook();
-            Map<Integer, Runnable> keyActions = new HashMap<>();
-            keyActions.put(NativeKeyEvent.VC_F4, () -> Platform.runLater(() -> onSaveVolforce(null)));
-            keyActions.put(NativeKeyEvent.VC_F5, () -> Platform.runLater(() -> onSaveSummary(null)));
-            keyActions.put(NativeKeyEvent.VC_F6, () -> Platform.runLater(() -> onSaveResult(null)));
-            keyActions.put(NativeKeyEvent.VC_F7, () -> Platform.runLater(() -> onImportScore(null)));
-            keyActions.put(NativeKeyEvent.VC_F8, () -> Platform.runLater(() -> onUpdateRival(null)));
-            keyActions.put(NativeKeyEvent.VC_F9, () -> Platform.runLater(() -> onStartRta(null)));
-            hotkeyListener = new SdvxNativeKeyListener(keyActions);
-            GlobalScreen.addNativeKeyListener(hotkeyListener);
-            log.info("Global hotkeys F4-F9 registered");
-        } catch (NativeHookException e) {
-            log.warn("Could not register global hotkeys (JNativeHook): {}", e.getMessage());
-        }
-    }
-
-    private void unregisterHotkeys() {
-        if (hotkeyListener != null) {
-            GlobalScreen.removeNativeKeyListener(hotkeyListener);
-            hotkeyListener = null;
-        }
-        try {
-            GlobalScreen.unregisterNativeHook();
-        } catch (NativeHookException e) {
-            log.debug("Error unregistering native hook", e);
-        }
-    }
+    // private void registerHotkeys() {
+    // try {
+    // // JNativeHook's default event-dispatch thread is a non-daemon thread.
+    // // Replacing it with a daemon-thread executor ensures the JVM can exit
+    // // naturally when the window is closed, without waiting for JNativeHook
+    // // to fully finish its internal teardown.
+    // ThreadFactory daemonFactory = r -> {
+    // Thread t = new Thread(r, "jnativehook-dispatch");
+    // t.setDaemon(true);
+    // return t;
+    // };
+    // GlobalScreen.setEventDispatcher(Executors.newSingleThreadExecutor(daemonFactory));
+    // GlobalScreen.registerNativeHook();
+    // Map<Integer, Runnable> keyActions = new HashMap<>();
+    // keyActions.put(NativeKeyEvent.VC_F4, () -> Platform.runLater(() ->
+    // onSaveVolforce(null)));
+    // keyActions.put(NativeKeyEvent.VC_F5, () -> Platform.runLater(() ->
+    // onSaveSummary(null)));
+    // keyActions.put(NativeKeyEvent.VC_F6, () -> Platform.runLater(() ->
+    // onSaveResult(null)));
+    // keyActions.put(NativeKeyEvent.VC_F7, () -> Platform.runLater(() ->
+    // onImportScore(null)));
+    // keyActions.put(NativeKeyEvent.VC_F8, () -> Platform.runLater(() ->
+    // onUpdateRival(null)));
+    // keyActions.put(NativeKeyEvent.VC_F9, () -> Platform.runLater(() ->
+    // onStartRta(null)));
+    // hotkeyListener = new SdvxNativeKeyListener(keyActions);
+    // GlobalScreen.addNativeKeyListener(hotkeyListener);
+    // log.info("Global hotkeys F4-F9 registered");
+    // } catch (NativeHookException e) {
+    // log.warn("Could not register global hotkeys (JNativeHook): {}",
+    // e.getMessage());
+    // }
+    // }
+    //
+    // private void unregisterHotkeys() {
+    // if (hotkeyListener != null) {
+    // GlobalScreen.removeNativeKeyListener(hotkeyListener);
+    // hotkeyListener = null;
+    // }
+    // try {
+    // GlobalScreen.unregisterNativeHook();
+    // } catch (NativeHookException e) {
+    // log.debug("Error unregistering native hook", e);
+    // }
+    // }
 
     // -------------------------------------------------------------------------
     // Miscellaneous private helpers

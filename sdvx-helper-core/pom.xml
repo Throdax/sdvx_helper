@@ -102,10 +102,10 @@
         </dependency>
 
         <!-- JNativeHook -->
-        <dependency>
-            <groupId>com.github.kwhat</groupId>
-            <artifactId>jnativehook</artifactId>
-        </dependency>
+        <!--        <dependency>-->
+        <!--            <groupId>com.github.kwhat</groupId>-->
+        <!--            <artifactId>jnativehook</artifactId>-->
+        <!--        </dependency>-->
 
         <!-- Logging: SLF4J + Log4J2 -->
         <dependency>
@@ -146,6 +146,12 @@
             <groupId>org.mockito</groupId>
             <artifactId>mockito-junit-jupiter</artifactId>
             <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.eclipse.jetty.websocket</groupId>
+            <artifactId>websocket-client</artifactId>
+            <version>9.4.49.v20220914</version>
         </dependency>
     </dependencies>
 

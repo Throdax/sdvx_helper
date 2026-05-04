@@ -293,6 +293,54 @@ DialogPane .header-panel {
     -fx-background-radius: 3;
 }
 
+/* ---- CheckBox ----------------------------------------------------------- */
+CheckBox {
+    -fx-text-fill: #222222;
+}
+
+CheckBox .box {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #cccccc;
+    -fx-border-radius: 3;
+    -fx-background-radius: 3;
+}
+
+CheckBox:selected .box {
+    -fx-background-color: #1976d2;
+    -fx-border-color: #1565c0;
+}
+
+CheckBox:selected .mark {
+    -fx-text-fill: #ffffff;
+}
+
+/* ---- RadioButton ----------------------------------------------------------- */
+RadioButton {
+    -fx-text-fill: #222222;
+}
+
+RadioButton .box {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #cccccc;
+    -fx-border-width: 2;
+}
+
+RadioButton:selected .box {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #1976d2;
+    -fx-border-width: 2;
+}
+
+RadioButton:selected .mark {
+    -fx-background-color: #1976d2;
+}
+
+RadioButton .mark {
+    -fx-background-color: transparent;
+}
+
+
+
 /* ---- Language combo in toolbar ------------------------------------------- */
 .lang-combo {
     -fx-pref-width: 60;

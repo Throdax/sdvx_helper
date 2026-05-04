@@ -12,6 +12,7 @@ import javafx.scene.control.CheckBox;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.RadioButton;
 import javafx.scene.control.TextField;
+import javafx.scene.control.ToggleGroup;
 import javafx.stage.DirectoryChooser;
 
 import com.sdvxhelper.repository.SettingsRepository;
@@ -48,8 +49,6 @@ public class SettingsController implements Initializable {
     private TextField obsPortField;
     @FXML
     private PasswordField obsPasswordField;
-    @FXML
-    private TextField obsSourceField;
 
     @FXML
     private TextField detectWaitField;
@@ -57,11 +56,6 @@ public class SettingsController implements Initializable {
     private TextField autosaveDirField;
     @FXML
     private TextField autosaveIntervalField;
-
-    @FXML
-    private TextField webhookNameField;
-    @FXML
-    private TextField webhookUrlField;
 
     @FXML
     private CheckBox clipLxlyCheck;
@@ -88,12 +82,30 @@ public class SettingsController implements Initializable {
     private RadioButton orientationRightRadio;
 
     private SettingsRepository settingsRepo = new SettingsRepository();
+
     private Map<String, String> settings;
+
+    @FXML
+    private CheckBox discordUseSongName;
+
+    @FXML
+    private CheckBox discordUploadJacket;
+
+    @FXML
+    private CheckBox discordUseOCR;
+
+    private ToggleGroup tgOrientation;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         settings = settingsRepo.load();
         populateFields();
+
+        tgOrientation = new ToggleGroup();
+        orientationTopRadio.setToggleGroup(tgOrientation);
+        orientationBottomRadio.setToggleGroup(tgOrientation);
+        orientationLeftRadio.setToggleGroup(tgOrientation);
+        orientationRightRadio.setToggleGroup(tgOrientation);
     }
 
     /**
@@ -134,31 +146,33 @@ public class SettingsController implements Initializable {
     }
 
     private void populateFields() {
-        playerNameField.setText(settings.getOrDefault("player_name", ""));
+        playerNameField.setText(settings.get("player_name"));
         autoUpdateCheck.setSelected(Boolean.parseBoolean(settings.get("auto_update")));
         ignoreRankDCheck.setSelected(Boolean.parseBoolean(settings.get("ignore_rankD")));
 
-        obsHostField.setText(settings.getOrDefault("host", ""));
-        obsPortField.setText(settings.getOrDefault("port", ""));
-        obsPasswordField.setText(settings.getOrDefault("passwd", ""));
-        obsSourceField.setText(settings.getOrDefault("obs_source", ""));
+        obsHostField.setText(settings.get("host"));
+        obsPortField.setText(settings.get("port"));
+        obsPasswordField.setText(settings.get("passwd"));
 
-        detectWaitField.setText(settings.getOrDefault("detect_wait", ""));
-        autosaveDirField.setText(settings.getOrDefault("autosave_dir", ""));
-        autosaveIntervalField.setText(settings.getOrDefault("autosave_interval", ""));
-
-        webhookNameField.setText(settings.getOrDefault("webhook_player_name", ""));
+        detectWaitField.setText(settings.get("detect_wait"));
+        autosaveDirField.setText(settings.get("autosave_dir"));
+        autosaveIntervalField.setText(settings.get("autosave_interval"));
 
         clipLxlyCheck.setSelected(Boolean.parseBoolean(settings.get("clip_lxly")));
         alwaysUpdateVfCheck.setSelected(Boolean.parseBoolean(settings.get("always_update_vf")));
         saveJacketImgCheck.setSelected(Boolean.parseBoolean(settings.get("save_jacketimg")));
         autosaveAlwaysCheck.setSelected(Boolean.parseBoolean(settings.get("autosave_always")));
         autosavePrewaitField.setText(settings.getOrDefault("autosave_prewait", ""));
-        discordEnableCheck.setSelected(Boolean.parseBoolean(settings.get("discord_enable")));
-        rtaTargetVfField.setText(settings.getOrDefault("rta_target_vf", ""));
+        rtaTargetVfField.setText(settings.get("rta_target_vf"));
 
-        String orientation = settings.getOrDefault("orientation", "top");
+        String orientation = settings.get("orientation");
         setRadioOrientation(orientation);
+
+        discordEnableCheck.setSelected(Boolean.parseBoolean(settings.get("discord_presence_enable")));
+        discordUploadJacket.setSelected(Boolean.parseBoolean(settings.get("discord_presence_upload_jacket")));
+        discordUseOCR.setSelected(Boolean.parseBoolean(settings.get("discord_presence_ocr_titles")));
+        discordUseSongName.setSelected(Boolean.parseBoolean(settings.get("discord_presence_song_as_title")));
+
     }
 
     private void collectFields() {
@@ -169,13 +183,10 @@ public class SettingsController implements Initializable {
         settings.put("host", obsHostField.getText().trim());
         settings.put("port", obsPortField.getText().trim());
         settings.put("passwd", obsPasswordField.getText());
-        settings.put("obs_source", obsSourceField.getText().trim());
 
         settings.put("detect_wait", detectWaitField.getText().trim());
         settings.put("autosave_dir", autosaveDirField.getText().trim());
         settings.put("autosave_interval", autosaveIntervalField.getText().trim());
-
-        settings.put("webhook_player_name", webhookNameField.getText().trim());
 
         settings.put("clip_lxly", Boolean.toString(clipLxlyCheck.isSelected()));
         settings.put("always_update_vf", Boolean.toString(alwaysUpdateVfCheck.isSelected()));

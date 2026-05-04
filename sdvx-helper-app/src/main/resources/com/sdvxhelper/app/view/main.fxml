@@ -17,12 +17,12 @@
                 <Menu text="%menu.file">
                     <MenuItem text="%menu.file.settings"    fx:id="menuSettings"    onAction="#onSettings"/>
                     <MenuItem text="%menu.file.obs"         fx:id="menuObsControl"  onAction="#onObsControl"/>
+                    <MenuItem text="%menu.tools.webhooks"     fx:id="menuWebhooks"    onAction="#onWebhooks"/>
                     <SeparatorMenuItem/>
                     <MenuItem text="%menu.file.exit"        onAction="#onExit"/>
                 </Menu>
                 <Menu text="%menu.tools">
                     <MenuItem text="%menu.tools.google.drive" fx:id="menuGoogleDrive" onAction="#onGoogleDrive"/>
-                    <MenuItem text="%menu.tools.webhooks"     fx:id="menuWebhooks"    onAction="#onWebhooks"/>
                 </Menu>
                 <Menu text="%menu.analysis">
                     <MenuItem text="%menu.analysis.csv"     fx:id="menuExportAllCsv"  onAction="#onExportAllCsv"/>

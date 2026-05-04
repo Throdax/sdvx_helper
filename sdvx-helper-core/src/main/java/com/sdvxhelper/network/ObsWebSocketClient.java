@@ -9,6 +9,8 @@ import java.util.Base64;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
@@ -16,6 +18,7 @@ import javax.imageio.ImageIO;
 
 import com.google.gson.JsonObject;
 import io.obswebsocket.community.client.OBSRemoteController;
+import io.obswebsocket.community.client.OBSRemoteControllerBuilder;
 import io.obswebsocket.community.client.message.request.inputs.SetInputSettingsRequest;
 import io.obswebsocket.community.client.message.request.sceneitems.GetSceneItemIdRequest;
 import io.obswebsocket.community.client.message.request.sceneitems.GetSceneItemListRequest;
@@ -29,6 +32,7 @@ import io.obswebsocket.community.client.message.response.scenes.GetSceneListResp
 import io.obswebsocket.community.client.message.response.sources.GetSourceScreenshotResponse;
 import io.obswebsocket.community.client.model.Scene;
 import io.obswebsocket.community.client.model.SceneItem;
+import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,9 +70,11 @@ public class ObsWebSocketClient implements Closeable {
     /** Screenshot image format requested from OBS. */
     private static final String IMAGE_FORMAT = "png";
 
-    private final String host;
-    private final int port;
-    private final String password;
+    private Executor obsConnectorExecutor = Executors.newFixedThreadPool(1);
+
+    private String host;
+    private int port;
+    private String password;
 
     private OBSRemoteController controller;
     private volatile boolean connected = false;
@@ -106,7 +112,7 @@ public class ObsWebSocketClient implements Closeable {
 
         CompletableFuture<Void> ready = new CompletableFuture<>();
 
-        controller = OBSRemoteController.builder().host(host).port(port).password(password)
+        OBSRemoteControllerBuilder builder = OBSRemoteController.builder().host(host).port(port).password(password)
                 .connectionTimeout(REQUEST_TIMEOUT_SECONDS).lifecycle().onReady(() -> {
                     connected = true;
                     ready.complete(null);
@@ -116,12 +122,21 @@ public class ObsWebSocketClient implements Closeable {
                 }).onDisconnect(() -> {
                     log.info("OBS disconnected");
                     connected = false;
-                }).and().build();
+                }).onControllerError(rt -> {
+                    ready.completeExceptionally(
+                            new IOException("OBS connection error: " + rt.getReason(), rt.getThrowable()));
+                }).and();
 
+        WebSocketClient webSocketClient = builder.getWebSocketClient();
+        webSocketClient.getHttpClient().setMaxConnectionsPerDestination(1);
+        
+        controller = builder.build();
         controller.connect();
 
         try {
             ready.get(REQUEST_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+            log.info("Connected to OBS at {}:{}", host, port);
+
         } catch (TimeoutException e) {
             throw new IOException("Timed out waiting for OBS WebSocket handshake at " + host + ":" + port, e);
         } catch (ExecutionException e) {
@@ -131,7 +146,6 @@ public class ObsWebSocketClient implements Closeable {
             throw new IOException("Connection to OBS WebSocket was interrupted", e);
         }
 
-        log.info("Connected to OBS");
     }
 
     /**

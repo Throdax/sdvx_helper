@@ -89,6 +89,7 @@ public class SdvxHelperApp extends Application {
         ResourceBundle bundle = ResourceBundle.getBundle("i18n/messages", locale);
         FXMLLoader loader = new FXMLLoader(fxmlUrl, bundle);
         Scene scene = new Scene(loader.load());
+
         URL cssUrl = getClass().getResource("/styles/light.css");
         if (cssUrl != null) {
             scene.getStylesheets().add(cssUrl.toExternalForm());
