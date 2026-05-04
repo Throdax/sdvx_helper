@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -834,6 +835,16 @@ public class MainController implements Initializable, DetectionListener {
 
     private void registerHotkeys() {
         try {
+            // JNativeHook's default event-dispatch thread is a non-daemon thread.
+            // Replacing it with a daemon-thread executor ensures the JVM can exit
+            // naturally when the window is closed, without waiting for JNativeHook
+            // to fully finish its internal teardown.
+            ThreadFactory daemonFactory = r -> {
+                Thread t = new Thread(r, "jnativehook-dispatch");
+                t.setDaemon(true);
+                return t;
+            };
+            GlobalScreen.setEventDispatcher(Executors.newSingleThreadExecutor(daemonFactory));
             GlobalScreen.registerNativeHook();
             Map<Integer, Runnable> keyActions = new HashMap<>();
             keyActions.put(NativeKeyEvent.VC_F4, () -> Platform.runLater(() -> onSaveVolforce(null)));

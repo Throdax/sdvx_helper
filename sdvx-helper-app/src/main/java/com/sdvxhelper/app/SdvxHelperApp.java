@@ -71,6 +71,10 @@ public class SdvxHelperApp extends Application {
         if (currentController != null) {
             currentController.cleanup();
         }
+        // Force JVM exit after JavaFX has shut down. Third-party libraries such as
+        // JNativeHook and obs-websocket-java/Jetty start non-daemon threads that
+        // would otherwise keep the process alive after the window is closed.
+        System.exit(0);
     }
 
     // -------------------------------------------------------------------------

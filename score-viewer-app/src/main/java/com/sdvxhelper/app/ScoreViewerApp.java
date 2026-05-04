@@ -67,6 +67,7 @@ public class ScoreViewerApp extends Application {
     @Override
     public void stop() {
         log.info("Score Viewer shutting down");
+        System.exit(0);
     }
 
     private void buildScene(Locale locale) throws IOException {

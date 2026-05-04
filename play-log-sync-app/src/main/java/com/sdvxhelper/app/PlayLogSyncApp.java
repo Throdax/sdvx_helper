@@ -66,6 +66,7 @@ public class PlayLogSyncApp extends Application {
     @Override
     public void stop() {
         log.info("Play Log Sync shutting down");
+        System.exit(0);
     }
 
     private void buildScene(Locale locale) throws IOException {

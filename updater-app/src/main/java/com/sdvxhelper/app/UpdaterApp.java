@@ -67,6 +67,7 @@ public class UpdaterApp extends Application {
     @Override
     public void stop() {
         log.info("Updater shutting down");
+        System.exit(0);
     }
 
     private void buildScene(Locale locale) throws IOException {

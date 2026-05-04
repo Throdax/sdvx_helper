@@ -74,6 +74,7 @@ public class OcrReporterApp extends Application {
     @Override
     public void stop() {
         log.info("OCR Reporter shutting down");
+        System.exit(0);
     }
 
     private void buildScene(Locale locale) throws IOException {
