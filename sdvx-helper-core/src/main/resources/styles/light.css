@@ -319,24 +319,32 @@ RadioButton {
     -fx-text-fill: #222222;
 }
 
-RadioButton .box {
+RadioButton .radio {
     -fx-background-color: #ffffff;
     -fx-border-color: #cccccc;
     -fx-border-width: 2;
+    -fx-border-radius: 6em;
+    -fx-background-radius: 6em;
+    -fx-padding: 3;
 }
 
-RadioButton:selected .box {
+RadioButton:selected .radio {
     -fx-background-color: #ffffff;
     -fx-border-color: #1976d2;
     -fx-border-width: 2;
+    -fx-border-radius: 6em;
+    -fx-background-radius: 6em;
 }
 
-RadioButton:selected .mark {
-    -fx-background-color: #1976d2;
-}
-
-RadioButton .mark {
+RadioButton .radio > .dot {
     -fx-background-color: transparent;
+    -fx-background-radius: 6em;
+    -fx-padding: 3;
+}
+
+RadioButton:selected .radio > .dot {
+    -fx-background-color: #1976d2;
+    -fx-background-radius: 6em;
 }
 
 

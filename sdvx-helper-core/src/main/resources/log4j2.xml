@@ -5,11 +5,22 @@
         <Property name="appName">${sys:app.log.name:-sdvx_helper}</Property>
         <Property name="logDir">log</Property>
         <Property name="pattern">%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n</Property>
+        <!--
+          Same pattern but %throwable{0} suppresses the exception stack trace.
+          Used for expected third-party errors (e.g. OBS connection-refused during
+          retry cycles) where the message alone is sufficient.
+        -->
+        <Property name="patternNoStack">%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n%throwable{0}</Property>
     </Properties>
 
     <Appenders>
         <Console name="Console" target="SYSTEM_OUT">
             <PatternLayout pattern="${pattern}"/>
+        </Console>
+
+        <!-- Stack-trace-free console sink for noisy third-party loggers. -->
+        <Console name="ConsoleNoStack" target="SYSTEM_OUT">
+            <PatternLayout pattern="${patternNoStack}"/>
         </Console>
 
         <RollingFile name="RollingFile"
@@ -26,12 +37,48 @@
                 </Delete>
             </DefaultRolloverStrategy>
         </RollingFile>
+
+        <!-- Stack-trace-free file sink.  Shares the same physical file as
+             RollingFile but applies patternNoStack so that expected connection
+             failures are stored as single lines rather than full stack traces. -->
+        <RollingFile name="RollingFileNoStack"
+                     fileName="${logDir}/${appName}.log"
+                     filePattern="${logDir}/${appName}-%d{yyyy-MM-dd}.log.gz">
+            <PatternLayout pattern="${patternNoStack}"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+            </Policies>
+            <DefaultRolloverStrategy>
+                <Delete basePath="${logDir}" maxDepth="1">
+                    <IfFileName glob="${appName}-*.log.gz"/>
+                    <IfLastModified age="7d"/>
+                </Delete>
+            </DefaultRolloverStrategy>
+        </RollingFile>
     </Appenders>
 
     <Loggers>
         <Logger name="com.sdvxhelper" level="INFO" additivity="false">
             <AppenderRef ref="Console"/>
             <AppenderRef ref="RollingFile"/>
+        </Logger>
+
+        <!--
+          obs-websocket-java logs a full Jetty stack trace at ERROR level every
+          time a connection-refused retry fires.  Routing these two internal
+          lifecycle-listener loggers to the no-stack appenders keeps the message
+          visible (so the user knows OBS is not yet reachable) without flooding
+          the output with 15-line stack traces on each retry cycle.
+        -->
+        <Logger name="io.obswebsocket.community.client.listener.lifecycle.communicator.LoggingCommunicatorLifecycleListener"
+                level="ERROR" additivity="false">
+            <AppenderRef ref="ConsoleNoStack"/>
+            <AppenderRef ref="RollingFileNoStack"/>
+        </Logger>
+        <Logger name="io.obswebsocket.community.client.listener.lifecycle.controller.LoggingControllerLifecycleListener"
+                level="ERROR" additivity="false">
+            <AppenderRef ref="ConsoleNoStack"/>
+            <AppenderRef ref="RollingFileNoStack"/>
         </Logger>
 
         <Root level="INFO">

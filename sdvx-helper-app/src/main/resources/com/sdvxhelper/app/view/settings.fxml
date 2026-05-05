@@ -38,13 +38,13 @@
                     <ColumnConstraints hgrow="ALWAYS" />
                 </columnConstraints>
 
-                <Label text="%label.settings.obs.host" GridPane.columnIndex="0" GridPane.rowIndex="0" styleClass="muted" />
+                <Label text="%text.settings.obsHost" GridPane.columnIndex="0" GridPane.rowIndex="0" styleClass="muted" />
                 <TextField fx:id="obsHostField" GridPane.columnIndex="1" GridPane.rowIndex="0" />
 
-                <Label text="%label.settings.obs.port" GridPane.columnIndex="0" GridPane.rowIndex="1" styleClass="muted" />
+                <Label text="%text.settings.obsPort" GridPane.columnIndex="0" GridPane.rowIndex="1" styleClass="muted" />
                 <TextField fx:id="obsPortField" GridPane.columnIndex="1" GridPane.rowIndex="1" />
 
-                <Label text="%label.settings.obs.password" GridPane.columnIndex="0" GridPane.rowIndex="2" styleClass="muted" />
+                <Label text="%text.settings.obsPassword" GridPane.columnIndex="0" GridPane.rowIndex="2" styleClass="muted" />
                 <PasswordField fx:id="obsPasswordField" GridPane.columnIndex="1" GridPane.rowIndex="2" />
             </GridPane>
         </TitledPane>
@@ -105,16 +105,29 @@
                     <ColumnConstraints hgrow="ALWAYS" />
                 </columnConstraints>
 
-                <Label text="%label.settings.player.name" GridPane.columnIndex="0" GridPane.rowIndex="0" styleClass="muted" />
+                <Label text="%text.settings.playerName" GridPane.columnIndex="0" GridPane.rowIndex="0" styleClass="muted" />
                 <TextField fx:id="playerNameField" GridPane.columnIndex="1" GridPane.rowIndex="0" />
 
-                <CheckBox fx:id="autoUpdateCheck" text="%label.settings.auto.update" GridPane.columnIndex="0" GridPane.rowIndex="1" GridPane.columnSpan="2" />
-                <CheckBox fx:id="ignoreRankDCheck" text="%label.settings.ignore.rankd" GridPane.columnIndex="0" GridPane.rowIndex="2" GridPane.columnSpan="2" />
+                <CheckBox fx:id="autoUpdateCheck" text="%checkbox.settings.checkForUpdatesAtStart" GridPane.columnIndex="0" GridPane.rowIndex="1" GridPane.columnSpan="2" />
+                <CheckBox fx:id="ignoreRankDCheck" text="%checkbox.settings.ignoreRankD" GridPane.columnIndex="0" GridPane.rowIndex="2" GridPane.columnSpan="2" />
                 <CheckBox fx:id="clipLxlyCheck" text="%label.settings.clip.lxly" GridPane.columnIndex="0" GridPane.rowIndex="3" GridPane.columnSpan="2" />
-                <CheckBox fx:id="alwaysUpdateVfCheck" text="%label.settings.always.update.vf" GridPane.columnIndex="0" GridPane.rowIndex="4" GridPane.columnSpan="2" />
+                <CheckBox fx:id="alwaysUpdateVfCheck" text="%checkbox.settings.allwaysUpdateVF" GridPane.columnIndex="0" GridPane.rowIndex="4" GridPane.columnSpan="2" />
                 
-                <Label text="%label.settings.rta.target.vf" GridPane.columnIndex="0" GridPane.rowIndex="5" styleClass="muted" />
+                <Label text="%text.settings.rta.target" GridPane.columnIndex="0" GridPane.rowIndex="5" styleClass="muted" />
                 <TextField fx:id="rtaTargetVfField" GridPane.columnIndex="1" GridPane.rowIndex="5" prefColumnCount="10" maxWidth="120" />
+
+                <CheckBox fx:id="blasterGaugeMaxCheck" text="%checkbox.settings.blasterGaugeMax"
+                          GridPane.columnIndex="0" GridPane.rowIndex="6" GridPane.columnSpan="2" />
+
+                <Label text="%text.settings.logWindowTransparency"
+                       GridPane.columnIndex="0" GridPane.rowIndex="7" styleClass="muted" />
+                <TextField fx:id="logWindowTransparencyField"
+                           GridPane.columnIndex="1" GridPane.rowIndex="7" prefColumnCount="5" maxWidth="80" />
+
+                <CheckBox fx:id="importFromSelectCheck" text="%checkbox.settings.importFromSelect"
+                          GridPane.columnIndex="0" GridPane.rowIndex="8" />
+                <CheckBox fx:id="includeArcadeScoresCheck" text="%checkbox.settings.includeArcadeScores"
+                          GridPane.columnIndex="1" GridPane.rowIndex="8" />
             </GridPane>
         </TitledPane>
 
@@ -132,7 +145,7 @@
                 <Label text="%label.settings.detect.wait" GridPane.columnIndex="0" GridPane.rowIndex="0" styleClass="muted" />
                 <TextField fx:id="detectWaitField" GridPane.columnIndex="1" GridPane.rowIndex="0" prefColumnCount="10" maxWidth="120" />
 
-                <Label text="%label.settings.autosave.dir" GridPane.columnIndex="0" GridPane.rowIndex="1" styleClass="muted" />
+                <Label text="%text.settings.resultsAutoSaveFolder" GridPane.columnIndex="0" GridPane.rowIndex="1" styleClass="muted" />
                 <HBox spacing="6" GridPane.columnIndex="1" GridPane.rowIndex="1">
                     <TextField fx:id="autosaveDirField" prefColumnCount="100" HBox.hgrow="ALWAYS" />
                     <Button text="%button.settings.browse" onAction="#onBrowseAutosaveDir" />
@@ -141,11 +154,48 @@
                 <Label text="%label.settings.autosave.int" GridPane.columnIndex="0" GridPane.rowIndex="2" styleClass="muted" />
                 <TextField fx:id="autosaveIntervalField" GridPane.columnIndex="1" GridPane.rowIndex="2" prefColumnCount="10" maxWidth="120" />
 
-                <Label text="%label.settings.autosave.prewait" GridPane.columnIndex="0" GridPane.rowIndex="3" styleClass="muted" />
+                <Label text="%text.settings.screenshotDelay" GridPane.columnIndex="0" GridPane.rowIndex="3" styleClass="muted" />
                 <TextField fx:id="autosavePrewaitField" GridPane.columnIndex="1" GridPane.rowIndex="3" prefColumnCount="10" maxWidth="120" />
 
-                <CheckBox fx:id="autosaveAlwaysCheck" text="%label.settings.autosave.always" GridPane.columnIndex="0" GridPane.rowIndex="4" GridPane.columnSpan="2" />
-                <CheckBox fx:id="saveJacketImgCheck" text="%label.settings.save.jacket" GridPane.columnIndex="0" GridPane.rowIndex="5" GridPane.columnSpan="2" />
+                <CheckBox fx:id="autosaveAlwaysCheck" text="%checkbox.settings.autoSaveAlways" GridPane.columnIndex="0" GridPane.rowIndex="4" GridPane.columnSpan="2" />
+                <CheckBox fx:id="saveJacketImgCheck" text="%checkbox.settings.autoSaveCover" GridPane.columnIndex="0" GridPane.rowIndex="5" GridPane.columnSpan="2" />
+
+                <HBox spacing="8" GridPane.columnIndex="0" GridPane.rowIndex="6" GridPane.columnSpan="2">
+                    <Button text="%button.settings.processPastResults" onAction="#onProcessPastResults" />
+                    <Button text="%button.settings.generateJackets" onAction="#onGenerateJackets" />
+                </HBox>
+
+                <Label text="%text.settings.textNumberOfNumbersPlayed"
+                       GridPane.columnIndex="0" GridPane.rowIndex="7" styleClass="muted">
+                    <tooltip>
+                        <Tooltip text="%text.settinss.textNumberOfNumbersPlayed.tooltip" />
+                    </tooltip>
+                </Label>
+                <HBox spacing="6" GridPane.columnIndex="1" GridPane.rowIndex="7">
+                    <Label text="%text.settings.textNumberOfNumbersPlayed.prefix" />
+                    <TextField fx:id="playsPrefixField" prefColumnCount="12">
+                        <tooltip>
+                            <Tooltip text="%text.settings.textNumberOfNumbersPlayed.prefix.tooltip" />
+                        </tooltip>
+                    </TextField>
+                    <Label text="%text.settings.textNumberOfNumbersPlayed.suffix" />
+                    <TextField fx:id="playsSuffixField" prefColumnCount="10">
+                        <tooltip>
+                            <Tooltip text="%text.settings.textNumberOfNumbersPlayed.suffix.tooltip" />
+                        </tooltip>
+                    </TextField>
+                </HBox>
+
+                <Label text="%text.settings.textPlayTime"
+                       GridPane.columnIndex="0" GridPane.rowIndex="8" styleClass="muted" />
+                <HBox spacing="6" GridPane.columnIndex="1" GridPane.rowIndex="8">
+                    <Label text="%text.settings.textPlayTime.prefix" />
+                    <TextField fx:id="playtimePrefixField" prefColumnCount="12">
+                        <tooltip>
+                            <Tooltip text="%text.settings.textPlayTime.prefix.tooltip" />
+                        </tooltip>
+                    </TextField>
+                </HBox>
             </GridPane>
         </TitledPane>
 

@@ -25,6 +25,12 @@
             <artifactId>sdvx-helper-core</artifactId>
         </dependency>
 
+        <!-- JNA platform bindings for Win32 RegisterHotKey (global hotkeys) -->
+        <dependency>
+            <groupId>net.java.dev.jna</groupId>
+            <artifactId>jna-platform</artifactId>
+        </dependency>
+
         <!-- Testing -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>

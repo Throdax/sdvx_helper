@@ -87,36 +87,20 @@ public class DetectionEngine {
     private String lastKnownDiff = "";
 
     /**
-     * @param listener
-     *            UI callback target
-     * @param imageAnalysisService
-     *            image analysis service (also passed to ScreenHandler)
-     * @param discordPresenceClient
-     *            Discord Rich Presence client, may be {@code null}
-     * @param screenHandler
-     *            per-screen image processing service
-     * @param obsOverlayService
-     *            OBS text-source and scene service
-     * @param webhookDispatcher
-     *            Discord webhook dispatcher
-     * @param params
-     *            detection parameters map
-     * @param settings
-     *            application settings map
+     * Returns a new builder for constructing a {@link DetectionEngine}.
+     *
+     * @return a fresh {@link DetectionEngineBuilder}
      */
-    public DetectionEngine(DetectionListener listener, ImageAnalysisService imageAnalysisService,
-            DiscordPresenceClient discordPresenceClient, ScreenHandler screenHandler,
-            ObsOverlayService obsOverlayService, WebhookDispatcher webhookDispatcher, Map<String, String> params,
-            Map<String, String> settings) {
-        this.listener = listener;
-        this.imageAnalysisService = imageAnalysisService;
-        this.discordPresenceClient = discordPresenceClient;
-        this.screenHandler = screenHandler;
-        this.obsOverlayService = obsOverlayService;
-        this.webhookDispatcher = webhookDispatcher;
-        this.params = params;
-        this.settings = settings;
-        this.stateHashes = buildStateHashes(params);
+    public static DetectionEngineBuilder builder() {
+        return new DetectionEngineBuilder();
+    }
+
+    /**
+     * Package-private no-arg constructor — use {@link #builder()} to obtain an
+     * instance. Field population is performed by
+     * {@link DetectionEngineBuilder#build()}.
+     */
+    DetectionEngine() {
     }
 
     // -------------------------------------------------------------------------
@@ -548,7 +532,7 @@ public class DetectionEngine {
         return dest;
     }
 
-    private static Map<DetectMode, String> buildStateHashes(Map<String, String> params) {
+    protected static Map<DetectMode, String> buildStateHashes(Map<String, String> params) {
         Map<DetectMode, String> map = new EnumMap<>(DetectMode.class);
         String selectHash = params.get("hash_select");
         String resultHash = params.get("hash_result");
@@ -564,4 +548,77 @@ public class DetectionEngine {
         }
         return map;
     }
+
+    /**
+     * @param listener
+     *            the listener to set
+     */
+    public void setListener(DetectionListener listener) {
+        this.listener = listener;
+    }
+
+    /**
+     * @param imageAnalysisService
+     *            the imageAnalysisService to set
+     */
+    public void setImageAnalysisService(ImageAnalysisService imageAnalysisService) {
+        this.imageAnalysisService = imageAnalysisService;
+    }
+
+    /**
+     * @param discordPresenceClient
+     *            the discordPresenceClient to set
+     */
+    public void setDiscordPresenceClient(DiscordPresenceClient discordPresenceClient) {
+        this.discordPresenceClient = discordPresenceClient;
+    }
+
+    /**
+     * @param screenHandler
+     *            the screenHandler to set
+     */
+    public void setScreenHandler(ScreenHandler screenHandler) {
+        this.screenHandler = screenHandler;
+    }
+
+    /**
+     * @param obsOverlayService
+     *            the obsOverlayService to set
+     */
+    public void setObsOverlayService(ObsOverlayService obsOverlayService) {
+        this.obsOverlayService = obsOverlayService;
+    }
+
+    /**
+     * @param webhookDispatcher
+     *            the webhookDispatcher to set
+     */
+    public void setWebhookDispatcher(WebhookDispatcher webhookDispatcher) {
+        this.webhookDispatcher = webhookDispatcher;
+    }
+
+    /**
+     * @param params
+     *            the params to set
+     */
+    public void setParams(Map<String, String> params) {
+        this.params = params;
+    }
+
+    /**
+     * @param settings
+     *            the settings to set
+     */
+    public void setSettings(Map<String, String> settings) {
+        this.settings = settings;
+    }
+
+    /**
+     * @param stateHashes
+     *            the stateHashes to set
+     */
+    public void setStateHashes(Map<DetectMode, String> stateHashes) {
+        this.stateHashes = stateHashes;
+    }
+
 }

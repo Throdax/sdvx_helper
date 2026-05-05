@@ -101,12 +101,6 @@
             <artifactId>tess4j</artifactId>
         </dependency>
 
-        <!-- JNativeHook -->
-        <!--        <dependency>-->
-        <!--            <groupId>com.github.kwhat</groupId>-->
-        <!--            <artifactId>jnativehook</artifactId>-->
-        <!--        </dependency>-->
-
         <!-- Logging: SLF4J + Log4J2 -->
         <dependency>
             <groupId>org.slf4j</groupId>
