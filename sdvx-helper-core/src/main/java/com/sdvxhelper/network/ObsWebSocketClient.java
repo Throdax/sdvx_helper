@@ -129,7 +129,7 @@ public class ObsWebSocketClient implements Closeable {
 
         WebSocketClient webSocketClient = builder.getWebSocketClient();
         webSocketClient.getHttpClient().setMaxConnectionsPerDestination(1);
-        
+
         controller = builder.build();
         controller.connect();
 

@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.ResourceBundle;
@@ -34,6 +35,7 @@ import com.sdvxhelper.app.controller.detection.ObsOverlayService;
 import com.sdvxhelper.app.controller.detection.ScreenHandler;
 import com.sdvxhelper.app.controller.detection.WebhookDispatcher;
 import com.sdvxhelper.app.controller.factories.DetectionThreadFactory;
+import com.sdvxhelper.app.controller.listeners.GlobalHotkeyService;
 import com.sdvxhelper.i18n.LocaleManager;
 import com.sdvxhelper.model.OnePlayData;
 import com.sdvxhelper.model.enums.DetectMode;
@@ -148,7 +150,7 @@ public class MainController implements Initializable, DetectionListener {
 
     private ObservableList<OnePlayData> sessionLogData = FXCollections.observableArrayList();
     private ExecutorService executor;
-    // private NativeKeyListener hotkeyListener;
+    private GlobalHotkeyService hotkeyService;
     private Map<String, String> settings = Collections.emptyMap();
 
     // -------------------------------------------------------------------------
@@ -170,7 +172,17 @@ public class MainController implements Initializable, DetectionListener {
         languageCombo.setOnAction(_ -> LocaleManager.getInstance().setLocale(languageCombo.getValue()));
 
         executor = Executors.newSingleThreadExecutor(new DetectionThreadFactory());
-        // registerHotkeys();
+
+        hotkeyService = new GlobalHotkeyService();
+        Map<Integer, Runnable> hotkeys = new LinkedHashMap<>();
+        hotkeys.put(GlobalHotkeyService.VK_F4, () -> onSaveVolforce(null));
+        hotkeys.put(GlobalHotkeyService.VK_F5, () -> onSaveSummary(null));
+        hotkeys.put(GlobalHotkeyService.VK_F6, () -> onSaveResult(null));
+        hotkeys.put(GlobalHotkeyService.VK_F7, () -> onImportScore(null));
+        hotkeys.put(GlobalHotkeyService.VK_F8, () -> onUpdateRival(null));
+        hotkeys.put(GlobalHotkeyService.VK_F9, () -> onStartRta(null));
+        hotkeyService.start(hotkeys);
+
         executor.submit(this::initialise);
     }
 
@@ -207,8 +219,10 @@ public class MainController implements Initializable, DetectionListener {
         ObsOverlayService obsOverlayService = new ObsOverlayService(settings);
         WebhookDispatcher webhookDispatcher = new WebhookDispatcher(discordWebhookClient, loggerService, settings);
 
-        detectionEngine = new DetectionEngine(this, imageAnalysisService, discordPresenceClient, screenHandler,
-                obsOverlayService, webhookDispatcher, params, settings);
+        detectionEngine = DetectionEngine.builder().listener(this).imageAnalysisService(imageAnalysisService)
+                .discordPresenceClient(discordPresenceClient).screenHandler(screenHandler)
+                .obsOverlayService(obsOverlayService).webhookDispatcher(webhookDispatcher).params(params)
+                .settings(settings).build();
 
         Platform.runLater(() -> {
             refreshVfDisplay();
@@ -521,15 +535,18 @@ public class MainController implements Initializable, DetectionListener {
             ResourceBundle bundle = LocaleManager.getInstance().getBundle();
             FXMLLoader loader = new FXMLLoader(fxmlUrl, bundle);
             Parent root = loader.load();
+            SettingsController ctrl = loader.getController();
+            ctrl.setGenerateJacketsAction(this::handleGenerateJackets);
+            ctrl.setProcessPastResultsAction(this::handleProcessPastResults);
             Dialog<ButtonType> dlg = new Dialog<>();
-            dlg.setTitle(bundle.getString("label.settings.title"));
+            dlg.setTitle(bundle.getString("menu.file.settings"));
             dlg.getDialogPane().setContent(root);
             dlg.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
             if (statusLabel.getScene() != null) {
                 dlg.initOwner(statusLabel.getScene().getWindow());
             }
             dlg.showAndWait().filter(bt -> bt == ButtonType.OK).ifPresent(_ -> {
-                ((SettingsController) loader.getController()).save();
+                ctrl.save();
                 settings = new SettingsRepository().load();
             });
         } catch (IOException e) {
@@ -556,7 +573,7 @@ public class MainController implements Initializable, DetectionListener {
             FXMLLoader loader = new FXMLLoader(fxmlUrl, bundle);
             Parent root = loader.load();
             Dialog<ButtonType> dlg = new Dialog<>();
-            dlg.setTitle(bundle.getString("label.obs.control.title"));
+            dlg.setTitle(bundle.getString("menu.file.obs"));
             dlg.getDialogPane().setContent(root);
             dlg.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
             if (statusLabel.getScene() != null) {
@@ -783,8 +800,9 @@ public class MainController implements Initializable, DetectionListener {
     }
 
     /**
-     * Stops the detection loop and releases the JNativeHook global hotkey listener.
-     * Called by the app before a locale-triggered scene rebuild.
+     * Stops the detection loop, unregisters global hotkeys, and shuts down the
+     * executor. Called by the app on window close and before a locale-triggered
+     * scene rebuild.
      */
     public void cleanup() {
         if (detectionEngine != null) {
@@ -793,7 +811,9 @@ public class MainController implements Initializable, DetectionListener {
         if (executor != null) {
             executor.shutdownNow();
         }
-        // unregisterHotkeys();
+        if (hotkeyService != null) {
+            hotkeyService.stop();
+        }
     }
 
     /**
@@ -824,55 +844,22 @@ public class MainController implements Initializable, DetectionListener {
     }
 
     // -------------------------------------------------------------------------
-    // Hotkeys
+    // Settings dialog callbacks
     // -------------------------------------------------------------------------
 
-    // private void registerHotkeys() {
-    // try {
-    // // JNativeHook's default event-dispatch thread is a non-daemon thread.
-    // // Replacing it with a daemon-thread executor ensures the JVM can exit
-    // // naturally when the window is closed, without waiting for JNativeHook
-    // // to fully finish its internal teardown.
-    // ThreadFactory daemonFactory = r -> {
-    // Thread t = new Thread(r, "jnativehook-dispatch");
-    // t.setDaemon(true);
-    // return t;
-    // };
-    // GlobalScreen.setEventDispatcher(Executors.newSingleThreadExecutor(daemonFactory));
-    // GlobalScreen.registerNativeHook();
-    // Map<Integer, Runnable> keyActions = new HashMap<>();
-    // keyActions.put(NativeKeyEvent.VC_F4, () -> Platform.runLater(() ->
-    // onSaveVolforce(null)));
-    // keyActions.put(NativeKeyEvent.VC_F5, () -> Platform.runLater(() ->
-    // onSaveSummary(null)));
-    // keyActions.put(NativeKeyEvent.VC_F6, () -> Platform.runLater(() ->
-    // onSaveResult(null)));
-    // keyActions.put(NativeKeyEvent.VC_F7, () -> Platform.runLater(() ->
-    // onImportScore(null)));
-    // keyActions.put(NativeKeyEvent.VC_F8, () -> Platform.runLater(() ->
-    // onUpdateRival(null)));
-    // keyActions.put(NativeKeyEvent.VC_F9, () -> Platform.runLater(() ->
-    // onStartRta(null)));
-    // hotkeyListener = new SdvxNativeKeyListener(keyActions);
-    // GlobalScreen.addNativeKeyListener(hotkeyListener);
-    // log.info("Global hotkeys F4-F9 registered");
-    // } catch (NativeHookException e) {
-    // log.warn("Could not register global hotkeys (JNativeHook): {}",
-    // e.getMessage());
-    // }
-    // }
-    //
-    // private void unregisterHotkeys() {
-    // if (hotkeyListener != null) {
-    // GlobalScreen.removeNativeKeyListener(hotkeyListener);
-    // hotkeyListener = null;
-    // }
-    // try {
-    // GlobalScreen.unregisterNativeHook();
-    // } catch (NativeHookException e) {
-    // log.debug("Error unregistering native hook", e);
-    // }
-    // }
+    private void handleGenerateJackets() {
+        // TODO: iterate autosave_dir result images, extract jacket crop via
+        // ImageAnalysisService,
+        // hash with PerceptualHasher, save to jackets/{hash}.png — mirrors Python
+        // gen_jacket_imgs()
+        log.warn("Generate jackets from result images: not yet implemented");
+    }
+
+    private void handleProcessPastResults() {
+        // TODO: iterate autosave_dir result images, OCR each into OnePlayData,
+        // push via loggerService.pushPlay() — mirrors Python import_from_resultimg()
+        log.warn("Process past result images into play log: not yet implemented");
+    }
 
     // -------------------------------------------------------------------------
     // Miscellaneous private helpers

@@ -94,6 +94,24 @@ public class SettingsController implements Initializable {
     @FXML
     private CheckBox discordUseOCR;
 
+    @FXML
+    private CheckBox blasterGaugeMaxCheck;
+    @FXML
+    private TextField logWindowTransparencyField;
+    @FXML
+    private CheckBox importFromSelectCheck;
+    @FXML
+    private CheckBox includeArcadeScoresCheck;
+    @FXML
+    private TextField playsPrefixField;
+    @FXML
+    private TextField playsSuffixField;
+    @FXML
+    private TextField playtimePrefixField;
+
+    private Runnable generateJacketsAction;
+    private Runnable processPastResultsAction;
+
     private ToggleGroup tgOrientation;
 
     @Override
@@ -120,6 +138,28 @@ public class SettingsController implements Initializable {
         } catch (IOException e) {
             log.error("Failed to save settings", e);
         }
+    }
+
+    /**
+     * Wires the action invoked when the user clicks "Generate Jackets". Must be
+     * called by {@code MainController} before the dialog is shown.
+     *
+     * @param action
+     *            the callback to run
+     */
+    public void setGenerateJacketsAction(Runnable action) {
+        generateJacketsAction = action;
+    }
+
+    /**
+     * Wires the action invoked when the user clicks "Process Past Results". Must be
+     * called by {@code MainController} before the dialog is shown.
+     *
+     * @param action
+     *            the callback to run
+     */
+    public void setProcessPastResultsAction(Runnable action) {
+        processPastResultsAction = action;
     }
 
     /**
@@ -173,6 +213,13 @@ public class SettingsController implements Initializable {
         discordUseOCR.setSelected(Boolean.parseBoolean(settings.get("discord_presence_ocr_titles")));
         discordUseSongName.setSelected(Boolean.parseBoolean(settings.get("discord_presence_song_as_title")));
 
+        blasterGaugeMaxCheck.setSelected(Boolean.parseBoolean(settings.get("alert_blastermax")));
+        logWindowTransparencyField.setText(settings.get("logpic_bg_alpha"));
+        importFromSelectCheck.setSelected(Boolean.parseBoolean(settings.get("import_from_select")));
+        includeArcadeScoresCheck.setSelected(Boolean.parseBoolean(settings.get("import_arcade_score")));
+        playsPrefixField.setText(settings.get("obs_txt_plays_header"));
+        playsSuffixField.setText(settings.get("obs_txt_plays_footer"));
+        playtimePrefixField.setText(settings.get("obs_txt_playtime_header"));
     }
 
     private void collectFields() {
@@ -197,6 +244,46 @@ public class SettingsController implements Initializable {
         settings.put("rta_target_vf", rtaTargetVfField.getText().trim());
 
         settings.put("orientation", getSelectedOrientation());
+
+        settings.put("alert_blastermax", Boolean.toString(blasterGaugeMaxCheck.isSelected()));
+        settings.put("logpic_bg_alpha", logWindowTransparencyField.getText().trim());
+        settings.put("import_from_select", Boolean.toString(importFromSelectCheck.isSelected()));
+        settings.put("import_arcade_score", Boolean.toString(includeArcadeScoresCheck.isSelected()));
+        settings.put("obs_txt_plays_header", playsPrefixField.getText().trim());
+        settings.put("obs_txt_plays_footer", playsSuffixField.getText().trim());
+        settings.put("obs_txt_playtime_header", playtimePrefixField.getText().trim());
+    }
+
+    /**
+     * Handles the "Generate Jackets" button click by delegating to the injected
+     * callback.
+     *
+     * @param event
+     *            action event from the Generate Jackets button
+     */
+    @FXML
+    public void onGenerateJackets(ActionEvent event) {
+        if (generateJacketsAction != null) {
+            generateJacketsAction.run();
+        } else {
+            log.warn("Generate jackets action not wired");
+        }
+    }
+
+    /**
+     * Handles the "Process Past Results" button click by delegating to the injected
+     * callback.
+     *
+     * @param event
+     *            action event from the Process Past Results button
+     */
+    @FXML
+    public void onProcessPastResults(ActionEvent event) {
+        if (processPastResultsAction != null) {
+            processPastResultsAction.run();
+        } else {
+            log.warn("Process past results action not wired");
+        }
     }
 
     private void setRadioOrientation(String value) {
