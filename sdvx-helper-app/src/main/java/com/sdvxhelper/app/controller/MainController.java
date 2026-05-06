@@ -18,6 +18,7 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
+import javafx.geometry.Rectangle2D;
 import javafx.scene.Parent;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
@@ -28,6 +29,8 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.stage.Screen;
+import javafx.stage.Window;
 
 import com.sdvxhelper.app.controller.detection.DetectionEngine;
 import com.sdvxhelper.app.controller.detection.DetectionListener;
@@ -554,6 +557,7 @@ public class MainController implements Initializable, DetectionListener {
             if (statusLabel.getScene() != null) {
                 dlg.initOwner(statusLabel.getScene().getWindow());
             }
+            dlg.setOnShown(_ -> clampToScreen(dlg));
             dlg.showAndWait().filter(bt -> bt == ButtonType.OK).ifPresent(_ -> {
                 ctrl.save();
                 settings = new SettingsRepository().load();
@@ -588,6 +592,7 @@ public class MainController implements Initializable, DetectionListener {
             if (statusLabel.getScene() != null) {
                 dlg.initOwner(statusLabel.getScene().getWindow());
             }
+            dlg.setOnShown(_ -> clampToScreen(dlg));
             dlg.showAndWait().filter(bt -> bt == ButtonType.OK)
                     .ifPresent(_ -> ((ObsControlController) loader.getController()).save());
         } catch (IOException e) {
@@ -656,6 +661,7 @@ public class MainController implements Initializable, DetectionListener {
             if (statusLabel.getScene() != null) {
                 dlg.initOwner(statusLabel.getScene().getWindow());
             }
+            dlg.setOnShown(_ -> clampToScreen(dlg));
             dlg.showAndWait().filter(bt -> bt == ButtonType.OK)
                     .ifPresent(_ -> ((WebhooksController) loader.getController()).save());
         } catch (IOException e) {
@@ -850,6 +856,33 @@ public class MainController implements Initializable, DetectionListener {
 
     private void setStatus(String msg) {
         statusLabel.setText(msg);
+    }
+
+    /**
+     * Clamps a dialog window so that it is fully visible on whichever screen it
+     * appears on. Must be called from an {@code onShown} handler so that the window
+     * dimensions are already known.
+     *
+     * @param dlg
+     *            the dialog to reposition if necessary
+     */
+    private static void clampToScreen(Dialog<?> dlg) {
+        Window window = dlg.getDialogPane().getScene().getWindow();
+        double x = window.getX();
+        double y = window.getY();
+        double w = window.getWidth();
+        double h = window.getHeight();
+        ObservableList<Screen> screens = Screen.getScreensForRectangle(x, y, w, h);
+        Screen screen = screens.isEmpty() ? Screen.getPrimary() : screens.get(0);
+        Rectangle2D bounds = screen.getVisualBounds();
+        double newX = Math.max(bounds.getMinX(), Math.min(x, bounds.getMaxX() - w));
+        double newY = Math.max(bounds.getMinY(), Math.min(y, bounds.getMaxY() - h));
+        if (newX != x) {
+            window.setX(newX);
+        }
+        if (newY != y) {
+            window.setY(newY);
+        }
     }
 
     // -------------------------------------------------------------------------
