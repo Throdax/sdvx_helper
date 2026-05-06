@@ -11,7 +11,7 @@
     <artifactId>sdvx-helper-core</artifactId>
     <packaging>jar</packaging>
 
-    <name>SDVX Helper Core</name>
+    <name>SDVX Helper :: Core</name>
     <description>Shared library: domain models, services, repositories, networking, OCR, config, i18n, and utilities</description>
 
     <dependencies>

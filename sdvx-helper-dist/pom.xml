@@ -12,7 +12,7 @@
     <artifactId>sdvx-helper-dist</artifactId>
     <packaging>pom</packaging>
 
-    <name>SDVX Helper Distribution</name>
+    <name>SDVX Helper :: Distribution</name>
     <description>Assembles the full distribution ZIP (sdvx_helper_en_all.zip) containing
         the JPackage app-images for all 5 tools together with shared resources.
         Java equivalent of the packaging section in python/build.cmd.</description>

@@ -12,7 +12,8 @@
     <artifactId>updater-app</artifactId>
     <packaging>jar</packaging>
 
-    <name>Updater App</name>
+    <name>SDVX Helper :: Updater</name>
+
     <description>Self-updater from GitHub releases (maps to update.py)</description>
 
     <properties>

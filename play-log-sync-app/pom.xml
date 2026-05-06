@@ -12,7 +12,8 @@
     <artifactId>play-log-sync-app</artifactId>
     <packaging>jar</packaging>
 
-    <name>Play Log Sync App</name>
+    <name>SDVX Helper :: Log Sync</name>
+
     <description>Reconcile screenshots with play log (maps to play_log_sync.py)</description>
 
     <properties>

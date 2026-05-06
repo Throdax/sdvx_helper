@@ -91,9 +91,9 @@ public class ObsControlController implements Initializable {
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         settings = settingsRepo.load();
-        populateFields();
         updateConnectionUi(false);
         wireSceneChangeListeners();
+        populateFields();
         onConnect(null);
     }
 
@@ -129,7 +129,7 @@ public class ObsControlController implements Initializable {
             log.info("Connected to OBS at {}:{}", host, port);
             discoverScenes();
         } catch (IOException e) {
-            log.error("Failed to connect to OBS", e);
+            log.warn("Failed to connect to OBS: {}", e.getMessage());
             connStatusLabel.setText("Error: " + e.getMessage());
         }
     }
@@ -167,9 +167,23 @@ public class ObsControlController implements Initializable {
                     cb.setValue(current);
                 }
             }
+            // setValue() does not re-fire the listener when the value is unchanged,
+            // so explicitly reload sources for every tab now that OBS is live.
+            reloadAllSources();
         } catch (IOException e) {
             log.warn("Failed to discover OBS scenes: {}", e.getMessage());
         }
+    }
+
+    private void reloadAllSources() {
+        loadSources(bootSceneCombo.getValue(), bootEnableList, bootDisableList, "obs_enable_boot", "obs_disable_boot");
+        loadSources(selectSceneCombo.getValue(), selectEnableList, selectDisableList, "obs_enable_select0",
+                "obs_disable_select0");
+        loadSources(playSceneCombo.getValue(), playEnableList, playDisableList, "obs_enable_play0",
+                "obs_disable_play0");
+        loadSources(resultSceneCombo.getValue(), resultEnableList, resultDisableList, "obs_enable_result0",
+                "obs_disable_result0");
+        loadSources(quitSceneCombo.getValue(), quitEnableList, quitDisableList, "obs_enable_quit", "obs_disable_quit");
     }
 
     private List<ComboBox<String>> allSceneCombos() {
@@ -191,19 +205,37 @@ public class ObsControlController implements Initializable {
 
     private void loadSources(String scene, ListView<String> enable, ListView<String> disable, String enKey,
             String disKey) {
+        List<String> enSel = parseCsv(settings.get(enKey));
+        List<String> disSel = parseCsv(settings.get(disKey));
+
         if (obsClient == null || scene == null || scene.isBlank()) {
-            enable.getItems().clear();
-            disable.getItems().clear();
+            // OBS not connected — show the previously-saved source names so the
+            // user can still inspect or deselect them.
+            populateCheckList(enable, enSel, enSel, enKey);
+            populateCheckList(disable, disSel, disSel, disKey);
             return;
         }
         try {
             List<String> sources = obsClient.getSourceNames(scene);
-            List<String> enSel = parseCsv(settings.get(enKey));
-            List<String> disSel = parseCsv(settings.get(disKey));
-            populateCheckList(enable, sources, enSel, enKey);
-            populateCheckList(disable, sources, disSel, disKey);
+            // Merge any saved-but-absent sources so previously configured items
+            // are never silently dropped after an OBS scene change.
+            List<String> all = new java.util.ArrayList<>(sources);
+            for (String s : enSel) {
+                if (!all.contains(s)) {
+                    all.add(s);
+                }
+            }
+            for (String s : disSel) {
+                if (!all.contains(s)) {
+                    all.add(s);
+                }
+            }
+            populateCheckList(enable, all, enSel, enKey);
+            populateCheckList(disable, all, disSel, disKey);
         } catch (IOException e) {
             log.warn("Failed to load OBS sources for scene '{}': {}", scene, e.getMessage());
+            populateCheckList(enable, enSel, enSel, enKey);
+            populateCheckList(disable, disSel, disSel, disKey);
         }
     }
 
@@ -270,9 +302,8 @@ public class ObsControlController implements Initializable {
                 checked.add(e.getKey().substring(prefix.length()));
             }
         }
-        if (!checked.isEmpty()) {
-            settings.put(key, String.join(", ", checked));
-        }
+        // Save in Python-compatible list format: "[item1, item2]" or "[]"
+        settings.put(key, checked.isEmpty() ? "[]" : "[" + String.join(", ", checked) + "]");
     }
 
     private void updateConnectionUi(boolean connected) {
@@ -298,7 +329,11 @@ public class ObsControlController implements Initializable {
         if (s == null || s.isBlank()) {
             return List.of();
         }
-        return java.util.Arrays.stream(s.split(",")).map(String::trim).filter(x -> !x.isEmpty())
+        String trimmed = s.trim();
+        if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
+            trimmed = trimmed.substring(1, trimmed.length() - 1);
+        }
+        return java.util.Arrays.stream(trimmed.split(",")).map(String::trim).filter(x -> !x.isEmpty())
                 .collect(Collectors.toList());
     }
 }

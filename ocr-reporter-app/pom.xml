@@ -12,7 +12,8 @@
     <artifactId>ocr-reporter-app</artifactId>
     <packaging>jar</packaging>
 
-    <name>OCR Reporter App</name>
+    <name>SDVX Helper :: OCR Reporter</name>
+
     <description>Maintainer tool: register unknown hashes (maps to ocr_reporter.py)</description>
 
     <properties>
