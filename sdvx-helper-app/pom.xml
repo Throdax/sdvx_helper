@@ -12,7 +12,7 @@
     <artifactId>sdvx-helper-app</artifactId>
     <packaging>jar</packaging>
 
-    <name>SDVX Helper App</name>
+    <name>SDVX Helper :: App</name>
     <description>Main application: detection loop, OBS capture, GUI (maps to sdvx_helper.pyw)</description>
 
     <properties>

@@ -86,6 +86,7 @@ public class WebhooksController implements Initializable {
     private List<List<Boolean>> webhookEnableLamps = new ArrayList<>();
 
     private int selectedIndex = -1;
+    private boolean capturingCurrent = false;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -215,26 +216,35 @@ public class WebhooksController implements Initializable {
     }
 
     private void captureCurrent() {
-        if (selectedIndex < 0 || selectedIndex >= webhookNames.size()) {
-            log.debug("captureCurrent: no webhook selected (index={}), skipping", selectedIndex);
+        if (capturingCurrent) {
             return;
         }
-        webhookNames.set(selectedIndex, nameField.getText().trim());
-        webhookUrls.set(selectedIndex, urlField.getText().trim());
-        webhookEnablePics.set(selectedIndex, sendImagesCheck.isSelected());
-        webhookPlaylist.set(selectedIndex, sendPlaylistCheck.isSelected());
-        List<Boolean> lvs = new ArrayList<>();
-        for (CheckBox cb : levelBoxes) {
-            lvs.add(cb.isSelected());
+        final int idx = selectedIndex;
+        if (idx < 0 || idx >= webhookNames.size()) {
+            log.debug("captureCurrent: no webhook selected (index={}), skipping", idx);
+            return;
         }
-        webhookEnableLvs.set(selectedIndex, lvs);
-        List<Boolean> lamps = new ArrayList<>();
-        CheckBox[] lampBoxes = {lampPucCheck, lampUcCheck, lampExhCheck, lampHardCheck, lampClearCheck,
-                lampFailedCheck};
-        for (CheckBox cb : lampBoxes) {
-            lamps.add(cb.isSelected());
+        capturingCurrent = true;
+        try {
+            webhookNames.set(idx, nameField.getText().trim());
+            webhookUrls.set(idx, urlField.getText().trim());
+            webhookEnablePics.set(idx, sendImagesCheck.isSelected());
+            webhookPlaylist.set(idx, sendPlaylistCheck.isSelected());
+            List<Boolean> lvs = new ArrayList<>();
+            for (CheckBox cb : levelBoxes) {
+                lvs.add(cb.isSelected());
+            }
+            webhookEnableLvs.set(idx, lvs);
+            List<Boolean> lamps = new ArrayList<>();
+            CheckBox[] lampBoxes = {lampPucCheck, lampUcCheck, lampExhCheck, lampHardCheck, lampClearCheck,
+                    lampFailedCheck};
+            for (CheckBox cb : lampBoxes) {
+                lamps.add(cb.isSelected());
+            }
+            webhookEnableLamps.set(idx, lamps);
+        } finally {
+            capturingCurrent = false;
         }
-        webhookEnableLamps.set(selectedIndex, lamps);
     }
 
     private void clearFields() {

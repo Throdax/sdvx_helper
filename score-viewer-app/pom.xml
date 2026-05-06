@@ -11,7 +11,8 @@
 
     <artifactId>score-viewer-app</artifactId>
     <packaging>jar</packaging>
-    <name>Score Viewer App</name>
+
+    <name>SDVX Helper :: Score Viewer</name>
 
     <description>Score viewer / table GUI (maps to manage_score.py)</description>
 

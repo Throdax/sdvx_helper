@@ -303,7 +303,16 @@ public class MainController implements Initializable, DetectionListener {
 
     @Override
     public void onObsStatusChanged(String status) {
-        Platform.runLater(() -> obsStatusLabel.setText(status));
+        boolean connected = "connected".equals(status);
+        ResourceBundle bundle = LocaleManager.getInstance().getBundle();
+        String text = connected
+                ? bundle.getString("label.obs.control.connected")
+                : bundle.getString("label.main.obs.disconnected");
+        Platform.runLater(() -> {
+            obsStatusLabel.setText(text);
+            obsStatusLabel.getStyleClass().removeAll("obs-connected", "obs-disconnected");
+            obsStatusLabel.getStyleClass().add(connected ? "obs-connected" : "obs-disconnected");
+        });
     }
 
     // -------------------------------------------------------------------------

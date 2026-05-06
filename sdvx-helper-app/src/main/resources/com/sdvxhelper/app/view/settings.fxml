@@ -19,7 +19,7 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.control.Tooltip?>
 
-<ScrollPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml" fx:controller="com.sdvxhelper.app.controller.SettingsController" fitToWidth="true" prefWidth="720" prefHeight="620">
+<ScrollPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml" fx:controller="com.sdvxhelper.app.controller.SettingsController" fitToWidth="true" prefWidth="720" prefHeight="900">
 
     <VBox spacing="8">
     

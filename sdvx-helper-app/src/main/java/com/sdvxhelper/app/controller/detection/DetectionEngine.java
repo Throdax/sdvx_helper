@@ -267,11 +267,11 @@ public class DetectionEngine {
 
             obsClient = client;
             obsOverlayService.setObsClient(obsClient);
-            Platform.runLater(() -> listener.onObsStatusChanged("OBS: connected"));
+            Platform.runLater(() -> listener.onObsStatusChanged("connected"));
             log.info("OBS connected successfully");
         } catch (IOException e) {
             log.debug("OBS connect retry failed: {}", e.getMessage());
-            Platform.runLater(() -> listener.onObsStatusChanged("OBS: disconnected"));
+            Platform.runLater(() -> listener.onObsStatusChanged("disconnected"));
         }
     }
 
