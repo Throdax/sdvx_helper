@@ -30,6 +30,7 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.stage.Screen;
+import javafx.stage.Stage;
 import javafx.stage.Window;
 
 import com.sdvxhelper.app.controller.detection.DetectionEngine;
@@ -557,7 +558,7 @@ public class MainController implements Initializable, DetectionListener {
             if (statusLabel.getScene() != null) {
                 dlg.initOwner(statusLabel.getScene().getWindow());
             }
-            dlg.setOnShown(_ -> clampToScreen(dlg));
+            dlg.setOnShown(_ -> Platform.runLater(() -> clampToScreen(dlg)));
             dlg.showAndWait().filter(bt -> bt == ButtonType.OK).ifPresent(_ -> {
                 ctrl.save();
                 settings = new SettingsRepository().load();
@@ -592,7 +593,7 @@ public class MainController implements Initializable, DetectionListener {
             if (statusLabel.getScene() != null) {
                 dlg.initOwner(statusLabel.getScene().getWindow());
             }
-            dlg.setOnShown(_ -> clampToScreen(dlg));
+            dlg.setOnShown(_ -> Platform.runLater(() -> clampToScreen(dlg)));
             dlg.showAndWait().filter(bt -> bt == ButtonType.OK)
                     .ifPresent(_ -> ((ObsControlController) loader.getController()).save());
         } catch (IOException e) {
@@ -661,7 +662,7 @@ public class MainController implements Initializable, DetectionListener {
             if (statusLabel.getScene() != null) {
                 dlg.initOwner(statusLabel.getScene().getWindow());
             }
-            dlg.setOnShown(_ -> clampToScreen(dlg));
+            dlg.setOnShown(_ -> Platform.runLater(() -> clampToScreen(dlg)));
             dlg.showAndWait().filter(bt -> bt == ButtonType.OK)
                     .ifPresent(_ -> ((WebhooksController) loader.getController()).save());
         } catch (IOException e) {
@@ -859,30 +860,44 @@ public class MainController implements Initializable, DetectionListener {
     }
 
     /**
-     * Clamps a dialog window so that it is fully visible on whichever screen it
-     * appears on. Must be called from an {@code onShown} handler so that the window
-     * dimensions are already known.
+     * Clamps a dialog window so that it is fully visible on the same screen as its
+     * owner window. The owner's position is used to find the target screen because
+     * the dialog may already be partially or entirely off every screen when this is
+     * called, making its own coordinates unreliable for screen detection.
+     *
+     * <p>
+     * Must be invoked via {@code Platform.runLater} inside an {@code onShown}
+     * handler so that the dialog's width and height are fully committed by the
+     * layout pass.
+     * </p>
      *
      * @param dlg
      *            the dialog to reposition if necessary
      */
     private static void clampToScreen(Dialog<?> dlg) {
         Window window = dlg.getDialogPane().getScene().getWindow();
-        double x = window.getX();
-        double y = window.getY();
+        Window owner = (window instanceof Stage s) ? s.getOwner() : null;
+
+        // Prefer the owner's screen; fall back to the dialog's own position,
+        // then to the primary screen if both are off every monitor.
+        Screen screen;
+        if (owner != null) {
+            ObservableList<Screen> ownerScreens = Screen.getScreensForRectangle(owner.getX(), owner.getY(),
+                    owner.getWidth(), owner.getHeight());
+            screen = ownerScreens.isEmpty() ? Screen.getPrimary() : ownerScreens.get(0);
+        } else {
+            ObservableList<Screen> dlgScreens = Screen.getScreensForRectangle(window.getX(), window.getY(),
+                    window.getWidth(), window.getHeight());
+            screen = dlgScreens.isEmpty() ? Screen.getPrimary() : dlgScreens.get(0);
+        }
+
+        Rectangle2D bounds = screen.getVisualBounds();
         double w = window.getWidth();
         double h = window.getHeight();
-        ObservableList<Screen> screens = Screen.getScreensForRectangle(x, y, w, h);
-        Screen screen = screens.isEmpty() ? Screen.getPrimary() : screens.get(0);
-        Rectangle2D bounds = screen.getVisualBounds();
-        double newX = Math.max(bounds.getMinX(), Math.min(x, bounds.getMaxX() - w));
-        double newY = Math.max(bounds.getMinY(), Math.min(y, bounds.getMaxY() - h));
-        if (newX != x) {
-            window.setX(newX);
-        }
-        if (newY != y) {
-            window.setY(newY);
-        }
+        double newX = Math.max(bounds.getMinX(), Math.min(window.getX(), bounds.getMaxX() - w));
+        double newY = Math.max(bounds.getMinY(), Math.min(window.getY(), bounds.getMaxY() - h));
+        window.setX(newX);
+        window.setY(newY);
     }
 
     // -------------------------------------------------------------------------
