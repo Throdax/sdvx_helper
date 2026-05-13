@@ -34,6 +34,12 @@ public final class WindowPositionHelper {
      * an {@code onCloseRequest} handler that writes the current position back to
      * disk on close.
      *
+     * <p>
+     * Note: this sets {@code stage.setOnCloseRequest}. If the caller also needs to
+     * set a close handler, use {@link #restore} and {@link #save} separately
+     * instead.
+     * </p>
+     *
      * @param stage
      *            the primary stage
      * @param repo
@@ -44,6 +50,25 @@ public final class WindowPositionHelper {
      *            setting key for window Y position
      */
     public static void applyAndPersist(Stage stage, SettingsRepository repo, String keyX, String keyY) {
+        restore(stage, repo, keyX, keyY);
+        stage.setOnCloseRequest(_ -> save(stage, repo, keyX, keyY));
+    }
+
+    /**
+     * Restores the stage's X/Y position from the given settings keys without wiring
+     * a close handler. Use in combination with {@link #save} when the caller needs
+     * to supply its own {@code setOnCloseRequest}.
+     *
+     * @param stage
+     *            the primary stage
+     * @param repo
+     *            settings repository to read position from
+     * @param keyX
+     *            setting key for window X position
+     * @param keyY
+     *            setting key for window Y position
+     */
+    public static void restore(Stage stage, SettingsRepository repo, String keyX, String keyY) {
         Map<String, String> settings = repo.load();
         double x = parseDouble(settings.get(keyX), Double.NaN);
         double y = parseDouble(settings.get(keyY), Double.NaN);
@@ -53,10 +78,22 @@ public final class WindowPositionHelper {
         if (!Double.isNaN(y) && y != 0) {
             stage.setY(y);
         }
-        stage.setOnCloseRequest(_ -> saveCurrent(stage, repo, keyX, keyY));
     }
 
-    private static void saveCurrent(Stage stage, SettingsRepository repo, String keyX, String keyY) {
+    /**
+     * Saves the stage's current X/Y position to the given settings keys. Designed
+     * to be called from a close-request handler alongside other cleanup.
+     *
+     * @param stage
+     *            the primary stage
+     * @param repo
+     *            settings repository to write to
+     * @param keyX
+     *            setting key for window X position
+     * @param keyY
+     *            setting key for window Y position
+     */
+    public static void save(Stage stage, SettingsRepository repo, String keyX, String keyY) {
         try {
             Map<String, String> s = repo.load();
             s.put(keyX, String.valueOf((int) stage.getX()));

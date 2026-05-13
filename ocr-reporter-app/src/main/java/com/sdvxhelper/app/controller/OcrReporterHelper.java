@@ -20,6 +20,14 @@ public final class OcrReporterHelper {
     private static final String STOP_PREFIX = "[STOP]";
     private static final Pattern DIGIT_PATTERN = Pattern.compile("\\d+");
 
+    /**
+     * Pattern for an <em>unprocessed</em> result screenshot:
+     * {@code sdvx_YYYYMMDD_HHMMSS.png}. These are the raw auto-save files that have
+     * not yet been renamed with a title.
+     */
+    private static final Pattern UNPROCESSED_PATTERN = Pattern.compile("^sdvx_\\d{8}_\\d{6}\\.png$",
+            Pattern.CASE_INSENSITIVE);
+
     private OcrReporterHelper() {
         // utility class — not instantiable
     }
@@ -62,6 +70,43 @@ public final class OcrReporterHelper {
      */
     public static boolean isResultFilename(String filename) {
         return filename != null && filename.toLowerCase().startsWith("sdvx_");
+    }
+
+    /**
+     * Returns {@code true} if {@code filename} is an <em>unprocessed</em> result
+     * screenshot, i.e. it matches {@code sdvx_YYYYMMDD_HHMMSS.png} and has not yet
+     * been renamed with a title. Mirrors the Python pattern
+     * {@code ^sdvx_\d+_\d+.png} used by {@code do_coloring_missing}.
+     *
+     * @param filename
+     *            file base name to test
+     * @return {@code true} if the filename is an unprocessed auto-save file
+     */
+    public static boolean isUnprocessedResultFilename(String filename) {
+        return filename != null && UNPROCESSED_PATTERN.matcher(filename).matches();
+    }
+
+    /**
+     * Strips characters that are illegal in Windows/Unix filenames and replaces
+     * spaces with underscores. Mirrors the Python sanitization applied to OCR
+     * titles before building the renamed file path in {@code color_file}.
+     *
+     * @param title
+     *            raw song title
+     * @return filename-safe version of the title, or an empty string if
+     *         {@code title} is {@code null}
+     */
+    public static String sanitizeForFilename(String title) {
+        if (title == null) {
+            return "";
+        }
+        String t = title;
+        for (char ch : new char[]{'\\', '/', ':', '*', '?', '"', '<', '>', '|'}) {
+            t = t.replace(String.valueOf(ch), "");
+        }
+        // Replace both half-width and full-width spaces with underscores
+        t = t.replace(' ', '_').replace('\u3000', '_');
+        return t;
     }
 
     /**

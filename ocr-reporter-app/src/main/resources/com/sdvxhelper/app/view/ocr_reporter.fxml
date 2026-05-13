@@ -49,10 +49,12 @@
 
             <HBox spacing="8" alignment="CENTER_LEFT">
                 <Label text="%text.ocr.hash.jacket" />
-                <TextField fx:id="hashField" prefColumnCount="20" editable="false" style="-fx-font-family: 'Courier New', monospace;" />
+                <TextField fx:id="hashField" prefColumnCount="25" editable="false"
+                           style="-fx-font-family: 'Courier New', monospace; -fx-background-color: #f8f8f8;" />
 
                 <Label text="%text.ocr.hash.info" />
-                <TextField fx:id="hashInfoField" prefColumnCount="20" editable="false" style="-fx-font-family: 'Courier New', monospace;" />
+                <TextField fx:id="hashInfoField" prefColumnCount="25" editable="false"
+                           style="-fx-font-family: 'Courier New', monospace; -fx-background-color: #f8f8f8;" />
 
                 <Label text="%text.difficulty" />
                 <ComboBox fx:id="difficultyCombo" />
@@ -60,10 +62,10 @@
 
             <HBox spacing="8" alignment="CENTER_LEFT">
                 <Button text="%button.resgister" fx:id="registerButton" onAction="#onRegister" styleClass="button-success" disable="true" />
-                <CheckBox fx:id="registerAllDiffsCheck" text="%checkbox.register.all.diffs" selected="false" />
+<!--                 <CheckBox fx:id="registerAllDiffsCheck" text="%checkbox.register.all.diffs" selected="false" /> -->
                 <Button fx:id="colorizeButton" text="%button.rescan" onAction="#onColorize" disable="true" />
                 <Button fx:id="colorizeMissingButton" text="%button.rescan.missing" onAction="#onColorizeMissing" disable="true" />
-                <Button fx:id="mergeButton" text="%button.merge" onAction="#onMerge" />
+<!--                 <Button fx:id="mergeButton" text="%button.merge" onAction="#onMerge" /> -->
             </HBox>
         </VBox>
     </top>
@@ -131,7 +133,7 @@
         </SplitPane>
     </center>
 
-    <!-- Bottom panel: jacket (100×100) + difficulty band (137×29) + info strip (526×64) + title -->
+    <!-- Bottom panel: jacket (100×100) + difficulty band (137×29) + info strip (526×64) + status label -->
     <bottom>
         <HBox spacing="10" alignment="CENTER_LEFT">
             <padding>
@@ -145,6 +147,9 @@
                 <!-- info strip: Python size=(526,64) -->
                 <ImageView fx:id="infoView" fitWidth="526" fitHeight="64" preserveRatio="false" />
             </VBox>
+            <!-- Status messages (equivalent to Python self.window['state']) -->
+            <Label fx:id="stateLabel" text="" wrapText="true" HBox.hgrow="ALWAYS"
+                   style="-fx-padding: 0 0 0 10;" maxWidth="Infinity" />
         </HBox>
     </bottom>
 </BorderPane>
