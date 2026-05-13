@@ -38,7 +38,8 @@ import javafx.scene.control.TextField;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
-import javafx.scene.input.MouseEvent;
+import javafx.scene.input.Clipboard;
+import javafx.scene.input.ClipboardContent;
 import javafx.stage.FileChooser;
 import javax.imageio.ImageIO;
 
@@ -117,6 +118,8 @@ public class OcrReporterController implements Initializable {
     private ComboBox<String> difficultyCombo;
     @FXML
     private Button registerButton;
+    @FXML
+    private Button copyTitleButton;
     @FXML
     private Button skipButton;
     @FXML
@@ -204,6 +207,7 @@ public class OcrReporterController implements Initializable {
     public void initialize(URL location, ResourceBundle resources) {
         difficultyCombo.getItems().setAll("", "nov", "adv", "exh", "APPEND");
         difficultyCombo.getSelectionModel().select("exh");
+        difficultyCombo.valueProperty().addListener((_, _, _) -> updateRegisterButtonState());
 
         languageCombo.setItems(LocaleManager.getInstance().getAvailableLocaleCodes());
         languageCombo.setValue(LocaleManager.getInstance().getCurrentCode());
@@ -222,10 +226,28 @@ public class OcrReporterController implements Initializable {
         musicTable.setItems(filteredWikiSongs);
         musicTable.getSelectionModel().clearSelection();
         musicTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
+        // Populate title field and update Register button state whenever the
+        // wiki selection changes (keyboard navigation included).
+        musicTable.getSelectionModel().selectedItemProperty().addListener((_, _, selected) -> {
+            if (selected != null) {
+                titleField.setText(selected.getTitle());
+                titleField.setStyle("-fx-text-fill: black; -fx-background-color: #f8f8f8;");
+            }
+            updateRegisterButtonState();
+        });
 
         fileNameColumn.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getName()));
+        fileNameColumn.setSortable(false);
         filesTable.setItems(fileItems);
         filesTable.setRowFactory(_ -> new ResultFilesTableRowListener(this));
+        // Load the selected result image whenever the selection changes,
+        // including programmatic advances from onRegister → advanceToNext().
+        filesTable.getSelectionModel().selectedIndexProperty().addListener((_, _, idx) -> {
+            int i = idx.intValue();
+            if (i >= 0 && i < imageFiles.size()) {
+                showCurrentImage(imageFiles.get(i));
+            }
+        });
 
         hashTitleColumn.setCellValueFactory(new PropertyValueFactory<>("title"));
         hashValueColumn.setCellValueFactory(new PropertyValueFactory<>("hash"));
@@ -236,6 +258,10 @@ public class OcrReporterController implements Initializable {
         hashDbDiffCombo.setOnAction(_ -> refreshHashDb());
 
         filterField.textProperty().addListener(new TextFilterChangeListener(this));
+        // Re-evaluate Register button state whenever the title or hash changes
+        // (driven by OCR, wiki selection, or image load).
+        titleField.textProperty().addListener((_, _, _) -> updateRegisterButtonState());
+        hashField.textProperty().addListener((_, _, _) -> updateRegisterButtonState());
 
         SettingsRepository settingsRepo = new SettingsRepository();
         settings = settingsRepo.load();
@@ -258,7 +284,7 @@ public class OcrReporterController implements Initializable {
     private void loadBemaniWiki() {
         Platform.runLater(() -> {
             musicLoadingLabel.setText("Loading BemaniWiki…");
-            musicProgress.setProgress(-1.0);
+            musicProgress.setProgress(0.0);
         });
 
         Map<String, WikiSongRow> collected = new HashMap<>();
@@ -267,9 +293,9 @@ public class OcrReporterController implements Initializable {
         // First URL: コナステ list (simple structure — rows of 7-8 tds)
         // fetchKonasteList(http, WIKI_URL_KONASTE, collected);
 
-        // Second and third URLs: AC 旧曲 and 新曲 (rowspan handling)
-        fetchAcList(http, WIKI_URL_OLD, collected, 1);
-        fetchAcList(http, WIKI_URL_NEW, collected, 2);
+        // AC 旧曲 drives progress 0.0 → 0.5; 新曲 drives 0.5 → 1.0
+        fetchAcList(http, WIKI_URL_OLD, collected, 1, 0.0, 0.5);
+        fetchAcList(http, WIKI_URL_NEW, collected, 2, 0.5, 1.0);
 
         List<WikiSongRow> rows = new ArrayList<>(collected.values());
         rows.sort((a, b) -> a.getTitle().compareToIgnoreCase(b.getTitle()));
@@ -316,7 +342,8 @@ public class OcrReporterController implements Initializable {
     // }
     // }
 
-    private void fetchAcList(HttpClient http, String url, Map<String, WikiSongRow> out, int urlIndex) {
+    private void fetchAcList(HttpClient http, String url, Map<String, WikiSongRow> out, int urlIndex,
+            double progressStart, double progressEnd) {
         try {
             String html = fetchUrl(http, url);
             if (html == null) {
@@ -329,7 +356,23 @@ public class OcrReporterController implements Initializable {
             String preArtist = "";
             String preBpm = "";
 
-            for (Element tr : doc.select("tr")) {
+            Elements allTrs = doc.select("tr");
+            int totalTrs = allTrs.size();
+            for (int trIdx = 0; trIdx < totalTrs; trIdx++) {
+                Element tr = allTrs.get(trIdx);
+
+                // Throttle to one Platform.runLater every 10 rows.
+                if (trIdx % 10 == 0 || trIdx == totalTrs - 1) {
+                    final double prog = totalTrs == 0
+                            ? progressEnd
+                            : progressStart + (progressEnd - progressStart) * trIdx / totalTrs;
+                    final int songCount = out.size();
+                    Platform.runLater(() -> {
+                        musicProgress.setProgress(prog);
+                        musicLoadingLabel.setText("Loading BemaniWiki… " + songCount + " songs");
+                    });
+                }
+
                 Elements tds = tr.select("td");
                 int n = tds.size();
 
@@ -489,6 +532,36 @@ public class OcrReporterController implements Initializable {
     @FXML
     public void onClearFilter(ActionEvent event) {
         filterField.clear();
+    }
+
+    /**
+     * Enables the Register button when all three required fields are valid: a
+     * non-empty title, a 16-character lowercase hex jacket hash, and a non-blank
+     * difficulty. Mirrors the Python guard in {@code register_song}
+     * ({@code difficulty != '' and bool(pat.search(hash_jacket))}).
+     */
+    private void updateRegisterButtonState() {
+        String title = titleField.getText().trim();
+        String hash = hashField.getText().trim();
+        String diff = difficultyCombo.getValue();
+        boolean canRegister = !title.isEmpty() && hash.matches("[0-9a-f]{16}") && diff != null && !diff.isBlank();
+        registerButton.setDisable(!canRegister);
+    }
+
+    /**
+     * Copies the current title field value to the system clipboard.
+     *
+     * @param event
+     *            action event
+     */
+    @FXML
+    public void onCopyTitle(ActionEvent event) {
+        String text = titleField.getText();
+        if (text != null && !text.isBlank()) {
+            ClipboardContent content = new ClipboardContent();
+            content.putString(text);
+            Clipboard.getSystemClipboard().setContent(content);
+        }
     }
 
     /**
@@ -851,23 +924,9 @@ public class OcrReporterController implements Initializable {
         Platform.runLater(() -> logArea.appendText(line + "\n"));
     }
 
-    @FXML
-    public void onSelectMusic(MouseEvent event) {
-        WikiSongRow selectedItem = musicTable.getSelectionModel().getSelectedItem();
-        if (selectedItem != null) {
-            titleField.setText(selectedItem.getTitle());
-            titleField.setStyle("-fx-text-fill: black;");
-        }
-    }
-
-    @FXML
-    public void onSelectResult(MouseEvent event) {
-        int selectedIndex = filesTable.getSelectionModel().getSelectedIndex();
-
-        if (selectedIndex >= 0) {
-            showCurrentImage(imageFiles.get(selectedIndex));
-        }
-    }
+    // onSelectMusic and onSelectResult are superseded by selectedItemProperty /
+    // selectedIndexProperty listeners wired in initialize(); these stubs are
+    // retained so that any lingering FXML onMouseClicked references compile.
 
     public Map<String, String> getFileColorMap() {
         return fileColorMap;

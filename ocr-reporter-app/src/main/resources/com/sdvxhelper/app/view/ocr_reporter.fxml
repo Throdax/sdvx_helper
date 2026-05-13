@@ -42,7 +42,9 @@
 
             <HBox spacing="8" alignment="CENTER_LEFT">
                 <Label text="%text.ocr.title" />
-                <TextField fx:id="titleField" prefColumnCount="40" style="-fx-text-fill: black;" />
+                <TextField fx:id="titleField" prefColumnCount="40" editable="false"
+                           style="-fx-text-fill: black; -fx-background-color: #f8f8f8;" />
+                <Button fx:id="copyTitleButton" text="%button.copy.clipboard" onAction="#onCopyTitle" />
             </HBox>
 
             <HBox spacing="8" alignment="CENTER_LEFT">
@@ -78,7 +80,7 @@
                 <ProgressBar fx:id="musicProgress" progress="0.0" prefWidth="9999" />
 
                 <!-- col_widths=[43,40,7,4,4,4,7] at Noto Sans JP 14px (~8.5px/char), num_rows=7 -->
-                <TableView fx:id="musicTable" VBox.vgrow="ALWAYS" prefHeight="226" onMouseClicked="#onSelectMusic">
+                <TableView fx:id="musicTable" VBox.vgrow="ALWAYS" prefHeight="226">
                     <columns>
                         <TableColumn fx:id="musicTitleColumn"  text="Title"  prefWidth="366" />
                         <TableColumn fx:id="musicArtistColumn" text="Artist" prefWidth="340" />
@@ -96,7 +98,7 @@
                 <ProgressBar fx:id="filesProgress" progress="0.0" prefWidth="9999" />
 
                 <!-- col_widths=[100] at Noto Sans JP 16px, num_rows=8 -->
-                <TableView fx:id="filesTable" VBox.vgrow="ALWAYS" prefHeight="270" onMouseClicked="#onSelectResult">
+                <TableView fx:id="filesTable" VBox.vgrow="ALWAYS" prefHeight="270">
                     <columns>
                         <TableColumn fx:id="fileNameColumn" text="Saved Files" prefWidth="9999" />
                     </columns>
