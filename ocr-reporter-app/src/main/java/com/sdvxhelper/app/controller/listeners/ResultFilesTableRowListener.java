@@ -44,16 +44,31 @@ public class ResultFilesTableRowListener extends TableRow<File> {
     }
 
     private void refreshStyle() {
+        String rowStyle;
+        boolean propagateWhiteText = false;
+
         if (isSelected() && isHover()) {
-            setStyle(SELECTED_HOVER_STYLE);
+            rowStyle = SELECTED_HOVER_STYLE;
         } else if (isSelected()) {
-            setStyle(SELECTED_STYLE);
+            rowStyle = SELECTED_STYLE;
         } else if (isHover()) {
-            setStyle(HOVER_STYLE);
+            rowStyle = HOVER_STYLE;
         } else if (isEmpty() || getItem() == null) {
-            setStyle("");
+            rowStyle = "";
         } else {
-            setStyle(ocrReporterController.getFileColorMap().getOrDefault(getItem().getName(), ""));
+            rowStyle = ocrReporterController.getFileColorMap().getOrDefault(getItem().getName(), "");
+            propagateWhiteText = rowStyle.contains("-fx-text-fill: white");
+        }
+
+        setStyle(rowStyle);
+
+        // -fx-text-fill on a TableRow does not cascade to TableCell nodes because
+        // Modena sets its own -fx-text-fill on .table-cell. Propagate explicitly
+        // only for dark-background rows that require white text; clear it otherwise
+        // so selected/hovered rows restore the default (dark) cell text.
+        String cellTextStyle = propagateWhiteText ? "-fx-text-fill: white;" : "";
+        for (javafx.scene.Node child : getChildrenUnmodifiable()) {
+            child.setStyle(cellTextStyle);
         }
     }
 }

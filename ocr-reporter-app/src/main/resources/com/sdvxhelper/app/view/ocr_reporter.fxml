@@ -30,7 +30,6 @@
                 <Label text="Language/言語" />
                 <ComboBox fx:id="languageCombo" styleClass="lang-combo" />
                 <Region HBox.hgrow="ALWAYS" />
-                <Label fx:id="registeredLabel" text="0" styleClass="muted" />
             </HBox>
 
             <HBox spacing="8" alignment="CENTER_LEFT">
@@ -117,6 +116,7 @@
                     <Label text="%label.hashdb.filter" />
                     <ComboBox fx:id="hashDbDiffCombo" />
                     <Label text="%text.registered" styleClass="muted" />
+                    <Label fx:id="registeredLabel" text="0" styleClass="muted" />
                 </HBox>
                 <!-- col_widths=[50,27] at Courier New 16px (~9.6px/char) -->
                 <TableView fx:id="hashDbTable" VBox.vgrow="ALWAYS">

@@ -194,6 +194,12 @@ public class OcrReporterController implements Initializable {
     /** Detection parameters from params.json (log_crop_* entries). */
     private Map<String, String> paramsMap = new java.util.LinkedHashMap<>();
 
+    /**
+     * The info-strip crop from the most recently selected result image, used by the
+     * Suggest button.
+     */
+    private BufferedImage currentInfoCrop;
+
     private TesseractOcr tesseractOcr;
 
     /**
@@ -642,36 +648,40 @@ public class OcrReporterController implements Initializable {
             log.debug("onSuggestTitle: no file selected, skipping");
             return;
         }
+        if (currentInfoCrop == null) {
+            log.debug("onSuggestTitle: no info crop available for current selection, skipping");
+            appendLog("Suggest: no result image loaded — select a result screenshot first");
+            return;
+        }
         File selectedFile = imageFiles.get(selIdx);
         suggestButton.setDisable(true);
 
+        final BufferedImage infoCrop = currentInfoCrop;
         bgExecutor.submit(() -> {
             try {
-                BufferedImage awtImage = ImageIO.read(selectedFile);
-                if (awtImage == null) {
-                    log.warn("onSuggestTitle: ImageIO could not decode '{}' — skipping", selectedFile.getName());
-                    appendLog("Suggest ERROR: could not read " + selectedFile.getName());
-                    return;
-                }
-                int tsx = ParamUtils.getInt(paramsMap, "info_title_sx", 201);
-                int tsy = ParamUtils.getInt(paramsMap, "info_title_sy", 1091);
-                int tw = ParamUtils.getInt(paramsMap, "info_title_w", 678);
-                int th = ParamUtils.getInt(paramsMap, "info_title_h", 122);
-                BufferedImage titleRegion = cropAndScale(awtImage, tsx, tsy, tw, th, tw, th);
-                String recognised = suggestOcr.recognizeText(titleRegion);
-                log.debug("onSuggestTitle: recognised '{}'", recognised);
+                int titleLeftTrim = 10; // skip the fixed-position yellow nub on the left edge
+                BufferedImage titleLine = infoCrop.getSubimage(titleLeftTrim, 0, infoCrop.getWidth() - titleLeftTrim,
+                        infoCrop.getHeight() / 2);
+                saveDebugPart(titleLine, "info_title");
+                log.info("onSuggestTitle: OCR attempt on title-line sub-crop ({}x{}) from '{}'", titleLine.getWidth(),
+                        titleLine.getHeight(), selectedFile.getName());
+                // appendLog("Suggest: OCR attempt on title line crop from " +
+                // selectedFile.getName());
+                String recognised = suggestOcr.recognizeText(titleLine);
+                log.info("onSuggestTitle: Tesseract result '{}'", recognised);
                 final String suggestion = (recognised != null) ? recognised : "";
                 Platform.runLater(() -> {
+                    appendLog("Suggest: Tesseract result: \"" + suggestion + "\"");
+
                     if (!suggestion.isBlank()) {
                         filterField.setText(suggestion);
-                        appendLog("Suggest: \"" + suggestion + "\" from " + selectedFile.getName());
-                    } else {
-                        appendLog("Suggest: no text recognised from " + selectedFile.getName());
+                        // appendLog("Suggest: applied to search filter from " +
+                        // selectedFile.getName());
                     }
+                    // else {
+                    // appendLog("Suggest: no text recognised from " + selectedFile.getName());
+                    // }
                 });
-            } catch (IOException e) {
-                log.warn("onSuggestTitle: failed to read image '{}': {}", selectedFile.getName(), e.getMessage());
-                appendLog("Suggest ERROR: " + e.getMessage());
             } finally {
                 Platform.runLater(() -> suggestButton.setDisable(false));
             }
@@ -717,6 +727,11 @@ public class OcrReporterController implements Initializable {
             // background webhook task can read it safely.
             int selIdx = filesTable.getSelectionModel().getSelectedIndex();
             File webhookSourceFile = (selIdx >= 0 && selIdx < imageFiles.size()) ? imageFiles.get(selIdx) : null;
+            if (webhookSourceFile != null) {
+                fileColorMap.put(webhookSourceFile.getName(),
+                        "-fx-background-color: #1565c0; -fx-text-fill: white; -fx-background-insets: 0;");
+                filesTable.refresh();
+            }
             bgExecutor.submit(() -> sendWebhookOnRegister(title, diff, hash, hashInfo, webhookSourceFile));
         } catch (IOException e) {
             log.error("Failed to register hash", e);
@@ -841,14 +856,19 @@ public class OcrReporterController implements Initializable {
      * Called from the application close event handler.
      */
     public void onWindowClose() {
+        if (sessionRegisteredCount < 1) {
+            log.info("onWindowClose: {} song(s) registered this session — skipping close webhook",
+                    sessionRegisteredCount);
+            return;
+        }
         String webhookUrl = secretConfig != null ? secretConfig.getWebhookRegUrl() : "";
         if (webhookUrl.isBlank()) {
-            log.debug("onWindowClose: webhook.reg.url not configured, skipping close webhook");
+            log.warn("onWindowClose: webhook.reg.url not configured, skipping close webhook");
             return;
         }
         File musiclistFile = new File("resources/musiclist.xml");
         if (!musiclistFile.exists()) {
-            log.debug("musiclist.xml not found, skipping close webhook");
+            log.warn("musiclist.xml not found, skipping close webhook");
             return;
         }
         try {
@@ -859,14 +879,6 @@ public class OcrReporterController implements Initializable {
             log.info("Musiclist sent to Discord on close");
         } catch (IOException e) {
             log.warn("Failed to send musiclist on close: {}", e.getMessage());
-        }
-    }
-
-    private void advanceToNext() {
-        int next = filesTable.getSelectionModel().getSelectedIndex() + 1;
-        if (next < imageFiles.size()) {
-            filesTable.getSelectionModel().select(next);
-            filesTable.scrollTo(next);
         }
     }
 
@@ -1277,6 +1289,7 @@ public class OcrReporterController implements Initializable {
 
         if (!isResultFilename(f.getName())) {
             // Clear preview if this is not a result screenshot
+            currentInfoCrop = null;
             Platform.runLater(() -> {
                 jacketView.setImage(null);
                 difficultyView.setImage(null);
@@ -1297,6 +1310,7 @@ public class OcrReporterController implements Initializable {
             }
             if (imageAnalysisService != null && !imageAnalysisService.isResultScreen(awtImage, paramsMap)) {
                 log.debug("showCurrentImage: '{}' does not pass isResultScreen — clearing preview", f.getName());
+                currentInfoCrop = null;
                 Platform.runLater(() -> {
                     jacketView.setImage(null);
                     difficultyView.setImage(null);
@@ -1314,6 +1328,7 @@ public class OcrReporterController implements Initializable {
             int jW = ParamUtils.getInt(paramsMap, "log_crop_jacket_w", 263);
             int jH = ParamUtils.getInt(paramsMap, "log_crop_jacket_h", 263);
             BufferedImage jacket = cropAndScale(awtImage, jSx, jSy, jW, jH, 100, 100);
+            saveDebugPart(jacket, "jacket");
             jacketView.setImage(toFxImage(jacket));
 
             int dSx = ParamUtils.getInt(paramsMap, "log_crop_difficulty_sx", 55);
@@ -1321,6 +1336,7 @@ public class OcrReporterController implements Initializable {
             int dW = ParamUtils.getInt(paramsMap, "log_crop_difficulty_w", 138);
             int dH = ParamUtils.getInt(paramsMap, "log_crop_difficulty_h", 30);
             BufferedImage diff = cropAndScale(awtImage, dSx, dSy, dW, dH, 137, 29);
+            saveDebugPart(diff, "difficulty");
             difficultyView.setImage(toFxImage(diff));
 
             int iSx = ParamUtils.getInt(paramsMap, "log_crop_info_sx", 379);
@@ -1328,6 +1344,8 @@ public class OcrReporterController implements Initializable {
             int iW = ParamUtils.getInt(paramsMap, "log_crop_info_w", 527);
             int iH = ParamUtils.getInt(paramsMap, "log_crop_info_h", 65);
             BufferedImage info = cropAndScale(awtImage, iSx, iSy, iW, iH, 526, 64);
+            currentInfoCrop = info;
+            saveDebugPart(info, "info");
             infoView.setImage(toFxImage(info));
 
             // Info hash: average hash of the info region (mirrors Python
@@ -1344,17 +1362,6 @@ public class OcrReporterController implements Initializable {
                 difficultyCombo.setValue(detectedDiff);
             }
 
-            if (tesseractOcr != null) {
-                int tsx = ParamUtils.getInt(paramsMap, "info_title_sx", 201);
-                int tsy = ParamUtils.getInt(paramsMap, "info_title_sy", 1091);
-                int tw = ParamUtils.getInt(paramsMap, "info_title_w", 678);
-                int th = ParamUtils.getInt(paramsMap, "info_title_h", 122);
-                BufferedImage titleRegion = cropAndScale(awtImage, tsx, tsy, tw, th, tw, th);
-                String ocrTitle = tesseractOcr.recognizeText(titleRegion);
-                Platform.runLater(() -> titleField.setText(ocrTitle != null ? ocrTitle.trim() : ""));
-            } else {
-                Platform.runLater(() -> titleField.clear());
-            }
         } catch (IOException e) {
             log.error("Failed to load image {}", f.getAbsolutePath(), e);
             appendLog("ERROR loading: " + f.getName());
@@ -1482,6 +1489,39 @@ public class OcrReporterController implements Initializable {
 
     private Image toFxImage(BufferedImage awt) {
         return SwingFXUtils.toFXImage(awt, null);
+    }
+
+    /**
+     * Saves a cropped image to {@code out/part_{partName}.png} for debug
+     * inspection, mirroring the Python {@code cut_result_parts} save loop in
+     * {@code gen_summary.py}.
+     *
+     * <p>
+     * The {@code out/} directory is created on demand relative to the process
+     * working directory (sibling to the application executable). Failures are
+     * logged as warnings and never propagate to the caller.
+     * </p>
+     *
+     * @param img
+     *            the cropped region to persist
+     * @param partName
+     *            label used in the filename (e.g. {@code "jacket"})
+     */
+    private void saveDebugPart(BufferedImage img, String partName) {
+        if (img == null) {
+            return;
+        }
+        try {
+            File outDir = new File("out");
+            if (!outDir.exists()) {
+                outDir.mkdirs();
+            }
+            File outFile = new File(outDir, "part_" + partName + ".png");
+            ImageIO.write(img, "PNG", outFile);
+            log.debug("saveDebugPart: wrote '{}'", outFile.getPath());
+        } catch (IOException e) {
+            log.warn("saveDebugPart: failed to save part '{}': {}", partName, e.getMessage());
+        }
     }
 
     private void appendLog(String line) {
