@@ -250,6 +250,7 @@ public class OcrReporterController implements Initializable {
 
         fileNameColumn.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getName()));
         fileNameColumn.setSortable(false);
+        filesTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
         filesTable.setItems(fileItems);
         filesTable.setRowFactory(_ -> new ResultFilesTableRowListener(this));
         // Load the selected result image whenever the selection changes,
@@ -622,7 +623,13 @@ public class OcrReporterController implements Initializable {
             log.error("Failed to register hash", e);
             appendLog("ERROR: " + e.getMessage());
         }
-        advanceToNext();
+        filterField.clear();
+        titleField.clear();
+        hashField.clear();
+        hashInfoField.clear();
+        jacketView.setImage(null);
+        difficultyView.setImage(null);
+        infoView.setImage(null);
     }
 
     /**
@@ -661,7 +668,7 @@ public class OcrReporterController implements Initializable {
             File sourceFile) {
         String webhookUrl = secretConfig.getWebhookRegUrl();
         if (webhookUrl.isBlank()) {
-            log.debug("sendWebhookOnRegister: webhook.reg.url not configured in secrets, skipping");
+            log.info("sendWebhookOnRegister: webhook.reg.url not configured in secrets, skipping");
             return;
         }
 
@@ -678,6 +685,7 @@ public class OcrReporterController implements Initializable {
                 .append(difficulty.toUpperCase()).append("**)");
 
         if (sourceFile == null) {
+            log.debug("sendWebhookOnRegister: no source file selected — sending text-only message");
             discordWebhookClient.sendMessage(webhookUrl, msg.toString());
             return;
         }
@@ -685,6 +693,8 @@ public class OcrReporterController implements Initializable {
         try {
             BufferedImage awtImage = ImageIO.read(sourceFile);
             if (awtImage == null) {
+                log.warn("sendWebhookOnRegister: ImageIO could not decode '{}' — sending text-only message",
+                        sourceFile.getName());
                 discordWebhookClient.sendMessage(webhookUrl, msg.toString());
                 return;
             }
@@ -719,6 +729,8 @@ public class OcrReporterController implements Initializable {
             files.put("difficulty.png", baosDiff.toByteArray());
 
             discordWebhookClient.sendMessageWithMultipleImages(webhookUrl, msg.toString(), files);
+
+            log.info("{} send to discord registration webhook", title);
         } catch (IOException e) {
             log.warn("sendWebhookOnRegister: failed to attach images, sending text only: {}", e.getMessage());
             discordWebhookClient.sendMessage(webhookUrl, msg.toString());

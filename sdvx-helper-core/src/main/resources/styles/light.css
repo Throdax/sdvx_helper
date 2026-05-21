@@ -178,20 +178,46 @@ TableView .column-header Label {
     -fx-font-weight: bold;
 }
 
-TableRow:odd {
+/*
+ * Use .table-row-cell (JavaFX style class) instead of the type selector
+ * TableRow. The style-class selector hooks into the virtual-flow cell-
+ * recycling paint cycle and ensures `:selected` / `:hover` changes repaint
+ * correctly. Using the type selector causes the selection highlight to get
+ * "stuck" on the previously selected row when cells are recycled.
+ */
+.table-row-cell:odd {
     -fx-background-color: #fafafa;
+    -fx-background-insets: 0;
 }
 
-TableRow:even {
+.table-row-cell:even {
     -fx-background-color: #ffffff;
+    -fx-background-insets: 0;
 }
 
-TableRow:selected {
+.table-row-cell:hover {
+    -fx-background-color: #e3f2fd;
+    -fx-background-insets: 0;
+}
+
+.table-row-cell:selected {
     -fx-background-color: #bbdefb;
+    -fx-background-insets: 0;
 }
 
-TableCell {
+.table-row-cell:selected:hover {
+    -fx-background-color: #90caf9;
+    -fx-background-insets: 0;
+}
+
+.table-row-cell:focused:selected {
+    -fx-background-color: #90caf9;
+    -fx-background-insets: 0;
+}
+
+.table-cell {
     -fx-text-fill: #222222;
+    -fx-border-color: transparent;
 }
 
 /* ---- MenuBar ------------------------------------------------------------- */
@@ -213,6 +239,28 @@ MenuItem:focused {
 /* ---- ProgressBar --------------------------------------------------------- */
 ProgressBar {
     -fx-accent: #1976d2;
+    -fx-pref-height: 8;
+    -fx-max-height: 8;
+    -fx-min-height: 6;
+}
+
+/*
+ * Modena default track padding is 0.416667em (~5 px) on every side, which
+ * forces a minimum rendered height of ~10 px and makes the bar invisible when
+ * prefHeight is 8.  Zero it out and supply an explicit track colour instead.
+ */
+.progress-bar > .track {
+    -fx-background-color: #e0e0e0;
+    -fx-background-insets: 0;
+    -fx-background-radius: 3;
+    -fx-padding: 0;
+}
+
+.progress-bar > .bar {
+    -fx-background-color: #1976d2;
+    -fx-background-insets: 0;
+    -fx-background-radius: 3;
+    -fx-padding: 0;
 }
 
 /* ---- SplitPane ----------------------------------------------------------- */

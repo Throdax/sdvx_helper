@@ -5,27 +5,55 @@ import javafx.scene.control.TableRow;
 
 import com.sdvxhelper.app.controller.OcrReporterController;
 
+/**
+ * Custom {@link TableRow} for the saved-files table that applies per-row
+ * colorization from {@link OcrReporterController#getFileColorMap()} while
+ * correctly honouring the selection and hover states.
+ *
+ * <p>
+ * Plain {@code setStyle()} calls have higher CSS specificity than any
+ * pseudo-class rule in the external stylesheet, so a naïve implementation
+ * silently overrides {@code :selected} and {@code :hover} colours. This class
+ * resolves the conflict by re-evaluating the effective style whenever the item,
+ * selection, or hover state changes and writing the correct colour as an inline
+ * style, keeping the priority consistent.
+ * </p>
+ */
 public class ResultFilesTableRowListener extends TableRow<File> {
 
-    /**
-     * 
-     */
+    private static final String SELECTED_STYLE = "-fx-background-color: #bbdefb; -fx-background-insets: 0;";
+    private static final String SELECTED_HOVER_STYLE = "-fx-background-color: #90caf9; -fx-background-insets: 0;";
+    private static final String HOVER_STYLE = "-fx-background-color: #e3f2fd; -fx-background-insets: 0;";
+
     private final OcrReporterController ocrReporterController;
 
     /**
      * @param ocrReporterController
+     *            controller that owns the file-colour map
      */
     public ResultFilesTableRowListener(OcrReporterController ocrReporterController) {
         this.ocrReporterController = ocrReporterController;
+        selectedProperty().addListener((_, _, _) -> refreshStyle());
+        hoverProperty().addListener((_, _, _) -> refreshStyle());
     }
 
     @Override
     protected void updateItem(File item, boolean empty) {
         super.updateItem(item, empty);
-        if (item == null || empty) {
+        refreshStyle();
+    }
+
+    private void refreshStyle() {
+        if (isSelected() && isHover()) {
+            setStyle(SELECTED_HOVER_STYLE);
+        } else if (isSelected()) {
+            setStyle(SELECTED_STYLE);
+        } else if (isHover()) {
+            setStyle(HOVER_STYLE);
+        } else if (isEmpty() || getItem() == null) {
             setStyle("");
         } else {
-            setStyle(this.ocrReporterController.getFileColorMap().getOrDefault(item.getName(), ""));
+            setStyle(ocrReporterController.getFileColorMap().getOrDefault(getItem().getName(), ""));
         }
     }
 }

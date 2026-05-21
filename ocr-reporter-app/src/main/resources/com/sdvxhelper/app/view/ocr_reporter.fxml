@@ -30,7 +30,6 @@
                 <Label text="Language/言語" />
                 <ComboBox fx:id="languageCombo" styleClass="lang-combo" />
                 <Region HBox.hgrow="ALWAYS" />
-                <Label text="%text.registered" styleClass="muted" />
                 <Label fx:id="registeredLabel" text="0" styleClass="muted" />
             </HBox>
 
@@ -79,7 +78,7 @@
                 </padding>
 
                 <Label fx:id="musicLoadingLabel" text="" styleClass="muted" />
-                <ProgressBar fx:id="musicProgress" progress="0.0" prefWidth="9999" prefHeight="8" />
+                <ProgressBar fx:id="musicProgress" progress="0.0" prefWidth="9999" />
 
                 <!-- col_widths=[43,40,7,4,4,4,7] at Noto Sans JP 14px (~8.5px/char), num_rows=7 -->
                 <TableView fx:id="musicTable" VBox.vgrow="ALWAYS" prefHeight="226">
@@ -97,12 +96,12 @@
                 <Separator />
 
                 <Label fx:id="filesLoadingLabel" text="Saved Files" styleClass="muted" />
-                <ProgressBar fx:id="filesProgress" progress="0.0" prefWidth="9999" prefHeight="8" />
+                <ProgressBar fx:id="filesProgress" progress="0.0" prefWidth="9999" />
 
                 <!-- col_widths=[100] at Noto Sans JP 16px, num_rows=8 -->
                 <TableView fx:id="filesTable" VBox.vgrow="ALWAYS" prefHeight="270">
                     <columns>
-                        <TableColumn fx:id="fileNameColumn" text="Saved Files" prefWidth="9999" />
+                        <TableColumn fx:id="fileNameColumn" text="Saved Files"/>
                     </columns>
                 </TableView>
             </VBox>
@@ -116,6 +115,7 @@
                 <HBox spacing="6" alignment="CENTER_LEFT">
                     <Label text="%label.hashdb.filter" />
                     <ComboBox fx:id="hashDbDiffCombo" />
+                    <Label text="%text.registered" styleClass="muted" />
                 </HBox>
                 <!-- col_widths=[50,27] at Courier New 16px (~9.6px/char) -->
                 <TableView fx:id="hashDbTable" VBox.vgrow="ALWAYS">
