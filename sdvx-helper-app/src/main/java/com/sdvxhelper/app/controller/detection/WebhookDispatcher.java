@@ -3,8 +3,10 @@ package com.sdvxhelper.app.controller.detection;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import javax.imageio.ImageIO;
 
 import com.sdvxhelper.model.MusicInfo;
@@ -98,10 +100,20 @@ public class WebhookDispatcher {
      * Sends a session playlist summary message to all webhooks that have playlist
      * sending enabled.
      *
+     * <p>
+     * When a non-null {@link Duration} is present at the same index as a play in
+     * {@code timestamps}, the entry is formatted as {@code MM:SS - title}. Entries
+     * without a timestamp (e.g. plays recorded before OBS output started) fall back
+     * to a sequential number prefix.
+     * </p>
+     *
      * @param sessionPlays
      *            ordered list of plays recorded this session
+     * @param timestamps
+     *            per-play elapsed durations since OBS output started; entries may
+     *            be {@code null} when no output was active for that play
      */
-    public void sendPlaylistSummary(List<OnePlayData> sessionPlays) {
+    public void sendPlaylistSummary(List<OnePlayData> sessionPlays, List<Duration> timestamps) {
         if (sessionPlays.isEmpty()) {
             log.debug("sendPlaylistSummary: session has no plays, skipping");
             return;
@@ -116,7 +128,7 @@ public class WebhookDispatcher {
             if (!sendPlaylist) {
                 continue;
             }
-            String msg = buildPlaylistMessage(playerName, sessionPlays);
+            String msg = buildPlaylistMessage(playerName, sessionPlays, timestamps);
             discordWebhookClient.sendMessage(urls.get(i), msg);
         }
     }
@@ -131,13 +143,39 @@ public class WebhookDispatcher {
                 ScoreFormatter.formatScore(play.getCurScore()), play.getLamp());
     }
 
-    private String buildPlaylistMessage(String playerName, List<OnePlayData> plays) {
+    private String buildPlaylistMessage(String playerName, List<OnePlayData> plays, List<Duration> timestamps) {
+        boolean useHours = resolveUseHours(timestamps);
         StringBuilder msg = new StringBuilder();
         msg.append("Session playlist for ").append(playerName).append(" (").append(plays.size()).append(" songs):\n");
         for (int j = 0; j < plays.size(); j++) {
-            msg.append(String.format("%02d - %s%n", j + 1, plays.get(j).getTitle()));
+            Duration timestamp = (j < timestamps.size()) ? timestamps.get(j) : null;
+            String prefix = Objects.nonNull(timestamp)
+                    ? formatTimestamp(timestamp, useHours)
+                    : String.format("%02d", j + 1);
+            msg.append(prefix).append(" - ").append(plays.get(j).getTitle()).append("\n");
         }
         return msg.toString();
+    }
+
+    private boolean resolveUseHours(List<Duration> timestamps) {
+        for (int i = timestamps.size() - 1; i >= 0; i--) {
+            Duration last = timestamps.get(i);
+            if (Objects.nonNull(last)) {
+                return last.toHours() >= 1;
+            }
+        }
+        return false;
+    }
+
+    private String formatTimestamp(Duration duration, boolean useHours) {
+        long totalSeconds = duration.getSeconds();
+        long hours = totalSeconds / 3600;
+        long minutes = (totalSeconds % 3600) / 60;
+        long seconds = totalSeconds % 60;
+        if (useHours) {
+            return String.format("%02d:%02d:%02d", hours, minutes, seconds);
+        }
+        return String.format("%02d:%02d", minutes, seconds);
     }
 
     private void dispatchMessage(String url, String msg, boolean sendPic, byte[] screenshotBytes, String title) {

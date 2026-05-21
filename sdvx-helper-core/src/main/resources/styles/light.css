@@ -67,6 +67,12 @@ Label {
     -fx-text-fill: #c62828;
 }
 
+.obs-output-active {
+    -fx-text-fill: #c62828;
+    -fx-font-weight: bold;
+    -fx-font-size: 11;
+}
+
 /* ---- Text fields / areas ------------------------------------------------- */
 TextField, TextArea {
     -fx-background-color: #ffffff;

@@ -76,6 +76,21 @@ public class ImageAnalysisService {
     private final Map<String, String> resultLampHashes = new HashMap<>();
 
     /**
+     * Perceptual hashes for the two mandatory on-result reference crops
+     * ({@code onresult.png} and {@code onresult2.png}). Used by
+     * {@link #isResultScreen} to mirror Python {@code GenSummary.is_result()}.
+     */
+    private String onresult0Hash = null;
+    private String onresult1Hash = null;
+
+    /**
+     * Perceptual hash for the optional on-result header crop
+     * ({@code result_head.png}). Only used when {@code onresult_enable_head} is set
+     * to {@code 1} in {@code params.json}.
+     */
+    private String onresultHeadHash = null;
+
+    /**
      * Constructs the service and loads digit template hashes from
      * {@code resources/images/}.
      *
@@ -106,6 +121,9 @@ public class ImageAnalysisService {
         loadResultLampTemplate("uc");
         loadResultLampTemplate("clear");
         loadResultLampTemplate("failed");
+        onresult0Hash = loadSingleImageHash("resources/images/onresult.png");
+        onresult1Hash = loadSingleImageHash("resources/images/onresult2.png");
+        onresultHeadHash = loadSingleImageHash("resources/images/result_head.png");
         log.info("Loaded {} large, {} small, {} bestscore, {} select digit templates, {} result lamp templates",
                 largeDigitTemplates.size(), smallDigitTemplates.size(), bestScoreTemplates.size(),
                 selectScoreTemplates.size(), resultLampHashes.size());
@@ -167,6 +185,99 @@ public class ImageAnalysisService {
         } catch (IOException e) {
             log.debug("Could not load result lamp template {}: {}", name, e.getMessage());
         }
+    }
+
+    /**
+     * Loads a single reference image and returns its perceptual hash, or
+     * {@code null} if the file cannot be found or read.
+     *
+     * @param relPath
+     *            relative path such as {@code "resources/images/onresult.png"}
+     * @return perceptual hash string, or {@code null}
+     */
+    private String loadSingleImageHash(String relPath) {
+        try (InputStream is = openResource(relPath)) {
+            if (is == null) {
+                log.debug("loadSingleImageHash: file not found at {} (file system or classpath), skipping", relPath);
+                return null;
+            }
+            BufferedImage img = ImageIO.read(is);
+            if (img != null) {
+                return hasher.hash(img);
+            }
+        } catch (IOException e) {
+            log.debug("loadSingleImageHash: could not read {}: {}", relPath, e.getMessage());
+        }
+        return null;
+    }
+
+    // -------------------------------------------------------------------------
+    // Result-screen detection
+    // -------------------------------------------------------------------------
+
+    /**
+     * Returns {@code true} when {@code frame} is a genuine SDVX result screen,
+     * mirroring the Python {@code GenSummary.is_result()} method in
+     * {@code gen_summary.py:318}.
+     *
+     * <p>
+     * Two fixed regions of the frame are cropped using the coordinates stored in
+     * {@code params} ({@code onresult_val0_*} and {@code onresult_val1_*}) and
+     * compared against pre-loaded reference images ({@code onresult.png} and
+     * {@code onresult2.png}) using average perceptual hash with a Hamming-distance
+     * threshold of 5, exactly as Python's {@code comp_images(cr, img_j, 5)} does.
+     * An optional third check ({@code onresult_head} vs {@code result_head.png}) is
+     * included when {@code onresult_enable_head} is set to {@code 1} in params.
+     * </p>
+     *
+     * <p>
+     * This is the authoritative guard that must be called before any result-screen
+     * data extraction (difficulty band, score, lamp, etc.). A black or otherwise
+     * invalid image will always return {@code false} here.
+     * </p>
+     *
+     * @param frame
+     *            full-frame capture to test
+     * @param params
+     *            detection parameters (from {@code params.json})
+     * @return {@code true} if the frame contains a result screen
+     */
+    public boolean isResultScreen(BufferedImage frame, Map<String, String> params) {
+        if (frame == null) {
+            return false;
+        }
+        if (onresult0Hash == null || onresult1Hash == null) {
+            log.warn("isResultScreen: reference images not loaded — returning true to avoid blocking all processing");
+            return true;
+        }
+        int v0sx = ParamUtils.getInt(params, "onresult_val0_sx", 340);
+        int v0sy = ParamUtils.getInt(params, "onresult_val0_sy", 1600);
+        int v0w = ParamUtils.getInt(params, "onresult_val0_w", 200);
+        int v0h = ParamUtils.getInt(params, "onresult_val0_h", 40);
+
+        int v1sx = ParamUtils.getInt(params, "onresult_val1_sx", 30);
+        int v1sy = ParamUtils.getInt(params, "onresult_val1_sy", 1390);
+        int v1w = ParamUtils.getInt(params, "onresult_val1_w", 210);
+        int v1h = ParamUtils.getInt(params, "onresult_val1_h", 40);
+
+        BufferedImage crop0 = crop(frame, v0sx, v0sy, v0w, v0h);
+        BufferedImage crop1 = crop(frame, v1sx, v1sy, v1w, v1h);
+
+        boolean val0 = hasher.isSimilar(hasher.hash(crop0), onresult0Hash, 5);
+        boolean val1 = hasher.isSimilar(hasher.hash(crop1), onresult1Hash, 5);
+        boolean result = val0 && val1;
+
+        if (result && ParamUtils.getInt(params, "onresult_enable_head", 0) != 0 && onresultHeadHash != null) {
+            int hsx = ParamUtils.getInt(params, "onresult_head_sx", 0);
+            int hsy = ParamUtils.getInt(params, "onresult_head_sy", 0);
+            int hw = ParamUtils.getInt(params, "onresult_head_w", 1080);
+            int hh = ParamUtils.getInt(params, "onresult_head_h", 150);
+            BufferedImage cropHead = crop(frame, hsx, hsy, hw, hh);
+            result = hasher.isSimilar(hasher.hash(cropHead), onresultHeadHash, 5);
+        }
+
+        log.debug("isResultScreen: val0={}, val1={}, result={}", val0, val1, result);
+        return result;
     }
 
     /**
@@ -572,20 +683,26 @@ public class ImageAnalysisService {
      * </ul>
      *
      * <p>
-     * When no threshold matches (e.g. a black/uniform image), the crop is saved to
-     * {@code ./target/out/last_error_crop.png} (test / IDE) or
-     * {@code ./out/last_error_crop.png} (production) and an
-     * {@link ImageCropNotParsed} exception is thrown so callers can surface the
-     * failure without silently producing a wrong filename.
+     * When no threshold matches the NOV / ADV / EXH colour profiles (e.g. an APPEND
+     * difficulty band) the method returns {@code "APPEND"}, mirroring the Python
+     * {@code ocr()} fall-through at {@code gen_summary.py:591}.
+     * </p>
+     *
+     * <p>
+     * An {@link ImageCropNotParsed} exception is thrown only for inputs that
+     * clearly cannot originate from a result screen (null, or a crop too small to
+     * contain meaningful colour data). These represent a caller error — the image
+     * should only be passed here after confirming it is a result screen.
      * </p>
      *
      * @param diffBand
      *            difficulty-band image at any resolution
      * @return detected difficulty string ({@code "nov"}, {@code "adv"},
-     *         {@code "exh"})
+     *         {@code "exh"}, or {@code "APPEND"})
      * @throws ImageCropNotParsed
-     *             if {@code diffBand} is {@code null}, too small to analyse, or its
-     *             colour sums do not match any known difficulty
+     *             if {@code diffBand} is {@code null} or too small to analyse.
+     *             Callers must first pass the full frame through
+     *             {@link #isResultScreen} before invoking this method.
      */
     public static String detectDifficultyFromBand(BufferedImage diffBand) throws ImageCropNotParsed {
         if (diffBand == null) {
@@ -622,64 +739,11 @@ public class ImageAnalysisService {
         if (rT > 300000L && gT < 180000L && bT < 180000L) {
             return "exh";
         }
-        // No threshold matched — save the crop for diagnostics and throw.
-        String msg = String.format("Difficulty band colour does not match any known difficulty "
-                + "(rT=%d, gT=%d, bT=%d) — crop saved to %s", rT, gT, bT, saveErrorCrop(diffBand));
-        log.error(msg);
-        throw new ImageCropNotParsed(msg);
-    }
-
-    /**
-     * Saves {@code crop} to {@code last_error_crop.png} in the resolved output
-     * directory and returns the absolute path of the saved file for use in
-     * exception messages.
-     *
-     * <p>
-     * Output directory selection:
-     * </p>
-     * <ul>
-     * <li>{@code target/out/} — when {@code target/test-classes/} exists (test or
-     * IDE run).</li>
-     * <li>{@code out/} — production deployment (no {@code target/} directory).</li>
-     * </ul>
-     *
-     * @param crop
-     *            image to persist; ignored if {@code null}
-     * @return absolute path of the written file, or a placeholder string if saving
-     *         failed
-     */
-    private static String saveErrorCrop(BufferedImage crop) {
-        if (crop == null) {
-            return "(crop was null)";
-        }
-        File outDir = resolveErrorOutputDir();
-        outDir.mkdirs();
-        File dest = new File(outDir, "last_error_crop.png");
-        try {
-            ImageIO.write(crop, "png", dest);
-            return dest.getAbsolutePath();
-        } catch (IOException e) {
-            log.warn("saveErrorCrop: could not write {}: {}", dest.getAbsolutePath(), e.getMessage());
-            return dest.getAbsolutePath() + " (write failed: " + e.getMessage() + ")";
-        }
-    }
-
-    /**
-     * Returns the output directory to use for diagnostic artefacts.
-     *
-     * <ul>
-     * <li>If {@code target/test-classes/} exists the JVM is running inside a
-     * Maven/IDE test environment → {@code target/out/}.</li>
-     * <li>Otherwise a production deployment is assumed → {@code out/}.</li>
-     * </ul>
-     *
-     * @return resolved output {@link File} (not yet created)
-     */
-    static File resolveErrorOutputDir() {
-        if (new File("target/test-classes").isDirectory()) {
-            return new File("target/out");
-        }
-        return new File("out");
+        // No NOV / ADV / EXH threshold matched — treat as APPEND (mirrors Python
+        // gen_summary.py:591).
+        log.debug("detectDifficultyFromBand: no NOV/ADV/EXH match (rT={}, gT={}, bT={}) — returning APPEND", rT, gT,
+                bT);
+        return "APPEND";
     }
 
     /**

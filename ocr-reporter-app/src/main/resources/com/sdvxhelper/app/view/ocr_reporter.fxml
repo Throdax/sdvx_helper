@@ -79,7 +79,7 @@
                 </padding>
 
                 <Label fx:id="musicLoadingLabel" text="" styleClass="muted" />
-                <ProgressBar fx:id="musicProgress" progress="0.0" prefWidth="9999" />
+                <ProgressBar fx:id="musicProgress" progress="0.0" prefWidth="9999" prefHeight="8" />
 
                 <!-- col_widths=[43,40,7,4,4,4,7] at Noto Sans JP 14px (~8.5px/char), num_rows=7 -->
                 <TableView fx:id="musicTable" VBox.vgrow="ALWAYS" prefHeight="226">
@@ -97,7 +97,7 @@
                 <Separator />
 
                 <Label fx:id="filesLoadingLabel" text="Saved Files" styleClass="muted" />
-                <ProgressBar fx:id="filesProgress" progress="0.0" prefWidth="9999" />
+                <ProgressBar fx:id="filesProgress" progress="0.0" prefWidth="9999" prefHeight="8" />
 
                 <!-- col_widths=[100] at Noto Sans JP 16px, num_rows=8 -->
                 <TableView fx:id="filesTable" VBox.vgrow="ALWAYS" prefHeight="270">

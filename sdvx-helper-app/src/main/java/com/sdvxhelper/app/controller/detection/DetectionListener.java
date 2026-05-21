@@ -46,4 +46,17 @@ public interface DetectionListener {
      *            human-readable status string
      */
     void onObsStatusChanged(String status);
+
+    /**
+     * Called when OBS begins recording or streaming.
+     *
+     * <p>
+     * Called on a background thread; implementors must wrap UI updates in
+     * {@code Platform.runLater()}.
+     * </p>
+     *
+     * @param outputType
+     *            {@code "Recording"} or {@code "Streaming"}
+     */
+    void onObsOutputStarted(String outputType);
 }

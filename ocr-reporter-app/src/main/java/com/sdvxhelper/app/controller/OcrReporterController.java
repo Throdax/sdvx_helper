@@ -20,31 +20,6 @@ import java.util.ResourceBundle;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.regex.Pattern;
-
-import javax.imageio.ImageIO;
-
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.sdvxhelper.app.controller.listeners.ResultFilesTableRowListener;
-import com.sdvxhelper.app.controller.listeners.TextFilterChangeListener;
-import com.sdvxhelper.app.controller.model.HashEntry;
-import com.sdvxhelper.app.controller.model.WikiSongRow;
-import com.sdvxhelper.config.SecretConfig;
-import com.sdvxhelper.i18n.LocaleManager;
-import com.sdvxhelper.network.DiscordWebhookClient;
-import com.sdvxhelper.ocr.PerceptualHasher;
-import com.sdvxhelper.ocr.TesseractOcr;
-import com.sdvxhelper.repository.MusicListRepository;
-import com.sdvxhelper.repository.ParamsRepository;
-import com.sdvxhelper.repository.SettingsRepository;
-import com.sdvxhelper.service.ImageAnalysisService;
-import com.sdvxhelper.util.ParamUtils;
-
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -67,6 +42,28 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
+import javax.imageio.ImageIO;
+
+import com.sdvxhelper.app.controller.listeners.ResultFilesTableRowListener;
+import com.sdvxhelper.app.controller.listeners.TextFilterChangeListener;
+import com.sdvxhelper.app.controller.model.HashEntry;
+import com.sdvxhelper.app.controller.model.WikiSongRow;
+import com.sdvxhelper.config.SecretConfig;
+import com.sdvxhelper.i18n.LocaleManager;
+import com.sdvxhelper.network.DiscordWebhookClient;
+import com.sdvxhelper.ocr.PerceptualHasher;
+import com.sdvxhelper.ocr.TesseractOcr;
+import com.sdvxhelper.repository.MusicListRepository;
+import com.sdvxhelper.repository.ParamsRepository;
+import com.sdvxhelper.repository.SettingsRepository;
+import com.sdvxhelper.service.ImageAnalysisService;
+import com.sdvxhelper.util.ParamUtils;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Controller for the OCR Reporter maintainer tool ({@code ocr_reporter.fxml}).
@@ -899,6 +896,10 @@ public class OcrReporterController implements Initializable {
                 if (img == null) {
                     continue;
                 }
+                if (imageAnalysisService != null && !imageAnalysisService.isResultScreen(img, paramsMap)) {
+                    log.debug("colorize: '{}' does not pass isResultScreen — skipping", f.getName());
+                    continue;
+                }
 
                 String hash = hasher.hash(img);
                 String[] match = musicListRepo.findByJacketHash(hash);
@@ -1173,6 +1174,19 @@ public class OcrReporterController implements Initializable {
             BufferedImage awtImage = ImageIO.read(f);
             if (awtImage == null) {
                 log.debug("showCurrentImage: failed to load image (awtImage null), skipping display");
+                return;
+            }
+            if (imageAnalysisService != null && !imageAnalysisService.isResultScreen(awtImage, paramsMap)) {
+                log.debug("showCurrentImage: '{}' does not pass isResultScreen — clearing preview", f.getName());
+                Platform.runLater(() -> {
+                    jacketView.setImage(null);
+                    difficultyView.setImage(null);
+                    infoView.setImage(null);
+                    titleField.setStyle("-fx-text-fill: red;");
+                    titleField.setText("(not a result screenshot)");
+                    hashField.clear();
+                    hashInfoField.clear();
+                });
                 return;
             }
 
