@@ -3,15 +3,25 @@ package com.sdvxhelper.service;
 /**
  * Thrown by
  * {@link ImageAnalysisService#detectDifficultyFromBand(java.awt.image.BufferedImage)}
- * when the difficulty band image is {@code null}, too small to analyse, or
- * produces RGB-channel sums that do not match any known difficulty colour
- * (NOVICE, ADVANCED, EXHAUST, or APPEND).
+ * when the supplied crop image cannot be analysed:
+ * <ul>
+ * <li>{@code diffBand} is {@code null}.</li>
+ * <li>The image dimensions are too small to contain meaningful colour
+ * data.</li>
+ * </ul>
  *
  * <p>
- * The failed crop image is saved to {@code ./target/out/last_error_crop.png}
- * when running inside a test or IDE environment, and to
- * {@code ./out/last_error_crop.png} in a production deployment, so that the
- * operator can inspect the problematic region.
+ * Whether the frame originates from a genuine result screen is determined
+ * separately by {@link ImageAnalysisService#isResultScreen}, which mirrors the
+ * Python {@code GenSummary.is_result()} method. Callers must invoke
+ * {@code isResultScreen} before passing any crop to
+ * {@code detectDifficultyFromBand}.
+ * </p>
+ *
+ * <p>
+ * An unrecognised difficulty colour (one that does not match NOVICE, ADVANCED,
+ * or EXHAUST) is <em>not</em> an error: the method returns {@code "APPEND"} in
+ * that case, mirroring the Python {@code gen_summary.py} fall-through.
  * </p>
  *
  * @author Throdax

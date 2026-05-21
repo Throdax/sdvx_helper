@@ -90,6 +90,10 @@ public class MainController implements Initializable, DetectionListener {
     @FXML
     private Label obsStatusLabel;
     @FXML
+    private Label obsRecordingLabel;
+    @FXML
+    private Label obsStreamingLabel;
+    @FXML
     private Label totalVfLabel;
     @FXML
     private Label playCountLabel;
@@ -317,6 +321,11 @@ public class MainController implements Initializable, DetectionListener {
             obsStatusLabel.getStyleClass().removeAll("obs-connected", "obs-disconnected");
             obsStatusLabel.getStyleClass().add(connected ? "obs-connected" : "obs-disconnected");
         });
+    }
+
+    @Override
+    public void onObsOutputStarted(String outputType) {
+        Platform.runLater(() -> showObsOutputLabel(outputType));
     }
 
     // -------------------------------------------------------------------------
@@ -857,6 +866,16 @@ public class MainController implements Initializable, DetectionListener {
 
     private void setStatus(String msg) {
         statusLabel.setText(msg);
+    }
+
+    private void showObsOutputLabel(String outputType) {
+        if ("Recording".equals(outputType)) {
+            obsRecordingLabel.setVisible(true);
+            obsRecordingLabel.setManaged(true);
+        } else if ("Streaming".equals(outputType)) {
+            obsStreamingLabel.setVisible(true);
+            obsStreamingLabel.setManaged(true);
+        }
     }
 
     /**

@@ -326,39 +326,37 @@ class CrackTraxxxxResultScreenDetectionTest {
     }
 
     /**
-     * Verifies that a solid-black difficulty band throws {@link ImageCropNotParsed}
-     * instead of silently returning {@code "APPEND"}.
+     * Verifies that {@link ImageAnalysisService#isResultScreen} returns
+     * {@code true} for the real result-screen fixture.
      *
      * <p>
-     * A black image has channel sums of zero, matching none of the NOV / ADV / EXH
-     * thresholds. The service must save the crop and throw so callers can surface
-     * the failure rather than renaming the file with a wrong difficulty.
+     * Mirrors Python {@code GenSummary.is_result(img)} returning {@code True} when
+     * the two reference-image crops match {@code onresult.png} and
+     * {@code onresult2.png}.
      * </p>
      */
     @Test
-    void detectDifficultyFromBandThrowsForBlackImage() {
-        BufferedImage black = new BufferedImage(10, 10, BufferedImage.TYPE_INT_RGB);
-        Assertions.assertThrows(ImageCropNotParsed.class, () -> ImageAnalysisService.detectDifficultyFromBand(black),
-                "A black image must throw ImageCropNotParsed instead of returning 'APPEND'");
+    void isResultScreenReturnsTrueForRealResultScreen() {
+        boolean result = imageAnalysisService.isResultScreen(resultScreen, params);
+        Assertions.assertTrue(result, "isResultScreen must return true for a genuine result-screen screenshot");
     }
 
     /**
-     * Verifies that when {@link ImageCropNotParsed} is thrown for a black image the
-     * error crop file is created at {@code target/out/last_error_crop.png} (the
-     * test / IDE output path, detected because {@code target/test-classes/}
-     * exists).
+     * Verifies that {@link ImageAnalysisService#isResultScreen} returns
+     * {@code false} for a fully-black image.
+     *
+     * <p>
+     * A solid-black frame has no pixels that can match either reference crop, so
+     * both hash comparisons will fail — mirroring Python's {@code is_result}
+     * returning {@code False} for a non-result image.
+     * </p>
      */
     @Test
-    void errorCropIsSavedWhenDetectionFails() {
-        BufferedImage black = new BufferedImage(10, 10, BufferedImage.TYPE_INT_RGB);
-        try {
-            ImageAnalysisService.detectDifficultyFromBand(black);
-            Assertions.fail("Expected ImageCropNotParsed to be thrown");
-        } catch (ImageCropNotParsed e) {
-            java.io.File expected = new java.io.File("target/out/last_error_crop.png");
-            Assertions.assertTrue(expected.exists(),
-                    "Error crop must be saved to " + expected.getAbsolutePath() + " when running under Maven / IDE");
-        }
+    void isResultScreenReturnsFalseForBlackImage() {
+        BufferedImage black = new BufferedImage(EXPECTED_WIDTH, EXPECTED_HEIGHT, BufferedImage.TYPE_INT_RGB);
+        boolean result = imageAnalysisService.isResultScreen(black, params);
+        Assertions.assertFalse(result,
+                "isResultScreen must return false for a solid-black frame — it cannot be a result screen");
     }
 
     // =========================================================================

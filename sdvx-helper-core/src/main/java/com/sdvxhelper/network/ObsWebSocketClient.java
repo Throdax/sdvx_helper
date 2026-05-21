@@ -7,18 +7,20 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.function.Consumer;
 import javax.imageio.ImageIO;
 
 import com.google.gson.JsonObject;
 import io.obswebsocket.community.client.OBSRemoteController;
 import io.obswebsocket.community.client.OBSRemoteControllerBuilder;
+import io.obswebsocket.community.client.message.event.outputs.RecordStateChangedEvent;
+import io.obswebsocket.community.client.message.event.outputs.StreamStateChangedEvent;
 import io.obswebsocket.community.client.message.request.inputs.SetInputSettingsRequest;
 import io.obswebsocket.community.client.message.request.sceneitems.GetSceneItemIdRequest;
 import io.obswebsocket.community.client.message.request.sceneitems.GetSceneItemListRequest;
@@ -70,6 +72,8 @@ public class ObsWebSocketClient implements Closeable {
     /** Screenshot image format requested from OBS. */
     private static final String IMAGE_FORMAT = "png";
 
+    private static final String OUTPUT_STATE_STARTED = "OBS_WEBSOCKET_OUTPUT_STARTED";
+
     private Executor obsConnectorExecutor = Executors.newFixedThreadPool(1);
 
     private String host;
@@ -78,6 +82,9 @@ public class ObsWebSocketClient implements Closeable {
 
     private OBSRemoteController controller;
     private volatile boolean connected = false;
+
+    private Runnable onRecordingStarted;
+    private Runnable onStreamingStarted;
 
     /**
      * Constructs an OBS WebSocket client.
@@ -113,7 +120,10 @@ public class ObsWebSocketClient implements Closeable {
         CompletableFuture<Void> ready = new CompletableFuture<>();
 
         OBSRemoteControllerBuilder builder = OBSRemoteController.builder().host(host).port(port).password(password)
-                .connectionTimeout(REQUEST_TIMEOUT_SECONDS).lifecycle().onReady(() -> {
+                .connectionTimeout(REQUEST_TIMEOUT_SECONDS)
+                .registerEventListener(RecordStateChangedEvent.class, this::handleRecordStateChanged)
+                .registerEventListener(StreamStateChangedEvent.class, this::handleStreamStateChanged).lifecycle()
+                .onReady(() -> {
                     connected = true;
                     ready.complete(null);
                 }).onCommunicatorError(rt -> {
@@ -155,6 +165,32 @@ public class ObsWebSocketClient implements Closeable {
      */
     public boolean isConnected() {
         return connected;
+    }
+
+    /**
+     * Registers a callback that is invoked when OBS recording transitions to the
+     * started state ({@code OBS_WEBSOCKET_OUTPUT_STARTED}). Must be called before
+     * {@link #connect()}.
+     *
+     * @param onRecordingStarted
+     *            callback to invoke when recording starts; may be {@code null} to
+     *            clear a previously registered callback
+     */
+    public void setOnRecordingStarted(Runnable onRecordingStarted) {
+        this.onRecordingStarted = onRecordingStarted;
+    }
+
+    /**
+     * Registers a callback that is invoked when OBS streaming transitions to the
+     * started state ({@code OBS_WEBSOCKET_OUTPUT_STARTED}). Must be called before
+     * {@link #connect()}.
+     *
+     * @param onStreamingStarted
+     *            callback to invoke when streaming starts; may be {@code null} to
+     *            clear a previously registered callback
+     */
+    public void setOnStreamingStarted(Runnable onStreamingStarted) {
+        this.onStreamingStarted = onStreamingStarted;
     }
 
     /**
@@ -390,25 +426,28 @@ public class ObsWebSocketClient implements Closeable {
     // Event listener
     // -------------------------------------------------------------------------
 
-    /**
-     * Registers a callback that is invoked whenever OBS emits an event.
-     *
-     * <p>
-     * The callback receives the raw event string for diagnostic or custom-handling
-     * purposes. For typed event handling use
-     * {@link OBSRemoteController.OBSRemoteControllerBuilder#registerEventListener}
-     * during construction instead.
-     * </p>
-     *
-     * @param eventHandler
-     *            callback accepting the raw event string
-     */
-    public void onEvent(Consumer<String> eventHandler) {
-        // Raw event dispatch is handled via registerEventListener() on the builder.
-        // This method is retained for API compatibility; callers needing typed
-        // events should rebuild the controller with the appropriate listener
-        // registered.
-        log.debug("onEvent: raw event listener registered (no-op on live controller)");
+    // -------------------------------------------------------------------------
+    // Private event handlers
+    // -------------------------------------------------------------------------
+
+    private void handleRecordStateChanged(RecordStateChangedEvent event) {
+        if (Objects.isNull(onRecordingStarted)) {
+            return;
+        }
+        if (OUTPUT_STATE_STARTED.equals(event.getOutputState())) {
+            log.info("OBS recording started");
+            onRecordingStarted.run();
+        }
+    }
+
+    private void handleStreamStateChanged(StreamStateChangedEvent event) {
+        if (Objects.isNull(onStreamingStarted)) {
+            return;
+        }
+        if (OUTPUT_STATE_STARTED.equals(event.getOutputState())) {
+            log.info("OBS streaming started");
+            onStreamingStarted.run();
+        }
     }
 
     // -------------------------------------------------------------------------

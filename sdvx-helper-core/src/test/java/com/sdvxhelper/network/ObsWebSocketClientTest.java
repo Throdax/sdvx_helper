@@ -57,6 +57,36 @@ class ObsWebSocketClientTest {
     }
 
     @Test
+    void setOnRecordingStartedRegistersCallbackWithoutError() {
+        ObsWebSocketClient client = new ObsWebSocketClient("localhost", 4444, "");
+        Assertions.assertDoesNotThrow(() -> client.setOnRecordingStarted(() -> {
+        }));
+    }
+
+    @Test
+    void setOnStreamingStartedRegistersCallbackWithoutError() {
+        ObsWebSocketClient client = new ObsWebSocketClient("localhost", 4444, "");
+        Assertions.assertDoesNotThrow(() -> client.setOnStreamingStarted(() -> {
+        }));
+    }
+
+    @Test
+    void setOnRecordingStartedAcceptsNullToDeregister() {
+        ObsWebSocketClient client = new ObsWebSocketClient("localhost", 4444, "");
+        client.setOnRecordingStarted(() -> {
+        });
+        Assertions.assertDoesNotThrow(() -> client.setOnRecordingStarted(null));
+    }
+
+    @Test
+    void setOnStreamingStartedAcceptsNullToDeregister() {
+        ObsWebSocketClient client = new ObsWebSocketClient("localhost", 4444, "");
+        client.setOnStreamingStarted(() -> {
+        });
+        Assertions.assertDoesNotThrow(() -> client.setOnStreamingStarted(null));
+    }
+
+    @Test
     void discordPresenceClientThrottlesUpdates() throws Exception {
         DiscordPresenceClient dpc = new DiscordPresenceClient("123456789");
         // Not connected, so updates should be silent no-ops

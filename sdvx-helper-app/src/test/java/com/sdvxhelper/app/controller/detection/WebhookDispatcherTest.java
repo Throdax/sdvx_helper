@@ -1,6 +1,9 @@
 package com.sdvxhelper.app.controller.detection;
 
 import java.io.IOException;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -129,7 +132,7 @@ class WebhookDispatcherTest {
 
     @Test
     void sendPlaylistSummarySkipsEmptySession() {
-        assertDoesNotThrow(() -> dispatcher.sendPlaylistSummary(List.of()));
+        assertDoesNotThrow(() -> dispatcher.sendPlaylistSummary(List.of(), List.of()));
         Mockito.verifyNoInteractions(discordClient);
     }
 
@@ -145,7 +148,7 @@ class WebhookDispatcherTest {
         settings.put("webhook_player_name", "Throdax");
 
         OnePlayData play = new OnePlayData("Song", 9_000_000, 0, "clear", "exh", "2024-01-01");
-        dispatcher.sendPlaylistSummary(List.of(play));
+        dispatcher.sendPlaylistSummary(List.of(play), List.of());
 
         Mockito.verifyNoInteractions(discordClient);
     }
@@ -158,10 +161,139 @@ class WebhookDispatcherTest {
         settings.put("webhook_player_name", "Player1");
 
         OnePlayData play = new OnePlayData("Song", 9_000_000, 0, "clear", "exh", "2024-01-01");
-        dispatcher.sendPlaylistSummary(List.of(play));
+        dispatcher.sendPlaylistSummary(List.of(play), List.of());
 
         Mockito.verify(discordClient).sendMessage(ArgumentMatchers.eq("https://discord.com/api/webhooks/test"),
                 ArgumentMatchers.contains("Song"));
+    }
+
+    // -------------------------------------------------------------------------
+    // sendPlaylistSummary — timestamp formatting
+    // -------------------------------------------------------------------------
+
+    @Test
+    void sendPlaylistSummaryFormatsTimestampWhenPresent() {
+        settings.put("webhook_names", "['Hook1']");
+        settings.put("webhook_urls", "['https://discord.com/api/webhooks/test']");
+        settings.put("webhook_playlist", "['true']");
+        settings.put("webhook_player_name", "Player1");
+
+        OnePlayData play = new OnePlayData("My Song", 9_000_000, 0, "clear", "exh", "2024-01-01");
+        List<Duration> timestamps = new ArrayList<>();
+        timestamps.add(Duration.ofSeconds(112));
+
+        dispatcher.sendPlaylistSummary(List.of(play), timestamps);
+
+        Mockito.verify(discordClient).sendMessage(ArgumentMatchers.anyString(),
+                ArgumentMatchers.contains("01:52 - My Song"));
+    }
+
+    @Test
+    void sendPlaylistSummaryUsesNumberedPrefixWhenTimestampIsNull() {
+        settings.put("webhook_names", "['Hook1']");
+        settings.put("webhook_urls", "['https://discord.com/api/webhooks/test']");
+        settings.put("webhook_playlist", "['true']");
+        settings.put("webhook_player_name", "Player1");
+
+        OnePlayData play = new OnePlayData("My Song", 9_000_000, 0, "clear", "exh", "2024-01-01");
+        List<Duration> timestamps = new ArrayList<>();
+        timestamps.add(null);
+
+        dispatcher.sendPlaylistSummary(List.of(play), timestamps);
+
+        Mockito.verify(discordClient).sendMessage(ArgumentMatchers.anyString(),
+                ArgumentMatchers.contains("01 - My Song"));
+    }
+
+    @Test
+    void sendPlaylistSummaryUsesNumberedPrefixWhenTimestampsListEmpty() {
+        settings.put("webhook_names", "['Hook1']");
+        settings.put("webhook_urls", "['https://discord.com/api/webhooks/test']");
+        settings.put("webhook_playlist", "['true']");
+        settings.put("webhook_player_name", "Player1");
+
+        OnePlayData play = new OnePlayData("My Song", 9_000_000, 0, "clear", "exh", "2024-01-01");
+
+        dispatcher.sendPlaylistSummary(List.of(play), Collections.emptyList());
+
+        Mockito.verify(discordClient).sendMessage(ArgumentMatchers.anyString(),
+                ArgumentMatchers.contains("01 - My Song"));
+    }
+
+    @Test
+    void sendPlaylistSummaryMixesTimestampAndNumberedPrefixes() {
+        settings.put("webhook_names", "['Hook1']");
+        settings.put("webhook_urls", "['https://discord.com/api/webhooks/test']");
+        settings.put("webhook_playlist", "['true']");
+        settings.put("webhook_player_name", "Player1");
+
+        OnePlayData play1 = new OnePlayData("Song A", 9_000_000, 0, "clear", "exh", "2024-01-01");
+        OnePlayData play2 = new OnePlayData("Song B", 9_000_000, 0, "clear", "exh", "2024-01-01");
+        List<Duration> timestamps = new ArrayList<>();
+        timestamps.add(Duration.ofSeconds(217));
+        timestamps.add(null);
+
+        dispatcher.sendPlaylistSummary(List.of(play1, play2), timestamps);
+
+        Mockito.verify(discordClient).sendMessage(ArgumentMatchers.anyString(),
+                ArgumentMatchers.argThat(msg -> msg.contains("03:37 - Song A") && msg.contains("02 - Song B")));
+    }
+
+    @Test
+    void sendPlaylistSummaryUsesHhMmSsWhenLastTimestampExceedsOneHour() {
+        settings.put("webhook_names", "['Hook1']");
+        settings.put("webhook_urls", "['https://discord.com/api/webhooks/test']");
+        settings.put("webhook_playlist", "['true']");
+        settings.put("webhook_player_name", "Player1");
+
+        OnePlayData play1 = new OnePlayData("Song A", 9_000_000, 0, "clear", "exh", "2024-01-01");
+        OnePlayData play2 = new OnePlayData("Song B", 9_000_000, 0, "clear", "exh", "2024-01-01");
+        List<Duration> timestamps = new ArrayList<>();
+        timestamps.add(Duration.ofSeconds(112));
+        timestamps.add(Duration.ofSeconds(3720));
+
+        dispatcher.sendPlaylistSummary(List.of(play1, play2), timestamps);
+
+        Mockito.verify(discordClient).sendMessage(ArgumentMatchers.anyString(), ArgumentMatchers
+                .argThat(msg -> msg.contains("00:01:52 - Song A") && msg.contains("01:02:00 - Song B")));
+    }
+
+    @Test
+    void sendPlaylistSummaryUsesMmSsWhenLastTimestampBelowOneHour() {
+        settings.put("webhook_names", "['Hook1']");
+        settings.put("webhook_urls", "['https://discord.com/api/webhooks/test']");
+        settings.put("webhook_playlist", "['true']");
+        settings.put("webhook_player_name", "Player1");
+
+        OnePlayData play1 = new OnePlayData("Song A", 9_000_000, 0, "clear", "exh", "2024-01-01");
+        OnePlayData play2 = new OnePlayData("Song B", 9_000_000, 0, "clear", "exh", "2024-01-01");
+        List<Duration> timestamps = new ArrayList<>();
+        timestamps.add(Duration.ofSeconds(112));
+        timestamps.add(Duration.ofSeconds(217));
+
+        dispatcher.sendPlaylistSummary(List.of(play1, play2), timestamps);
+
+        Mockito.verify(discordClient).sendMessage(ArgumentMatchers.anyString(),
+                ArgumentMatchers.argThat(msg -> msg.contains("01:52 - Song A") && msg.contains("03:37 - Song B")));
+    }
+
+    @Test
+    void sendPlaylistSummaryUsesHhMmSsForEarlierSongsWhenLastExceedsOneHour() {
+        settings.put("webhook_names", "['Hook1']");
+        settings.put("webhook_urls", "['https://discord.com/api/webhooks/test']");
+        settings.put("webhook_playlist", "['true']");
+        settings.put("webhook_player_name", "Player1");
+
+        OnePlayData play1 = new OnePlayData("Song A", 9_000_000, 0, "clear", "exh", "2024-01-01");
+        OnePlayData play2 = new OnePlayData("Song B", 9_000_000, 0, "clear", "exh", "2024-01-01");
+        List<Duration> timestamps = new ArrayList<>();
+        timestamps.add(null);
+        timestamps.add(Duration.ofSeconds(3661));
+
+        dispatcher.sendPlaylistSummary(List.of(play1, play2), timestamps);
+
+        Mockito.verify(discordClient).sendMessage(ArgumentMatchers.anyString(),
+                ArgumentMatchers.argThat(msg -> msg.contains("01 - Song A") && msg.contains("01:01:01 - Song B")));
     }
 
     // -------------------------------------------------------------------------

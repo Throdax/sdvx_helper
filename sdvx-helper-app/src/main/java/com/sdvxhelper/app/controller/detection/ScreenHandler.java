@@ -4,6 +4,7 @@ import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -61,6 +62,7 @@ public class ScreenHandler {
 
     // Result tracking state
     private List<OnePlayData> sessionPlays = new ArrayList<>();
+    private List<Duration> sessionPlayTimestamps = new ArrayList<>();
     private double currentTotalVf = 0.0;
     private double previousTotalVf = 0.0;
 
@@ -121,6 +123,10 @@ public class ScreenHandler {
         return sessionPlays;
     }
 
+    public List<Duration> getSessionPlayTimestamps() {
+        return sessionPlayTimestamps;
+    }
+
     // -------------------------------------------------------------------------
     // Result screen
     // -------------------------------------------------------------------------
@@ -136,11 +142,18 @@ public class ScreenHandler {
      *
      * @param frame
      *            full-frame capture of the result screen
+     * @param songTimestamp
+     *            elapsed time since OBS recording/streaming started at the point
+     *            the song was detected, or {@code null} when no output was active
      * @return the recorded play, or {@code null} if processing failed
      */
-    public OnePlayData handleResultScreen(BufferedImage frame) {
+    public OnePlayData handleResultScreen(BufferedImage frame, Duration songTimestamp) {
         if (frame == null) {
             log.debug("handleResultScreen: frame is null, skipping");
+            return null;
+        }
+        if (!imageAnalysisService.isResultScreen(frame, params)) {
+            log.warn("handleResultScreen: frame does not match result-screen layout — skipping");
             return null;
         }
         try {
@@ -158,6 +171,7 @@ public class ScreenHandler {
                     LocalDateTime.now().toString());
             loggerService.pushPlay(play);
             sessionPlays.add(play);
+            sessionPlayTimestamps.add(songTimestamp);
 
             previousTotalVf = currentTotalVf;
             currentTotalVf = loggerService.getTotalVfInt() / 1000.0;

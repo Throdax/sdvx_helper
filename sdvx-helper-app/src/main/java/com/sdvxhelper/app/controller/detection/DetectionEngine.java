@@ -8,6 +8,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.EnumMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -81,6 +82,10 @@ public class DetectionEngine {
     private boolean rtaMode = false;
     private Instant rtaStartTime;
     private double rtaTargetVf = 0;
+
+    // Playlist timer state — set when OBS recording or streaming starts
+    private Instant outputStartTime;
+    private Duration pendingSongTimestamp;
 
     // Last known song for Discord presence updates
     private String lastKnownTitle = "";
@@ -229,7 +234,8 @@ public class DetectionEngine {
 
     /** Sends the session playlist summary via webhook. */
     public void sendPlaylistSummary() {
-        webhookDispatcher.sendPlaylistSummary(screenHandler.getSessionPlays());
+        webhookDispatcher.sendPlaylistSummary(screenHandler.getSessionPlays(),
+                screenHandler.getSessionPlayTimestamps());
     }
 
     // -------------------------------------------------------------------------
@@ -262,6 +268,8 @@ public class DetectionEngine {
             String pass = currentSettings.getOrDefault("obs_password", currentSettings.getOrDefault("passwd", ""));
 
             ObsWebSocketClient client = new ObsWebSocketClient(host, port, pass);
+            client.setOnRecordingStarted(this::handleRecordingStarted);
+            client.setOnStreamingStarted(this::handleStreamingStarted);
 
             client.connect();
 
@@ -273,6 +281,24 @@ public class DetectionEngine {
             log.debug("OBS connect retry failed: {}", e.getMessage());
             Platform.runLater(() -> listener.onObsStatusChanged("disconnected"));
         }
+    }
+
+    private void handleRecordingStarted() {
+        handleOutputStarted("Recording");
+    }
+
+    private void handleStreamingStarted() {
+        handleOutputStarted("Streaming");
+    }
+
+    private void handleOutputStarted(String outputType) {
+        if (Objects.isNull(outputStartTime)) {
+            outputStartTime = Instant.now();
+            log.info("OBS {} started — playlist timer started", outputType);
+        } else {
+            log.debug("OBS {} started — playlist timer already running", outputType);
+        }
+        listener.onObsOutputStarted(outputType);
     }
 
     // -------------------------------------------------------------------------
@@ -420,7 +446,8 @@ public class DetectionEngine {
     // -------------------------------------------------------------------------
 
     private void processResultScreen(BufferedImage frame) {
-        OnePlayData play = screenHandler.handleResultScreen(frame);
+        OnePlayData play = screenHandler.handleResultScreen(frame, pendingSongTimestamp);
+        pendingSongTimestamp = null;
         if (play == null) {
             log.debug("Result screen processing returned no play (frame may have been unreadable)");
             return;
@@ -470,6 +497,10 @@ public class DetectionEngine {
     private void processDetectMode(BufferedImage frame) {
         String[] titleDiff = screenHandler.handleDetectMode(frame, currentFrame);
         doneThisSong = true;
+        if (Objects.nonNull(outputStartTime)) {
+            pendingSongTimestamp = Duration.between(outputStartTime, Instant.now());
+            log.debug("Playlist timestamp captured at detect screen: {}", pendingSongTimestamp);
+        }
         if (titleDiff == null) {
             log.debug("Detect mode: jacket not identified, marking song as done");
             return;
