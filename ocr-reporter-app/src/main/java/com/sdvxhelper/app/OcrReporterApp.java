@@ -60,9 +60,17 @@ public class OcrReporterApp extends Application {
         }));
         buildScene(LocaleManager.getInstance().getCurrentLocale());
         stage.setTitle("SDVX OCR Reporter " + VersionUtil.getVersion("ocr"));
-        WindowPositionHelper.applyAndPersist(stage, repo, "ocr_lx", "ocr_ly");
+        // Restore saved position without wiring a handler so we can combine with
+        // controller.onWindowClose() in a single setOnCloseRequest below.
+        WindowPositionHelper.restore(stage, repo, "ocr_lx", "ocr_ly");
+
+        // Only apply maximized state after restoring position,
+        // otherwise the window will always open in the top-left corner on a single
+        // monitor setup
         stage.setMaximized(true);
+
         stage.setOnCloseRequest(_ -> {
+            WindowPositionHelper.save(stage, repo, "ocr_lx", "ocr_ly");
             if (controller != null) {
                 controller.onWindowClose();
             }
