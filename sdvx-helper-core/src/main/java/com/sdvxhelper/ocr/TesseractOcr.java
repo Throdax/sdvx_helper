@@ -34,7 +34,8 @@ public class TesseractOcr {
     private final Tesseract tess;
 
     /**
-     * Constructs a {@code TesseractOcr} instance with default configuration.
+     * Constructs a {@code TesseractOcr} instance with the default language set
+     * ({@code jpn+eng}).
      *
      * <p>
      * The Tesseract data directory is resolved (in priority order) from:
@@ -45,10 +46,28 @@ public class TesseractOcr {
      * </ol>
      */
     public TesseractOcr() {
+        this("jpn+eng");
+    }
+
+    /**
+     * Constructs a {@code TesseractOcr} instance with a custom Tesseract language
+     * string.
+     *
+     * <p>
+     * Use {@code +} to combine multiple language packs, e.g.
+     * {@code "jpn+eng+fra+ell"}. The required {@code .traineddata} files must be
+     * present in the tessdata directory; missing packs are logged as warnings by
+     * Tesseract and the engine degrades gracefully.
+     * </p>
+     *
+     * @param language
+     *            Tesseract language string (e.g. {@code "jpn+eng+fra+ell"})
+     */
+    public TesseractOcr(String language) {
         tess = new Tesseract();
         String dataPath = System.getProperty("TESSDATA_PREFIX", "resources/tessdata");
         tess.setDatapath(dataPath);
-        tess.setLanguage("jpn+eng");
+        tess.setLanguage(language);
         tess.setPageSegMode(7);
         tess.setOcrEngineMode(1);
     }

@@ -52,6 +52,7 @@ import com.sdvxhelper.config.SecretConfig;
 import com.sdvxhelper.i18n.LocaleManager;
 import com.sdvxhelper.network.DiscordWebhookClient;
 import com.sdvxhelper.ocr.PerceptualHasher;
+import com.sdvxhelper.ocr.TesseractLanguageInstaller;
 import com.sdvxhelper.ocr.TesseractOcr;
 import com.sdvxhelper.repository.MusicListRepository;
 import com.sdvxhelper.repository.ParamsRepository;
@@ -124,6 +125,8 @@ public class OcrReporterController implements Initializable {
     @FXML
     private Button copyTitleButton;
     @FXML
+    private Button suggestButton;
+    @FXML
     private Button skipButton;
     @FXML
     private Button colorizeButton;
@@ -191,7 +194,14 @@ public class OcrReporterController implements Initializable {
     /** Detection parameters from params.json (log_crop_* entries). */
     private Map<String, String> paramsMap = new java.util.LinkedHashMap<>();
 
-    private com.sdvxhelper.ocr.TesseractOcr tesseractOcr;
+    private TesseractOcr tesseractOcr;
+
+    /**
+     * Extended-language Tesseract instance for the "Suggest" feature. Uses
+     * {@code jpn+eng+fra+ell} to handle Japanese, Latin-script (incl. French), and
+     * Greek song titles.
+     */
+    private TesseractOcr suggestOcr;
 
     private DiscordWebhookClient discordWebhookClient;
     private SecretConfig secretConfig;
@@ -280,7 +290,9 @@ public class OcrReporterController implements Initializable {
         settings = settingsRepo.load();
         paramsMap = new ParamsRepository().load(settings.getOrDefault("params_json", "resources/params.json"));
         tesseractOcr = new TesseractOcr();
+        suggestOcr = new TesseractOcr("jpn+eng+fra+ell");
         discordWebhookClient = new DiscordWebhookClient();
+        startSuggestLanguageInstall();
         secretConfig = new SecretConfig();
 
         colorizeButton.setDisable(true);
@@ -577,6 +589,93 @@ public class OcrReporterController implements Initializable {
             content.putString(text);
             Clipboard.getSystemClipboard().setContent(content);
         }
+    }
+
+    /**
+     * Runs Tesseract OCR on the title region of the currently selected result image
+     * and writes the recognised text into the BemaniWiki search/filter field.
+     *
+     * <p>
+     * Uses an extended language set ({@code jpn+eng+fra+ell}) to handle Japanese,
+     * Latin-script (including French), and Greek song titles. The button is
+     * disabled for the duration of the OCR call to prevent concurrent invocations.
+     * </p>
+     *
+     * @param event
+     *            action event
+     */
+    /**
+     * Checks whether the language files required by {@link #suggestOcr} are present
+     * in the tessdata directory and downloads any that are missing in the
+     * background. While the download is running the suggest button is disabled and
+     * shows a progress label. On completion the button is re-enabled if all files
+     * were obtained; if the download failed it stays disabled and reverts to its
+     * normal label.
+     */
+    private void startSuggestLanguageInstall() {
+        String tessdataDir = System.getProperty("TESSDATA_PREFIX", "resources/tessdata");
+        List<String> languages = List.of("jpn", "eng", "fra", "ell");
+        String installingText = bundle != null
+                ? bundle.getString("button.suggest.installing")
+                : "Installing language files…";
+        String suggestText = bundle != null ? bundle.getString("button.suggest.title") : "Suggest (experimental)";
+
+        suggestButton.setDisable(true);
+        suggestButton.setText(installingText);
+
+        bgExecutor.submit(() -> {
+            boolean allPresent = TesseractLanguageInstaller.ensureLanguages(languages, tessdataDir);
+            Platform.runLater(() -> {
+                suggestButton.setText(suggestText);
+                suggestButton.setDisable(!allPresent);
+                if (!allPresent) {
+                    appendLog("Suggest: language install failed — button remains disabled");
+                }
+            });
+        });
+    }
+
+    @FXML
+    public void onSuggestTitle(ActionEvent event) {
+        int selIdx = filesTable.getSelectionModel().getSelectedIndex();
+        if (selIdx < 0 || selIdx >= imageFiles.size()) {
+            log.debug("onSuggestTitle: no file selected, skipping");
+            return;
+        }
+        File selectedFile = imageFiles.get(selIdx);
+        suggestButton.setDisable(true);
+
+        bgExecutor.submit(() -> {
+            try {
+                BufferedImage awtImage = ImageIO.read(selectedFile);
+                if (awtImage == null) {
+                    log.warn("onSuggestTitle: ImageIO could not decode '{}' — skipping", selectedFile.getName());
+                    appendLog("Suggest ERROR: could not read " + selectedFile.getName());
+                    return;
+                }
+                int tsx = ParamUtils.getInt(paramsMap, "info_title_sx", 201);
+                int tsy = ParamUtils.getInt(paramsMap, "info_title_sy", 1091);
+                int tw = ParamUtils.getInt(paramsMap, "info_title_w", 678);
+                int th = ParamUtils.getInt(paramsMap, "info_title_h", 122);
+                BufferedImage titleRegion = cropAndScale(awtImage, tsx, tsy, tw, th, tw, th);
+                String recognised = suggestOcr.recognizeText(titleRegion);
+                log.debug("onSuggestTitle: recognised '{}'", recognised);
+                final String suggestion = (recognised != null) ? recognised : "";
+                Platform.runLater(() -> {
+                    if (!suggestion.isBlank()) {
+                        filterField.setText(suggestion);
+                        appendLog("Suggest: \"" + suggestion + "\" from " + selectedFile.getName());
+                    } else {
+                        appendLog("Suggest: no text recognised from " + selectedFile.getName());
+                    }
+                });
+            } catch (IOException e) {
+                log.warn("onSuggestTitle: failed to read image '{}': {}", selectedFile.getName(), e.getMessage());
+                appendLog("Suggest ERROR: " + e.getMessage());
+            } finally {
+                Platform.runLater(() -> suggestButton.setDisable(false));
+            }
+        });
     }
 
     /**
@@ -940,14 +1039,18 @@ public class OcrReporterController implements Initializable {
                             if (renamed != null) {
                                 renames.put(i, renamed);
                                 colorUpdates.put(renamed.getName(), style);
+                                appendLog("OCR: [" + effectiveDiff.toUpperCase() + "] " + lamp + " " + scorePrefix
+                                        + "xxxx — " + title + " → " + renamed.getName());
                             } else {
                                 colorUpdates.put(f.getName(), style);
+                                appendLog("OCR: [" + effectiveDiff.toUpperCase() + "] " + title + " (rename skipped)");
                             }
                         } catch (com.sdvxhelper.service.ImageCropNotParsed e) {
                             // Difficulty band cannot be classified — skip rename, mark grey.
                             log.error("colorize: cannot classify difficulty band for '{}': {}", f.getName(),
                                     e.getMessage());
                             final String errorMsg = e.getMessage();
+                            appendLog("ERROR [" + f.getName() + "]: " + errorMsg);
                             Platform.runLater(() -> {
                                 if (stateLabel != null) {
                                     stateLabel.setText(errorMsg);
@@ -957,14 +1060,17 @@ public class OcrReporterController implements Initializable {
                         }
                     } else {
                         colorUpdates.put(f.getName(), style);
+                        appendLog("Found: " + title + " [" + diff.toUpperCase() + "] — " + f.getName());
                     }
                     found++;
                 } else {
                     colorUpdates.put(f.getName(), "-fx-background-color: #dddddd;");
+                    appendLog("Not found: " + f.getName());
                     notFound++;
                 }
             } catch (IOException e) {
                 log.debug("Colorize error for {}: {}", f.getName(), e.getMessage());
+                appendLog("ERROR reading: " + f.getName());
             }
 
             // Throttle UI progress updates
@@ -1008,6 +1114,7 @@ public class OcrReporterController implements Initializable {
             if (stateLabel != null) {
                 stateLabel.setText(completionMsg);
             }
+            logArea.appendText("--- " + completionMsg + "\n");
             filesLoadingLabel.setText(imageFiles.size() + " file(s) in folder");
         });
     }

@@ -49,6 +49,7 @@ import com.sdvxhelper.network.GoogleDriveClient;
 import com.sdvxhelper.network.Maya2Client;
 import com.sdvxhelper.network.ObsWebSocketClient;
 import com.sdvxhelper.ocr.PerceptualHasher;
+import com.sdvxhelper.ocr.TesseractLanguageInstaller;
 import com.sdvxhelper.repository.MusicListRepository;
 import com.sdvxhelper.repository.ParamsRepository;
 import com.sdvxhelper.repository.PlayLogRepository;
@@ -195,11 +196,21 @@ public class MainController implements Initializable, DetectionListener {
     }
 
     // -------------------------------------------------------------------------
+    // Tessdata setup
+    // -------------------------------------------------------------------------
+
+    private void installTesseractLanguages() {
+        String tessdataDir = System.getProperty("TESSDATA_PREFIX", "resources/tessdata");
+        TesseractLanguageInstaller.ensureLanguages(List.of("jpn", "eng"), tessdataDir);
+    }
+
+    // -------------------------------------------------------------------------
     // Initialisation (runs on background thread)
     // -------------------------------------------------------------------------
 
     private void initialise() {
         log.info("Initialising repositories and services…");
+        installTesseractLanguages();
 
         settings = new SettingsRepository().load();
         String paramsPath = settings.getOrDefault("params_json", "resources/params.json");

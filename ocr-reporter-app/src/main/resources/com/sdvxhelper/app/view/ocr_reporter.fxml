@@ -44,6 +44,7 @@
                 <TextField fx:id="titleField" prefColumnCount="40" editable="false"
                            style="-fx-text-fill: black; -fx-background-color: #f8f8f8;" />
                 <Button fx:id="copyTitleButton" text="%button.copy.clipboard" onAction="#onCopyTitle" />
+                <Button fx:id="suggestButton" text="%button.suggest.title" onAction="#onSuggestTitle" />
             </HBox>
 
             <HBox spacing="8" alignment="CENTER_LEFT">
