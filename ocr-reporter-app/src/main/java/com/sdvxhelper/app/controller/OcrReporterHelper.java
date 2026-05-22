@@ -1,8 +1,18 @@
 package com.sdvxhelper.app.controller;
 
 import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.imageio.ImageIO;
+
+import com.sdvxhelper.service.ImageAnalysisService;
+import com.sdvxhelper.service.ImageCropNotParsed;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Pure-logic helpers for {@link OcrReporterController}.
@@ -17,8 +27,11 @@ import java.util.regex.Pattern;
  */
 public final class OcrReporterHelper {
 
+    private static final Logger log = LoggerFactory.getLogger(OcrReporterHelper.class);
+
     private static final String STOP_PREFIX = "[STOP]";
     private static final Pattern DIGIT_PATTERN = Pattern.compile("\\d+");
+    private static final Pattern TIMESTAMP_PATTERN = Pattern.compile("(\\d{8}_\\d{6})");
 
     /**
      * Pattern for an <em>unprocessed</em> result screenshot:
@@ -28,18 +41,15 @@ public final class OcrReporterHelper {
     private static final Pattern UNPROCESSED_PATTERN = Pattern.compile("^sdvx_\\d{8}_\\d{6}\\.png$",
             Pattern.CASE_INSENSITIVE);
 
+    /**
+     * Utility class — not meant to be instantiated.
+     */
     private OcrReporterHelper() {
-        // utility class — not instantiable
     }
 
     /**
      * Extracts the last sequence of digits from an OCR text string. Returns
      * {@code "??"} when {@code text} is blank or contains no digits.
-     *
-     * <p>
-     * If the text starts with {@code "[STOP]"} that prefix is stripped before
-     * searching for digits.
-     * </p>
      *
      * @param text
      *            OCR-recognized text, may be {@code null}
@@ -60,13 +70,11 @@ public final class OcrReporterHelper {
 
     /**
      * Returns {@code true} if {@code filename} matches the result screenshot naming
-     * pattern ({@code sdvx_*}) used by the main application, indicating it was
-     * auto-saved from the result screen.
+     * pattern ({@code sdvx_*}) used by the main application.
      *
      * @param filename
      *            file base name to test
      * @return {@code true} if the filename starts with {@code sdvx_}
-     *         (case-insensitive)
      */
     public static boolean isResultFilename(String filename) {
         return filename != null && filename.toLowerCase().startsWith("sdvx_");
@@ -74,9 +82,7 @@ public final class OcrReporterHelper {
 
     /**
      * Returns {@code true} if {@code filename} is an <em>unprocessed</em> result
-     * screenshot, i.e. it matches {@code sdvx_YYYYMMDD_HHMMSS.png} and has not yet
-     * been renamed with a title. Mirrors the Python pattern
-     * {@code ^sdvx_\d+_\d+.png} used by {@code do_coloring_missing}.
+     * screenshot matching {@code sdvx_YYYYMMDD_HHMMSS.png}.
      *
      * @param filename
      *            file base name to test
@@ -88,8 +94,7 @@ public final class OcrReporterHelper {
 
     /**
      * Strips characters that are illegal in Windows/Unix filenames and replaces
-     * spaces with underscores. Mirrors the Python sanitization applied to OCR
-     * titles before building the renamed file path in {@code color_file}.
+     * spaces with underscores.
      *
      * @param title
      *            raw song title
@@ -104,21 +109,20 @@ public final class OcrReporterHelper {
         for (char ch : new char[]{'\\', '/', ':', '*', '?', '"', '<', '>', '|'}) {
             t = t.replace(String.valueOf(ch), "");
         }
-        // Replace both half-width and full-width spaces with underscores
         t = t.replace(' ', '_').replace('\u3000', '_');
         return t;
     }
 
     /**
      * Crops a region from {@code src} and scales it to the requested output size,
-     * clamping the crop rectangle to image bounds to avoid exceptions.
+     * clamping the crop rectangle to image bounds.
      *
      * @param src
      *            source image
      * @param x
-     *            crop origin x (clamped to image bounds)
+     *            crop origin x (clamped)
      * @param y
-     *            crop origin y (clamped to image bounds)
+     *            crop origin y (clamped)
      * @param w
      *            crop width (clamped)
      * @param h
@@ -142,5 +146,101 @@ public final class OcrReporterHelper {
         scaled.createGraphics().drawImage(cropped.getScaledInstance(outW, outH, java.awt.Image.SCALE_SMOOTH), 0, 0,
                 null);
         return scaled;
+    }
+
+    /**
+     * Saves a cropped image to {@code out/part_{partName}.png} for debug
+     * inspection, mirroring the Python {@code cut_result_parts} save loop.
+     *
+     * @param img
+     *            the cropped region to persist
+     * @param partName
+     *            label used in the filename (e.g. {@code "jacket"})
+     */
+    public static void saveDebugPart(BufferedImage img, String partName) {
+        if (img == null) {
+            return;
+        }
+        try {
+            File outDir = new File("out");
+            if (!outDir.exists()) {
+                outDir.mkdirs();
+            }
+            File outFile = new File(outDir, "part_" + partName + ".png");
+            ImageIO.write(img, "PNG", outFile);
+            log.debug("saveDebugPart: wrote '{}'", outFile.getPath());
+        } catch (IOException e) {
+            log.warn("saveDebugPart: failed to save part '{}': {}", partName, e.getMessage());
+        }
+    }
+
+    /**
+     * Extracts a difficulty token from a processed result filename.
+     *
+     * @param filename
+     *            file base name to inspect
+     * @return lower-case difficulty token or {@code null} if not found
+     */
+    public static String parseDifficultyFromFilename(String filename) {
+        if (filename == null) {
+            return null;
+        }
+        String upper = filename.toUpperCase();
+        if (upper.contains("_APPEND_")) {
+            return "APPEND";
+        }
+        if (upper.contains("_EXH_")) {
+            return "exh";
+        }
+        if (upper.contains("_ADV_")) {
+            return "adv";
+        }
+        if (upper.contains("_NOV_")) {
+            return "nov";
+        }
+        return null;
+    }
+
+    /**
+     * Converts an integer score to the filename prefix: removes the trailing four
+     * digits so {@code 9970000} becomes {@code "997"}.
+     *
+     * @param score
+     *            detected score (0–10 000 000)
+     * @return score prefix string
+     */
+    public static String toScorePrefix(int score) {
+        String s = String.valueOf(score);
+        return s.length() > 4 ? s.substring(0, s.length() - 4) : s;
+    }
+
+    /**
+     * Extracts the {@code YYYYMMDD_HHMMSS} timestamp from a result filename. Falls
+     * back to the current time if the pattern is not found.
+     *
+     * @param filename
+     *            file base name such as {@code sdvx_20260512_185427.png}
+     * @return timestamp string of the form {@code YYYYMMDD_HHMMSS}
+     */
+    public static String extractTimestampFromFilename(String filename) {
+        Matcher m = TIMESTAMP_PATTERN.matcher(filename);
+        if (m.find()) {
+            return m.group(1);
+        }
+        return new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+    }
+
+    /**
+     * Delegates to
+     * {@link ImageAnalysisService#detectDifficultyFromBand(BufferedImage)}.
+     *
+     * @param diffBand
+     *            difficulty-band image
+     * @return detected difficulty string
+     * @throws ImageCropNotParsed
+     *             when the band cannot be classified
+     */
+    public static String detectDifficultyFromBand(BufferedImage diffBand) throws ImageCropNotParsed {
+        return ImageAnalysisService.detectDifficultyFromBand(diffBand);
     }
 }
