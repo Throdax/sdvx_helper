@@ -11,13 +11,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
 import javax.imageio.ImageIO;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.UnsupportedAudioFileException;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.sdvxhelper.model.MusicInfo;
 import com.sdvxhelper.model.OnePlayData;
@@ -29,6 +25,8 @@ import com.sdvxhelper.service.SummaryGeneratorService;
 import com.sdvxhelper.service.XmlExportService;
 import com.sdvxhelper.util.ParamUtils;
 import com.sdvxhelper.util.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Handles per-screen image analysis, file exports, and stateful Volforce
