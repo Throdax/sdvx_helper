@@ -11,18 +11,20 @@ import com.sdvxhelper.model.enums.ScoreRank;
  * The Volforce formula is:
  * 
  * <pre>
- *   VF_single = floor(level × score × coef_grade × coef_lamp × 20 / 10_000_000)
+ *   VF_single = floor(level × (score / 10_000_000) × coef_grade × coef_lamp × 20)
  * </pre>
  * 
- * where the result is an integer representing VF × 10 (e.g. {@code 369} = 36.9
- * VF).
+ * where the result is a raw integer representing VF × 1000 (e.g. {@code 369}
+ * means 0.369 VF for that chart; displaying it as {@code "36.9"} is a UI
+ * convention, see {@link com.sdvxhelper.util.ScoreFormatter#formatVf}).
  *
  * <p>
- * The total Volforce is the sum of the top-50 single-chart VF values, divided
- * by 100:
+ * The total Volforce is the sum of the top-50 single-chart raw integers,
+ * divided by 1000 (matching the Python {@code update_total_vf}:
+ * {@code ret / 1000}):
  * 
  * <pre>
- * total_VF = sum_of_top_50 / 100.0
+ * total_VF = sum_of_top_50_raw / 1000.0
  * </pre>
  *
  * <p>
@@ -90,7 +92,8 @@ public final class VolforceCalculator {
      * @param levelInt
      *            integer chart level (use {@link MusicInfo#getLvAsInt()} to obtain
      *            this)
-     * @return Volforce integer (VF × 10), or {@code 0} for unknown levels
+     * @return raw VF integer (VF × 1000, e.g. {@code 369} = 0.369 VF), or {@code 0}
+     *         for unknown levels
      */
     public static int computeSingleVf(int score, String lamp, int levelInt) {
         if (levelInt <= 0) {
@@ -111,7 +114,7 @@ public final class VolforceCalculator {
      *            play record (mutated: rank and vf are set)
      * @param levelInt
      *            integer chart level
-     * @return Volforce integer (VF × 10)
+     * @return raw VF integer (VF × 1000)
      */
     public static int computeAndSet(OnePlayData play, int levelInt) {
         ScoreRank rank = ScoreRank.fromScore(play.getCurScore());
@@ -127,7 +130,7 @@ public final class VolforceCalculator {
      *
      * @param info
      *            music info (mutated: rank and vf are set)
-     * @return Volforce integer (VF × 10)
+     * @return raw VF integer (VF × 1000)
      */
     public static int computeAndSet(MusicInfo info) {
         ScoreRank rank = ScoreRank.fromScore(info.getBestScore());

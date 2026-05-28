@@ -31,24 +31,37 @@ public final class ScoreFormatter {
     }
 
     /**
-     * Formats a Volforce integer value (e.g. {@code 369}) as a decimal string with
-     * one decimal place (e.g. {@code "36.9"}).
+     * Formats a raw single-chart VF integer (e.g. {@code 369} meaning 0.369 VF) as
+     * a one-decimal display string (e.g. {@code "36.9"}).
+     *
+     * <p>
+     * This follows the same display convention as the Python client, where the raw
+     * integer is divided by 10 for a compact representation in OBS overlays and CSV
+     * exports. To display the actual decimal VF contribution divide by 1000
+     * instead.
+     * </p>
      *
      * @param vfInt
-     *            Volforce integer (e.g. from {@code VolforceCalculator})
-     * @return formatted VF string
+     *            raw VF integer from {@link VolforceCalculator#computeSingleVf}
+     * @return formatted VF display string (raw ÷ 10, one decimal place)
      */
     public static String formatVf(int vfInt) {
         return String.format(Locale.ROOT, "%.1f", vfInt / 10.0);
     }
 
     /**
-     * Formats a total Volforce (sum of top-50 chart VFs, integer × 10) as a
-     * three-decimal string (e.g. {@code "17.255"}).
+     * Formats a total Volforce integer (sum of the top-50 raw chart VF values, each
+     * being VF × 1000) as a three-decimal string (e.g. {@code 17255} →
+     * {@code "17.255"}).
+     *
+     * <p>
+     * This mirrors the Python {@code update_total_vf} formula: {@code ret / 1000}.
+     * </p>
      *
      * @param totalVfInt
-     *            total Volforce integer
-     * @return formatted total-VF string
+     *            sum of top-50 raw VF integers (as returned by
+     *            {@link VolforceCalculator#computeSingleVf})
+     * @return formatted total-VF string with three decimal places
      */
     public static String formatTotalVf(int totalVfInt) {
         return String.format(Locale.ROOT, "%.3f", totalVfInt / 1000.0);

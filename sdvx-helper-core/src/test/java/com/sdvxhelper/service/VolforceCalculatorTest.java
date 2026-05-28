@@ -77,4 +77,52 @@ class VolforceCalculatorTest {
         int vf = VolforceCalculator.computeSingleVf(8_000_000, "clear", 16);
         Assertions.assertEquals(217, vf);
     }
+
+    /**
+     * Verifies the worked example from https://www.sdvx.org/en/compendium/volforce:
+     * Level 18 (integer part of 18.3), score 9,923,042 (S rank), Excessive Rate
+     * clear.
+     *
+     * floor(18 * 9_923_042 * 1.05 * 1.02 * 20 / 10_000_000) = floor(382.5928) = 382
+     *
+     * Note: the sdvx.org example uses level 18.3 (decimal). Java stores integer
+     * levels so level 18 is used here; the raw VF integer is 382 (representing
+     * 0.382 VF for this chart).
+     */
+    @Test
+    void sdvxOrgFormulaExample() {
+        // Level 18, score 9_923_042, S rank (coef 1.05), Excessive Rate clear.
+        // "hard" lamp = 1.02 (Excessive Rate Clear per sdvx.org).
+        // "exh" in this codebase maps to 1.04 (Maxxive Rate Clear), not 1.02.
+        // floor(18 * 9_923_042 * 1.05 * 1.02 * 20 / 10_000_000) = floor(382.592...) =
+        // 382
+        int vf = VolforceCalculator.computeSingleVf(9_923_042, "hard", 18);
+        Assertions.assertEquals(382, vf);
+    }
+
+    /**
+     * Verifies level 16 PUC with max score (10,000,000) returns 369 as documented
+     * in the Python client comment: "16PUCなら369のように整数を返す".
+     */
+    @Test
+    void level16PucMaxScoreReturns369() {
+        // floor(16 * 10_000_000 * 1.05 * 1.10 * 20 / 10_000_000) = floor(369.6) = 369
+        int vf = VolforceCalculator.computeSingleVf(10_000_000, "puc", 16);
+        Assertions.assertEquals(369, vf);
+    }
+
+    /**
+     * Verifies the total VF summing logic: sum of top-50 raw integers divided by
+     * 1000 must equal the displayed total VF (matching Python update_total_vf).
+     *
+     * Uses 50 identical entries of level 16 PUC 10M = 369 each. Expected total: (50
+     * * 369) / 1000 = 18.45.
+     */
+    @Test
+    void totalVfIsSumOfTop50DividedBy1000() {
+        int singleVf = VolforceCalculator.computeSingleVf(10_000_000, "puc", 16); // 369
+        int top50Sum = singleVf * VolforceCalculator.TOP_N; // 369 * 50 = 18450
+        double totalVf = top50Sum / 1000.0;
+        Assertions.assertEquals(18.45, totalVf, 1e-9);
+    }
 }

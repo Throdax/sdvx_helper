@@ -20,7 +20,7 @@
                           EXEs resolve $APPDIR as app/ relative to themselves
 
     resources/          – shared data and detection resources
-      alllog.xml            play history (Java XML equivalent of alllog.pkl)
+                          (sourced from sdvx-helper-core/src/main/resources)
       musiclist.xml         song database (Java XML equivalent of musiclist.pkl)
       title_conv_table.xml  title mapping  (Java XML equiv of title_conv_table.pkl)
       special_titles.json   user-editable title-normalisation rules
@@ -28,8 +28,9 @@
       blastermax.wav        audio alert
       i18n/                 localisation bundles
       images/               all image templates (score digits, lamps, overlays …)
+      tessdata/             Tesseract language data (populated on first run)
 
-    out/                – empty; application writes OBS overlay files here
+    out/                – default OBS overlay HTML + placeholder PNGs; overwritten at runtime
     log/                – empty; application writes rotating log files here
 -->
 <assembly xmlns="http://maven.apache.org/ASSEMBLY/2.2.0"
@@ -190,79 +191,57 @@
             </includes>
         </fileSet>
 
-        <!-- special_titles.json in resources/ so users can edit it easily. -->
-        <fileSet>
-            <directory>../sdvx-helper-core/src/main/resources</directory>
-            <outputDirectory>resources</outputDirectory>
-            <includes>
-                <include>special_titles.json</include>
-            </includes>
-        </fileSet>
-
         <!-- ================================================================
              Shared resources → resources/
 
-             Mirrors the python/resources/ folder in the Python distribution:
-               alllog.xml / musiclist.xml / title_conv_table.xml
-                   Java XML equivalents of the Python PKL data files.
-               params.json
-                   OCR detection parameters (sourced from python/resources/).
-               blastermax.wav
-                   Audio alert (sourced from python/resources/).
-               i18n/
-                   Localisation property files (sourced from python/resources/).
-               images/
-                   All image templates: score digits, lamps, overlays, etc.
-                   Sourced from sdvx-helper-core/src/main/resources/images/.
+             Source of truth: sdvx-helper-core/src/main/resources.
+             Contains images/, i18n/, params.json, musiclist.xml,
+             title_conv_table.xml, special_titles.json, blastermax.wav.
+
+             Exclusions (JAR-internal files that are not runtime resources):
+               icon.ico                – application icon, bundled inside JAR
+               log4j2.xml             – logging config, bundled inside JAR
+               musiclist.pkl          – Python-format file, not used by Java
+               secrets.properties     – contains credentials, never shipped
+               secrets.properties.template – template only, not shipped
+               styles/**              – CSS bundled inside JAR
+               version.properties     – top-level dist file, not in resources/
              ================================================================ -->
 
-        <!-- Migrated XML data files (Java equivalents of the Python PKL files). -->
         <fileSet>
             <directory>../sdvx-helper-core/src/main/resources</directory>
             <outputDirectory>resources</outputDirectory>
-            <includes>
-                <include>alllog.xml</include>
-                <include>musiclist.xml</include>
-                <include>title_conv_table.xml</include>
-            </includes>
+            <excludes>
+                <exclude>icon.ico</exclude>
+                <exclude>log4j2.xml</exclude>
+                <exclude>musiclist.pkl</exclude>
+                <exclude>secrets.properties</exclude>
+                <exclude>secrets.properties.template</exclude>
+                <exclude>styles/**</exclude>
+                <exclude>version.properties</exclude>
+            </excludes>
         </fileSet>
 
-        <!-- Detection parameters and audio alert from Python resources. -->
+        <!-- tessdata/ – empty folder with .gitkeep placeholder; the app
+             downloads language files here on first run. Sourced from
+             sdvx-helper-app because tessdata is app-deployment-specific. -->
         <fileSet>
-            <directory>../python/resources</directory>
-            <outputDirectory>resources</outputDirectory>
-            <includes>
-                <include>params.json</include>
-                <include>blastermax.wav</include>
-            </includes>
-        </fileSet>
-
-        <!-- Localisation bundles from the Java core module. -->
-        <fileSet>
-            <directory>../sdvx-helper-core/src/main/resources/i18n</directory>
-            <outputDirectory>resources/i18n</outputDirectory>
-        </fileSet>
-
-        <!-- Full image template set from the Java core module.
-             Includes all lamp, rank, overlay and score-digit images needed
-             by every tool at runtime. -->
-        <fileSet>
-            <directory>../sdvx-helper-core/src/main/resources/images</directory>
-            <outputDirectory>resources/images</outputDirectory>
-        </fileSet>
-
-        <!-- ================================================================
-             Empty output directories.
-             .gitkeep files are excluded so the directories appear empty in
-             the ZIP; the application creates files here at runtime.
-             ================================================================ -->
-
-        <fileSet>
-            <directory>src/assembly/placeholder/out</directory>
-            <outputDirectory>out</outputDirectory>
+            <directory>../sdvx-helper-app/src/main/resources/tessdata</directory>
+            <outputDirectory>resources/tessdata</outputDirectory>
             <excludes>
                 <exclude>.gitkeep</exclude>
             </excludes>
+        </fileSet>
+
+        <!-- ================================================================
+             Default output files (OBS overlay HTML + placeholder PNGs).
+             Mirrors the python/out/ folder shipped with the Python build.
+             The application overwrites these at runtime with live data.
+             ================================================================ -->
+
+        <fileSet>
+            <directory>../sdvx-helper-app/src/main/resources/out</directory>
+            <outputDirectory>out</outputDirectory>
         </fileSet>
 
         <fileSet>

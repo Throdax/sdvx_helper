@@ -881,6 +881,123 @@ public class ImageAnalysisService {
     }
 
     // -------------------------------------------------------------------------
+    // Result parts — cut and save
+    // -------------------------------------------------------------------------
+
+    /**
+     * Crops all ten result-screen parts from {@code frame}, saves each one to
+     * {@code out/part_{name}.png} for debug inspection, and returns the cropped
+     * regions indexed by part name.
+     *
+     * <p>
+     * Mirrors Python {@code GenSummary.cut_result_parts()} in
+     * {@code gen_summary.py:335–346}. The ten parts saved are: {@code jacket},
+     * {@code difficulty}, {@code info}, {@code title}, {@code title_small},
+     * {@code score}, {@code rate}, {@code rank}, {@code lamp_crop}, and
+     * {@code gauge}.
+     * </p>
+     *
+     * <p>
+     * Crops are taken at their natural resolution (no rescaling). Callers that need
+     * a different size for display should scale the returned images themselves.
+     * </p>
+     *
+     * @param frame
+     *            full result-screen image; must already have passed
+     *            {@link #isResultScreen}
+     * @param params
+     *            detection parameters from {@code params.json}
+     * @return map from part name to its {@link BufferedImage} crop; never
+     *         {@code null}, but individual entries may be missing if the crop
+     *         dimensions are invalid
+     */
+    public Map<String, BufferedImage> cutAndSaveResultParts(BufferedImage frame, Map<String, String> params) {
+        Map<String, BufferedImage> parts = new java.util.LinkedHashMap<>();
+
+        addLogCropPart(parts, frame, params, "jacket");
+        addLogCropPart(parts, frame, params, "difficulty");
+        addLogCropPart(parts, frame, params, "info");
+        addLogCropPart(parts, frame, params, "title");
+        addLogCropPart(parts, frame, params, "title_small");
+        addLogCropPart(parts, frame, params, "score");
+        addLogCropPart(parts, frame, params, "rate");
+        addLogCropPart(parts, frame, params, "rank");
+        addLampCropPart(parts, frame, params);
+        addGaugePart(parts, frame, params);
+
+        for (Map.Entry<String, BufferedImage> entry : parts.entrySet()) {
+            saveDebugPart(entry.getValue(), entry.getKey());
+        }
+
+        return parts;
+    }
+
+    private void addLogCropPart(Map<String, BufferedImage> parts, BufferedImage frame, Map<String, String> params,
+            String name) {
+        String prefix = "log_crop_" + name + "_";
+        int sx = ParamUtils.getInt(params, prefix + "sx", -1);
+        int sy = ParamUtils.getInt(params, prefix + "sy", -1);
+        int w = ParamUtils.getInt(params, prefix + "w", 0);
+        int h = ParamUtils.getInt(params, prefix + "h", 0);
+        if (sx >= 0 && sy >= 0 && w > 0 && h > 0) {
+            parts.put(name, crop(frame, sx, sy, w, h));
+        }
+    }
+
+    private void addLampCropPart(Map<String, BufferedImage> parts, BufferedImage frame, Map<String, String> params) {
+        int sx = ParamUtils.getInt(params, "lamp_sx", -1);
+        int sy = ParamUtils.getInt(params, "lamp_sy", -1);
+        int w = ParamUtils.getInt(params, "lamp_w", 230);
+        int h = ParamUtils.getInt(params, "lamp_h", 50);
+        if (sx >= 0 && sy >= 0) {
+            parts.put("lamp_crop", crop(frame, sx, sy, w, h));
+        }
+    }
+
+    private void addGaugePart(Map<String, BufferedImage> parts, BufferedImage frame, Map<String, String> params) {
+        int sx = ParamUtils.getInt(params, "gauge_sx", -1);
+        int sy = ParamUtils.getInt(params, "gauge_sy", -1);
+        int w = ParamUtils.getInt(params, "gauge_w", 100);
+        int h = ParamUtils.getInt(params, "gauge_h", 16);
+        if (sx >= 0 && sy >= 0) {
+            parts.put("gauge", crop(frame, sx, sy, w, h));
+        }
+    }
+
+    /**
+     * Saves {@code img} to {@code out/part_{partName}.png} for debug inspection,
+     * mirroring the Python {@code cut_result_parts} save loop in
+     * {@code gen_summary.py:345–346}.
+     *
+     * <p>
+     * The {@code out/} directory is created on demand relative to the process
+     * working directory. Failures are logged as warnings and never propagate to the
+     * caller.
+     * </p>
+     *
+     * @param img
+     *            the cropped region to persist
+     * @param partName
+     *            label used in the filename (e.g. {@code "jacket"})
+     */
+    private static void saveDebugPart(BufferedImage img, String partName) {
+        if (img == null) {
+            return;
+        }
+        try {
+            File outDir = new File("out");
+            if (!outDir.exists()) {
+                outDir.mkdirs();
+            }
+            File outFile = new File(outDir, "part_" + partName + ".png");
+            ImageIO.write(img, "PNG", outFile);
+            log.debug("saveDebugPart: wrote '{}'", outFile.getPath());
+        } catch (IOException e) {
+            log.warn("saveDebugPart: failed to save part '{}': {}", partName, e.getMessage());
+        }
+    }
+
+    // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
 

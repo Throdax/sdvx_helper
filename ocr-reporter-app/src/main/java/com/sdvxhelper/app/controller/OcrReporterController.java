@@ -58,7 +58,6 @@ import com.sdvxhelper.repository.MusicListRepository;
 import com.sdvxhelper.repository.ParamsRepository;
 import com.sdvxhelper.repository.SettingsRepository;
 import com.sdvxhelper.service.ImageAnalysisService;
-import com.sdvxhelper.util.ParamUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -712,30 +711,28 @@ public class OcrReporterController implements Initializable {
                 return;
             }
 
-            int jSx = ParamUtils.getInt(paramsMap, "log_crop_jacket_sx", 57);
-            int jSy = ParamUtils.getInt(paramsMap, "log_crop_jacket_sy", 916);
-            int jW = ParamUtils.getInt(paramsMap, "log_crop_jacket_w", 263);
-            int jH = ParamUtils.getInt(paramsMap, "log_crop_jacket_h", 263);
-            BufferedImage jacket = OcrReporterHelper.cropAndScale(awtImage, jSx, jSy, jW, jH, 100, 100);
-            OcrReporterHelper.saveDebugPart(jacket, "jacket");
-            jacketView.setImage(toFxImage(jacket));
+            Map<String, BufferedImage> parts = imageAnalysisService.cutAndSaveResultParts(awtImage, paramsMap);
 
-            int dSx = ParamUtils.getInt(paramsMap, "log_crop_difficulty_sx", 55);
-            int dSy = ParamUtils.getInt(paramsMap, "log_crop_difficulty_sy", 870);
-            int dW = ParamUtils.getInt(paramsMap, "log_crop_difficulty_w", 138);
-            int dH = ParamUtils.getInt(paramsMap, "log_crop_difficulty_h", 30);
-            BufferedImage diffBand = OcrReporterHelper.cropAndScale(awtImage, dSx, dSy, dW, dH, 137, 29);
-            OcrReporterHelper.saveDebugPart(diffBand, "difficulty");
-            difficultyView.setImage(toFxImage(diffBand));
+            BufferedImage jacketRaw = parts.get("jacket");
+            BufferedImage jacket = jacketRaw != null
+                    ? OcrReporterHelper.cropAndScale(jacketRaw, 0, 0, jacketRaw.getWidth(), jacketRaw.getHeight(), 100,
+                            100)
+                    : null;
+            jacketView.setImage(jacket != null ? toFxImage(jacket) : null);
 
-            int iSx = ParamUtils.getInt(paramsMap, "log_crop_info_sx", 379);
-            int iSy = ParamUtils.getInt(paramsMap, "log_crop_info_sy", 1001);
-            int iW = ParamUtils.getInt(paramsMap, "log_crop_info_w", 527);
-            int iH = ParamUtils.getInt(paramsMap, "log_crop_info_h", 65);
-            BufferedImage info = OcrReporterHelper.cropAndScale(awtImage, iSx, iSy, iW, iH, 526, 64);
+            BufferedImage diffBand = parts.get("difficulty");
+            if (diffBand != null) {
+                diffBand = OcrReporterHelper.cropAndScale(diffBand, 0, 0, diffBand.getWidth(), diffBand.getHeight(),
+                        137, 29);
+            }
+            difficultyView.setImage(diffBand != null ? toFxImage(diffBand) : null);
+
+            BufferedImage infoRaw = parts.get("info");
+            BufferedImage info = infoRaw != null
+                    ? OcrReporterHelper.cropAndScale(infoRaw, 0, 0, infoRaw.getWidth(), infoRaw.getHeight(), 526, 64)
+                    : null;
             currentInfoCrop = info;
-            OcrReporterHelper.saveDebugPart(info, "info");
-            infoView.setImage(toFxImage(info));
+            infoView.setImage(info != null ? toFxImage(info) : null);
 
             String infoHash = hasher.hash(info);
             hashInfoField.setText(infoHash);

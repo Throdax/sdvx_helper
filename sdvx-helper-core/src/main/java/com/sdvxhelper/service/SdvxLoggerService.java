@@ -143,13 +143,16 @@ public class SdvxLoggerService {
         }
         Collections.sort(bestAllFumen); // VF descending
 
-        // Compute total VF (top-50 × 10, sum × 10 = integer VF × 100)
+        // Compute total VF: sum top-50 raw VF integers, then divide by 1000 for
+        // display.
+        // Each chart's vf is e.g. 369 (= 0.369 VF); summing 50 of them and dividing by
+        // 1000 gives the total VF (matching Python's update_total_vf: ret / 1000).
         int sum = 0;
         int count = Math.min(VolforceCalculator.TOP_N, bestAllFumen.size());
         for (int i = 0; i < count; i++) {
             sum += bestAllFumen.get(i).getVf();
         }
-        totalVfInt = sum * 10; // store as VF_total × 1000 for 3 decimal display
+        totalVfInt = sum; // divide by 1000 at display time (ScoreFormatter.formatTotalVf)
 
         // Rebuild stats
         stats = new Stats();
