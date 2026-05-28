@@ -1,18 +1,21 @@
 package com.sdvxhelper.app.controller.detection;
 
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
 import java.awt.geom.AffineTransform;
 import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
+import java.io.File;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.EnumMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import javafx.application.Platform;
+import javax.imageio.ImageIO;
 
 import com.sdvxhelper.app.controller.factories.ObsReconnectThreadFactory;
 import com.sdvxhelper.model.OnePlayData;
@@ -65,7 +68,6 @@ public class DetectionEngine {
     // Detection loop state
     private volatile BufferedImage currentFrame;
     private DetectMode currentMode = DetectMode.INIT;
-    private Map<DetectMode, String> stateHashes = new EnumMap<>(DetectMode.class);
     private volatile boolean detectionRunning = false;
 
     // PLAY-mode timing
@@ -198,7 +200,8 @@ public class DetectionEngine {
     public void triggerResultScreen() {
         BufferedImage frame = currentFrame;
         if (frame != null) {
-            processResultScreen(frame);
+            boolean vfCaptured = screenHandler.captureVolforce(frame);
+            processResultScreen(frame, vfCaptured);
         }
     }
 
@@ -277,6 +280,7 @@ public class DetectionEngine {
             obsOverlayService.setObsClient(obsClient);
             Platform.runLater(() -> listener.onObsStatusChanged("connected"));
             log.info("OBS connected successfully");
+            log.info("OBS connection properties are: messageSize={}", obsClient.getMaxMessageSize());
         } catch (IOException e) {
             log.debug("OBS connect retry failed: {}", e.getMessage());
             Platform.runLater(() -> listener.onObsStatusChanged("disconnected"));
@@ -312,27 +316,80 @@ public class DetectionEngine {
         }
         String source = settings.getOrDefault("obs_source", "");
         if (source.isBlank()) {
-            log.debug("Cannot capture frame: obs_source setting is blank");
+            log.warn("Cannot capture frame: obs_source setting is blank — set it in OBS Control Settings");
             return;
         }
         try {
             BufferedImage raw = obsClient.captureSource(source);
             currentFrame = applyOrientation(raw);
+            log.debug("Captured frame from source '{}' (raw={}x{}, oriented={}x{})", source, raw.getWidth(),
+                    raw.getHeight(), currentFrame.getWidth(), currentFrame.getHeight());
+            if ("true".equalsIgnoreCase(settings.getOrDefault("save_on_capture", "false"))) {
+                saveDebugCapture(currentFrame);
+            }
         } catch (IOException e) {
-            log.debug("captureSource failed: {}", e.getMessage());
+            log.warn("captureSource('{}') failed: {}", source, e.getMessage());
             currentFrame = null;
         }
     }
 
+    private void saveDebugCapture(BufferedImage frame) {
+        try {
+            File outDir = new File("out");
+            if (!outDir.exists()) {
+                outDir.mkdirs();
+            }
+            File captureFile = new File(outDir, "capture.png");
+            log.debug("Saving debug capture to {}", captureFile.getAbsolutePath());
+            ImageIO.write(frame, "PNG", captureFile);
+        } catch (IOException e) {
+            log.warn("Failed to save debug capture to out/capture.png: {}", e.getMessage());
+        }
+    }
+
     private void processCurrentFrame() {
-        if (currentFrame == null || stateHashes.isEmpty()) {
-            log.debug("Skipping frame processing: frame={}, stateHashesEmpty={}",
-                    currentFrame == null ? "null" : "present", stateHashes.isEmpty());
+        if (currentFrame == null) {
+            log.debug("Skipping frame processing: no frame captured");
             return;
         }
         BufferedImage frame = currentFrame;
-        DetectMode newMode = imageAnalysisService.detectMode(frame, stateHashes, params);
-        newMode = filterPlayModeFlicker(newMode);
+
+        // Priority mode detection — mirrors Python detect() in
+        // sdvx_helper.pyw:1360-1365.
+        // Evaluate each screen once to avoid redundant hash comparisons.
+        boolean logoDetected = imageAnalysisService.isLogoScreen(frame, params);
+        boolean resultDetected = !logoDetected && imageAnalysisService.isResultScreen(frame, params);
+        boolean selectDetected = !logoDetected && !resultDetected && imageAnalysisService.isSelectScreen(frame, params);
+
+        DetectMode newMode = currentMode;
+        if (logoDetected) {
+            newMode = DetectMode.INIT;
+        } else if (resultDetected) {
+            newMode = DetectMode.RESULT;
+        } else if (selectDetected) {
+            newMode = DetectMode.SELECT;
+        } else if (newMode == DetectMode.SELECT) {
+            // Select screen was active but is now gone — mirrors Python line 1425:
+            // "if not self.is_onselect(): self.detect_mode = detect_mode.init"
+            // This is required to open the INIT block below, which is the only place
+            // that checks isPlayScreen() and transitions to PLAY.
+            newMode = DetectMode.INIT;
+        }
+
+        // PLAY validation — mirrors Python detect() lines 1376-1455.
+        // If currently PLAY but play screen is gone, fall back to INIT.
+        // If INIT and play screen is detected, enter PLAY only after the
+        // play0_interval guard to avoid false triggers from end-of-song animation.
+        if (newMode == DetectMode.PLAY && !imageAnalysisService.isPlayScreen(frame, params)) {
+            newMode = DetectMode.INIT;
+        }
+        if (newMode == DetectMode.INIT && imageAnalysisService.isPlayScreen(frame, params)) {
+            long secondsSinceLastPlay1 = Duration.between(lastPlay1Time, Instant.now()).getSeconds();
+            int play0Interval = ParamUtils.parseIntParam(settings.get("play0_interval"), 10);
+            if (secondsSinceLastPlay1 >= play0Interval) {
+                newMode = DetectMode.PLAY;
+            }
+        }
 
         if (newMode != currentMode) {
             log.info("Mode transition: {} → {}", currentMode, newMode);
@@ -348,21 +405,9 @@ public class DetectionEngine {
             obsOverlayService.updatePlaytime(playtime.plus(elapsed));
         }
 
-        if (currentMode == DetectMode.INIT && !doneThisSong && screenHandler.isOnDetect(frame)) {
+        if (currentMode == DetectMode.INIT && !doneThisSong && imageAnalysisService.isDetectScreen(frame, params)) {
             processDetectMode(frame);
         }
-    }
-
-    private DetectMode filterPlayModeFlicker(DetectMode newMode) {
-        if (newMode != DetectMode.PLAY || currentMode == DetectMode.PLAY) {
-            return newMode;
-        }
-        long secondsSinceLastPlay1 = Duration.between(lastPlay1Time, Instant.now()).getSeconds();
-        int play0Interval = ParamUtils.parseIntParam(settings.get("play0_interval"), 10);
-        if (secondsSinceLastPlay1 < play0Interval) {
-            return DetectMode.INIT;
-        }
-        return newMode;
     }
 
     private void handleModeTransition(DetectMode from, DetectMode to, BufferedImage frame) {
@@ -412,15 +457,22 @@ public class DetectionEngine {
     private void handleTransitionToResult(BufferedImage frame) {
         obsOverlayService.controlSources("result0");
         applyAutosavePrewait();
+        // Always crop and save the VF/class badge PNGs regardless of the autosave
+        // interval. Mirrors Python save_playerinfo() which runs on every result frame.
+        boolean vfCaptured = screenHandler.captureVolforce(frame);
         if ("true".equalsIgnoreCase(settings.get("autosave_always"))) {
             long intervalSeconds = ParamUtils.parseIntParam(settings.get("autosave_interval"), 60);
             long elapsed = Duration.between(lastAutosaveTime, Instant.now()).getSeconds();
             if (elapsed > intervalSeconds) {
-                processResultScreen(frame);
+                processResultScreen(frame, vfCaptured);
                 lastAutosaveTime = Instant.now();
+            } else {
+                // Interval not elapsed — still fire indicator so VF icon shows
+                final boolean finalVfCaptured = vfCaptured;
+                Platform.runLater(() -> listener.onResultCaptured(false, false, finalVfCaptured));
             }
         } else {
-            processResultScreen(frame);
+            processResultScreen(frame, vfCaptured);
         }
     }
 
@@ -445,11 +497,13 @@ public class DetectionEngine {
     // Screen processing
     // -------------------------------------------------------------------------
 
-    private void processResultScreen(BufferedImage frame) {
-        OnePlayData play = screenHandler.handleResultScreen(frame, pendingSongTimestamp);
+    private void processResultScreen(BufferedImage frame, boolean vfCaptured) {
+        OnePlayData play = screenHandler.handleResultScreen(frame, pendingSongTimestamp, lastKnownDiff);
         pendingSongTimestamp = null;
         if (play == null) {
             log.debug("Result screen processing returned no play (frame may have been unreadable)");
+            final boolean finalVf = vfCaptured;
+            Platform.runLater(() -> listener.onResultCaptured(false, false, finalVf));
             return;
         }
         obsOverlayService.updateVfText(screenHandler.getCurrentTotalVf(), screenHandler.getPreviousTotalVf());
@@ -458,8 +512,16 @@ public class DetectionEngine {
             discordPresenceClient.updatePresence(PlayState.RESULT, lastKnownTitle, lastKnownDiff,
                     ScoreFormatter.formatTotalVf((int) (screenHandler.getCurrentTotalVf() * 1000)), null);
         }
+        boolean screenshotSaved = screenHandler.wasLastScreenshotSaved();
+        boolean summaryGenerated = screenHandler.wasLastSummaryGenerated();
         final OnePlayData finalPlay = play;
-        Platform.runLater(() -> listener.onPlayRecorded(finalPlay));
+        final boolean finalVfCaptured = vfCaptured;
+        final boolean finalScreenshot = screenshotSaved;
+        final boolean finalSummary = summaryGenerated;
+        Platform.runLater(() -> {
+            listener.onPlayRecorded(finalPlay);
+            listener.onResultCaptured(finalScreenshot, finalSummary, finalVfCaptured);
+        });
         webhookDispatcher.send(play, frame);
     }
 
@@ -487,7 +549,6 @@ public class DetectionEngine {
             discordPresenceClient.updatePresence(PlayState.SELECTING, lastKnownTitle, lastKnownDiff,
                     ScoreFormatter.formatTotalVf((int) (screenHandler.getCurrentTotalVf() * 1000)), null);
         }
-        Platform.runLater(() -> listener.onTitleAndDiffChanged(result.getTitle(), result.getDiff()));
         if (result.getImportedPlay() != null) {
             final OnePlayData importedPlay = result.getImportedPlay();
             Platform.runLater(() -> listener.onPlayRecorded(importedPlay));
@@ -508,11 +569,11 @@ public class DetectionEngine {
         lastKnownTitle = titleDiff[0];
         lastKnownDiff = titleDiff[1];
         if (obsClient != null && obsClient.isConnected()) {
-            try {
-                obsClient.setTextSourceValue("nowplaying.html", "");
-            } catch (IOException e) {
-                log.debug("Could not refresh nowplaying.html: {}", e.getMessage());
-            }
+            // Refresh the browser source so OBS reloads the updated select_*.png files.
+            // Mirrors Python: obs.refresh_source('nowplaying.html') /
+            // obs.refresh_source('nowplaying')
+            obsClient.refreshBrowserSource("nowplaying.html");
+            obsClient.refreshBrowserSource("nowplaying");
         }
         if (discordPresenceClient != null) {
             discordPresenceClient.updatePresence(PlayState.PLAYING, lastKnownTitle, lastKnownDiff,
@@ -534,18 +595,53 @@ public class DetectionEngine {
     // Frame orientation
     // -------------------------------------------------------------------------
 
+    /**
+     * Mirrors Python {@code get_capture_after_rotate()} in
+     * {@code sdvx_helper.pyw:617}.
+     *
+     * <p>
+     * Reads the {@code orientation_top} setting (same key Python uses). The value
+     * describes which direction the physical screen top is pointing inside the raw
+     * OBS capture:
+     * <ul>
+     * <li>{@code "right"} — top points right → rotate 90° CCW (PIL rotate 90)</li>
+     * <li>{@code "left"} — top points left → rotate 90° CW (PIL rotate 270)</li>
+     * <li>anything else — already portrait → resize to 1080×1920</li>
+     * </ul>
+     * </p>
+     */
     private BufferedImage applyOrientation(BufferedImage frame) {
         if (frame == null) {
             log.debug("applyOrientation: frame is null, returning null");
             return null;
         }
-        String orientation = settings.getOrDefault("orientation", settings.getOrDefault("orientation_top", "top"));
-        return switch (orientation) {
+        // Read orientation_top first — that is the key Python reads.
+        // Fall back to orientation for backwards-compatibility, then default "top".
+        String orientationTop = settings.getOrDefault("orientation_top", settings.getOrDefault("orientation", "top"));
+        BufferedImage oriented = switch (orientationTop) {
             case "bottom" -> rotateImage(frame, Math.PI);
-            case "left" -> rotateImage(frame, -Math.PI / 2);
-            case "right" -> rotateImage(frame, Math.PI / 2);
-            default -> frame;
+            // Python rotate(90 CCW) — top points right in raw capture
+            case "right" -> rotateImage(frame, -Math.PI / 2);
+            // Python rotate(270 CCW = 90 CW) — top points left in raw capture
+            case "left" -> rotateImage(frame, Math.PI / 2);
+            // Python img.resize((1080,1920)) — already portrait orientation
+            default -> resizeImage(frame, 1080, 1920);
         };
+        log.debug("applyOrientation: orientation_top='{}' {}x{} → {}x{}", orientationTop, frame.getWidth(),
+                frame.getHeight(), oriented.getWidth(), oriented.getHeight());
+        return oriented;
+    }
+
+    private static BufferedImage resizeImage(BufferedImage src, int targetW, int targetH) {
+        if (src.getWidth() == targetW && src.getHeight() == targetH) {
+            return src;
+        }
+        BufferedImage dest = new BufferedImage(targetW, targetH, src.getType());
+        Graphics2D g = dest.createGraphics();
+        g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+        g.drawImage(src, 0, 0, targetW, targetH, null);
+        g.dispose();
+        return dest;
     }
 
     private static BufferedImage rotateImage(BufferedImage src, double radians) {
@@ -561,23 +657,6 @@ public class DetectionEngine {
         at.translate(-w / 2.0, -h / 2.0);
         new AffineTransformOp(at, AffineTransformOp.TYPE_BILINEAR).filter(src, dest);
         return dest;
-    }
-
-    protected static Map<DetectMode, String> buildStateHashes(Map<String, String> params) {
-        Map<DetectMode, String> map = new EnumMap<>(DetectMode.class);
-        String selectHash = params.get("hash_select");
-        String resultHash = params.get("hash_result");
-        String playHash = params.get("hash_play");
-        if (selectHash != null && !selectHash.isBlank()) {
-            map.put(DetectMode.SELECT, selectHash);
-        }
-        if (resultHash != null && !resultHash.isBlank()) {
-            map.put(DetectMode.RESULT, resultHash);
-        }
-        if (playHash != null && !playHash.isBlank()) {
-            map.put(DetectMode.PLAY, playHash);
-        }
-        return map;
     }
 
     /**
@@ -642,14 +721,6 @@ public class DetectionEngine {
      */
     public void setSettings(Map<String, String> settings) {
         this.settings = settings;
-    }
-
-    /**
-     * @param stateHashes
-     *            the stateHashes to set
-     */
-    public void setStateHashes(Map<DetectMode, String> stateHashes) {
-        this.stateHashes = stateHashes;
     }
 
 }

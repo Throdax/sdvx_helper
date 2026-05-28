@@ -1,81 +1,70 @@
 package com.sdvxhelper.ocr;
 
-import java.awt.Graphics2D;
-import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Computes perceptual hashes for jacket and info-bar images.
  *
  * <p>
  * Implements the average-hash (aHash) algorithm used by the Python
- * {@code imagehash.average_hash()} function:
- * <ol>
- * <li>Resize the image to {@code HASH_SIZE × HASH_SIZE} pixels using bilinear
- * interpolation.</li>
- * <li>Convert to greyscale.</li>
- * <li>Compute the mean pixel value.</li>
- * <li>Produce a bit string: {@code 1} if pixel ≥ mean, {@code 0}
- * otherwise.</li>
- * <li>Pack the bit string into a hex string.</li>
- * </ol>
- *
- * <p>
- * Two hashes can be compared via their Hamming distance to determine
- * similarity.
+ * {@code imagehash.average_hash(image, hash_size=10)} function, replicating
+ * Pillow's exact behaviour so that hashes match the values stored in
+ * {@code musiclist.xml}:
  * </p>
+ * <ol>
+ * <li>Convert the image to greyscale using Pillow's ITU-R 601 formula:
+ * {@code L = (R*19595 + G*38470 + B*7471 + 32768) >> 16}.</li>
+ * <li>Resize the greyscale image to {@code HASH_SIZE × HASH_SIZE} pixels using
+ * a Lanczos-3 separable filter with Pillow's coordinate conventions.</li>
+ * <li>Compute the float mean of all {@code HASH_SIZE²} pixels.</li>
+ * <li>Produce a bit-string: {@code 1} if pixel {@code >} mean (strict, matching
+ * Python's {@code pixels > avg}), {@code 0} otherwise.</li>
+ * <li>Pack bits MSB-first into a hex string.</li>
+ * </ol>
  *
  * @author Throdax
  * @since 2.0.0
  */
 public class PerceptualHasher {
 
-    private static final Logger log = LoggerFactory.getLogger(PerceptualHasher.class);
-
     /** Width and height of the reduced image used for hashing. */
     public static final int HASH_SIZE = 10;
 
+    /** Lanczos lobe count (a=3 → Lanczos-3). */
+    private static final double LANCZOS_A = 3.0;
+
     /**
-     * Computes the average perceptual hash of the given image.
+     * Computes the average perceptual hash of the given image, matching Python
+     * {@code imagehash.average_hash(image, hash_size=10)}.
      *
      * @param image
      *            input image (any size or colour model)
-     * @return lowercase hex hash string of length {@code HASH_SIZE * HASH_SIZE / 4}
-     *         (e.g. 16 chars for HASH_SIZE=8)
+     * @return lowercase hex hash string of length {@code HASH_SIZE²/4} (25 chars
+     *         for HASH_SIZE=10)
      */
     public String hash(BufferedImage image) {
-        // 1. Resize to HASH_SIZE × HASH_SIZE
-        BufferedImage small = resize(image, HASH_SIZE, HASH_SIZE);
+        int srcW = image.getWidth();
+        int srcH = image.getHeight();
 
-        // 2. Convert to greyscale and collect pixel values
-        int total = HASH_SIZE * HASH_SIZE;
-        int[] grey = new int[total];
-        long sum = 0;
-        for (int y = 0; y < HASH_SIZE; y++) {
-            for (int x = 0; x < HASH_SIZE; x++) {
-                int rgb = small.getRGB(x, y);
-                // Greyscale: BT.601 luminance approximation
-                int r = (rgb >> 16) & 0xFF;
-                int g = (rgb >> 8) & 0xFF;
-                int b = rgb & 0xFF;
-                int lum = (r * 299 + g * 587 + b * 114) / 1000;
-                grey[y * HASH_SIZE + x] = lum;
-                sum += lum;
-            }
+        // 1. Convert to greyscale using Pillow's ITU-R 601 formula
+        int[] srcGrey = toGreyArray(image, srcW, srcH);
+
+        // 2. Resize to HASH_SIZE × HASH_SIZE using Lanczos-3 (Pillow convention)
+        double[] small = resizeLanczos(srcGrey, srcW, srcH, HASH_SIZE, HASH_SIZE);
+
+        // 3. Float mean (matches numpy.mean — Python uses strict float arithmetic)
+        double mean = 0;
+        for (double v : small) {
+            mean += v;
         }
+        mean /= small.length;
 
-        // 3. Mean
-        int mean = (int) (sum / total);
-
-        // 4. Build bit string, then pack into hex
-        StringBuilder hex = new StringBuilder(total / 4);
-        for (int i = 0; i < total; i += 4) {
+        // 4. Build bit-string, pack into hex (pixel > mean, strict greater-than)
+        StringBuilder hex = new StringBuilder(small.length / 4);
+        for (int i = 0; i < small.length; i += 4) {
             int nibble = 0;
             for (int bit = 0; bit < 4; bit++) {
-                if (grey[i + bit] >= mean) {
+                if (small[i + bit] > mean) {
                     nibble |= (1 << (3 - bit));
                 }
             }
@@ -87,16 +76,11 @@ public class PerceptualHasher {
     /**
      * Computes the Hamming distance between two hex hash strings.
      *
-     * <p>
-     * Hashes must be of equal length. Lower distances indicate more similar images.
-     * </p>
-     *
      * @param h1
      *            first hex hash string
      * @param h2
      *            second hex hash string
-     * @return number of differing bits (0 = identical, max =
-     *         {@code h1.length() * 4})
+     * @return number of differing bits
      * @throws IllegalArgumentException
      *             if the hashes have different lengths
      */
@@ -121,7 +105,7 @@ public class PerceptualHasher {
      * @param h2
      *            second hash
      * @param threshold
-     *            maximum allowed Hamming distance (typically 5–10)
+     *            maximum allowed Hamming distance (typically 3–5)
      * @return {@code true} if similar
      */
     public boolean isSimilar(String h1, String h2, int threshold) {
@@ -133,23 +117,97 @@ public class PerceptualHasher {
     // -------------------------------------------------------------------------
 
     /**
-     * Resizes the given image to the specified width and height using bilinear
-     * interpolation.
-     *
-     * @param src
-     *            source image
-     * @param w
-     *            target width
-     * @param h
-     *            target height
-     * @return resized image
+     * Converts an RGB image to a flat greyscale array using Pillow's ITU-R 601
+     * formula (with rounding, matching {@code PIL.Image.convert('L')}).
      */
-    private static BufferedImage resize(BufferedImage src, int w, int h) {
-        BufferedImage dst = new BufferedImage(w, h, BufferedImage.TYPE_INT_RGB);
-        Graphics2D g = dst.createGraphics();
-        g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
-        g.drawImage(src, 0, 0, w, h, null);
-        g.dispose();
-        return dst;
+    private static int[] toGreyArray(BufferedImage img, int w, int h) {
+        int[] grey = new int[w * h];
+        for (int y = 0; y < h; y++) {
+            for (int x = 0; x < w; x++) {
+                int rgb = img.getRGB(x, y);
+                int r = (rgb >> 16) & 0xFF;
+                int g = (rgb >> 8) & 0xFF;
+                int b = rgb & 0xFF;
+                grey[y * w + x] = (r * 19595 + g * 38470 + b * 7471 + 0x8000) >> 16;
+            }
+        }
+        return grey;
+    }
+
+    /**
+     * Resizes a greyscale pixel array from {@code srcW×srcH} to {@code dstW×dstH}
+     * using a separable Lanczos-3 filter that replicates Pillow's coordinate
+     * convention:
+     * <ul>
+     * <li>Source center for output pixel {@code dx}:
+     * {@code center = (dx + 0.5) * scaleX}</li>
+     * <li>Kernel argument for source pixel {@code sx}:
+     * {@code lanczos((sx + 0.5 - center) * filterScale)}</li>
+     * <li>For downsampling {@code filterScale = 1 / scaleX}; for upsampling
+     * {@code filterScale = 1} (no kernel widening).</li>
+     * </ul>
+     */
+    private static double[] resizeLanczos(int[] src, int srcW, int srcH, int dstW, int dstH) {
+        // --- Horizontal pass: srcW columns → dstW columns ---
+        double scaleX = (double) srcW / dstW;
+        double filterScaleX = scaleX > 1.0 ? 1.0 / scaleX : 1.0;
+        double supportX = LANCZOS_A / filterScaleX;
+
+        double[] tmp = new double[dstW * srcH];
+        for (int y = 0; y < srcH; y++) {
+            for (int dx = 0; dx < dstW; dx++) {
+                double center = (dx + 0.5) * scaleX;
+                int xMin = (int) Math.max(0, Math.ceil(center - supportX));
+                int xMax = (int) Math.min(srcW - 1, Math.floor(center + supportX));
+
+                double wSum = 0;
+                double vSum = 0;
+                for (int sx = xMin; sx <= xMax; sx++) {
+                    double w = lanczos3((sx + 0.5 - center) * filterScaleX);
+                    vSum += w * src[y * srcW + sx];
+                    wSum += w;
+                }
+                tmp[y * dstW + dx] = wSum != 0 ? vSum / wSum : 0;
+            }
+        }
+
+        // --- Vertical pass: srcH rows → dstH rows ---
+        double scaleY = (double) srcH / dstH;
+        double filterScaleY = scaleY > 1.0 ? 1.0 / scaleY : 1.0;
+        double supportY = LANCZOS_A / filterScaleY;
+
+        double[] out = new double[dstW * dstH];
+        for (int dy = 0; dy < dstH; dy++) {
+            double center = (dy + 0.5) * scaleY;
+            int yMin = (int) Math.max(0, Math.ceil(center - supportY));
+            int yMax = (int) Math.min(srcH - 1, Math.floor(center + supportY));
+
+            for (int dx = 0; dx < dstW; dx++) {
+                double wSum = 0;
+                double vSum = 0;
+                for (int sy = yMin; sy <= yMax; sy++) {
+                    double w = lanczos3((sy + 0.5 - center) * filterScaleY);
+                    vSum += w * tmp[sy * dstW + dx];
+                    wSum += w;
+                }
+                out[dy * dstW + dx] = wSum != 0 ? vSum / wSum : 0;
+            }
+        }
+        return out;
+    }
+
+    /**
+     * Lanczos-3 kernel: {@code sinc(x) * sinc(x/a)}, evaluated at {@code x} for
+     * {@code a = 3}.
+     */
+    private static double lanczos3(double x) {
+        if (x == 0.0) {
+            return 1.0;
+        }
+        if (x <= -LANCZOS_A || x >= LANCZOS_A) {
+            return 0.0;
+        }
+        double pix = Math.PI * x;
+        return LANCZOS_A * Math.sin(pix) * Math.sin(pix / LANCZOS_A) / (pix * pix);
     }
 }

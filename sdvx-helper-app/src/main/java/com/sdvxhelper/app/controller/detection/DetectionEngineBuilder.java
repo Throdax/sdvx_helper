@@ -157,7 +157,6 @@ public class DetectionEngineBuilder {
         engine.setWebhookDispatcher(webhookDispatcher);
         engine.setParams(params);
         engine.setSettings(settings);
-        engine.setStateHashes(DetectionEngine.buildStateHashes(params));
         return engine;
     }
 }

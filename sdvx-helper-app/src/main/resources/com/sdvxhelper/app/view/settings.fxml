@@ -105,7 +105,7 @@
                     <ColumnConstraints hgrow="ALWAYS" />
                 </columnConstraints>
 
-                <Label text="%text.settings.playerName" GridPane.columnIndex="0" GridPane.rowIndex="0" styleClass="muted" />
+                <Label text="%label.settings.player.name" GridPane.columnIndex="0" GridPane.rowIndex="0" styleClass="muted" />
                 <TextField fx:id="playerNameField" GridPane.columnIndex="1" GridPane.rowIndex="0" />
 
                 <CheckBox fx:id="autoUpdateCheck" text="%checkbox.settings.checkForUpdatesAtStart" GridPane.columnIndex="0" GridPane.rowIndex="1" GridPane.columnSpan="2" />

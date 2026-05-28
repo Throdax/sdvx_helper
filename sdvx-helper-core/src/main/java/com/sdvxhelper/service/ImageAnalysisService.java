@@ -91,6 +91,37 @@ public class ImageAnalysisService {
     private String onresultHeadHash = null;
 
     /**
+     * Perceptual hash for the select-screen reference region
+     * ({@code onselect.png}). Used by {@link #isSelectScreen} to mirror Python
+     * {@code is_onselect()}.
+     */
+    private String onSelectHash = null;
+
+    /**
+     * Perceptual hashes for the two play-screen reference regions.
+     * {@code onPlayHash} corresponds to {@code onplay1.png} used for
+     * {@code onplay_val1} and {@code onPlay1Hash} corresponds to
+     * {@code onplay2.png} used for {@code onplay_val2}, mirroring Python's
+     * {@code is_onplay()} in {@code sdvx_helper.pyw:1110}.
+     */
+    private String onPlayHash = null;
+    private String onPlay1Hash = null;
+
+    /**
+     * Perceptual hash for the logo/transition-screen reference region
+     * ({@code logo.png}). Used by {@link #isLogoScreen} to mirror Python
+     * {@code is_onlogo()}.
+     */
+    private String onLogoHash = null;
+
+    /**
+     * Perceptual hash for the song-commit (detect) screen reference region
+     * ({@code ondetect.png}). Used by {@link #isDetectScreen} to mirror Python
+     * {@code is_ondetect()}.
+     */
+    private String onDetectHash = null;
+
+    /**
      * Constructs the service and loads digit template hashes from
      * {@code resources/images/}.
      *
@@ -124,6 +155,12 @@ public class ImageAnalysisService {
         onresult0Hash = loadSingleImageHash("resources/images/onresult.png");
         onresult1Hash = loadSingleImageHash("resources/images/onresult2.png");
         onresultHeadHash = loadSingleImageHash("resources/images/result_head.png");
+        onSelectHash = loadSingleImageHash("resources/images/onselect.png");
+        // Python is_onplay() uses onplay1.png for val1 and onplay2.png for val2
+        onPlayHash = loadSingleImageHash("resources/images/onplay1.png");
+        onPlay1Hash = loadSingleImageHash("resources/images/onplay2.png");
+        onLogoHash = loadSingleImageHash("resources/images/logo.png");
+        onDetectHash = loadSingleImageHash("resources/images/ondetect.png");
         log.info("Loaded {} large, {} small, {} bestscore, {} select digit templates, {} result lamp templates",
                 largeDigitTemplates.size(), smallDigitTemplates.size(), bestScoreTemplates.size(),
                 selectScoreTemplates.size(), resultLampHashes.size());
@@ -281,6 +318,135 @@ public class ImageAnalysisService {
     }
 
     /**
+     * Returns {@code true} when {@code frame} is the song-selection screen,
+     * mirroring Python {@code is_onselect()} in {@code sdvx_helper.pyw:1067}.
+     *
+     * <p>
+     * The {@code onselect_*} region is cropped and compared against the pre-loaded
+     * {@code onselect.png} reference using a Hamming-distance threshold of 5.
+     * </p>
+     *
+     * @param frame
+     *            full-frame capture to test
+     * @param params
+     *            detection parameters from {@code params.json}
+     * @return {@code true} if the frame is the select screen
+     */
+    public boolean isSelectScreen(BufferedImage frame, Map<String, String> params) {
+        if (frame == null || onSelectHash == null) {
+            return false;
+        }
+        int sx = ParamUtils.getInt(params, "onselect_sx", 0);
+        int sy = ParamUtils.getInt(params, "onselect_sy", 1310);
+        int w = ParamUtils.getInt(params, "onselect_w", 150);
+        int h = ParamUtils.getInt(params, "onselect_h", 270);
+        BufferedImage cropRegion = crop(frame, sx, sy, w, h);
+        boolean result = hasher.isSimilar(hasher.hash(cropRegion), onSelectHash, 5);
+        log.debug("isSelectScreen: result={}", result);
+        return result;
+    }
+
+    /**
+     * Returns {@code true} when {@code frame} is the active play screen, mirroring
+     * Python {@code is_onplay()} in {@code sdvx_helper.pyw:1110}.
+     *
+     * <p>
+     * Two regions are cropped ({@code onplay_val1_*} and {@code onplay_val2_*}) and
+     * compared against the pre-loaded {@code onplay.png} and {@code onplay1.png}
+     * references respectively, using a Hamming-distance threshold of 10. Both
+     * regions must match.
+     * </p>
+     *
+     * @param frame
+     *            full-frame capture to test
+     * @param params
+     *            detection parameters from {@code params.json}
+     * @return {@code true} if the frame is the play screen
+     */
+    public boolean isPlayScreen(BufferedImage frame, Map<String, String> params) {
+        if (frame == null || onPlayHash == null || onPlay1Hash == null) {
+            return false;
+        }
+        int v1sx = ParamUtils.getInt(params, "onplay_val1_sx", 0);
+        int v1sy = ParamUtils.getInt(params, "onplay_val1_sy", 420);
+        int v1w = ParamUtils.getInt(params, "onplay_val1_w", 131);
+        int v1h = ParamUtils.getInt(params, "onplay_val1_h", 88);
+
+        int v2sx = ParamUtils.getInt(params, "onplay_val2_sx", 15);
+        int v2sy = ParamUtils.getInt(params, "onplay_val2_sy", 876);
+        int v2w = ParamUtils.getInt(params, "onplay_val2_w", 296);
+        int v2h = ParamUtils.getInt(params, "onplay_val2_h", 16);
+
+        BufferedImage crop1 = crop(frame, v1sx, v1sy, v1w, v1h);
+        BufferedImage crop2 = crop(frame, v2sx, v2sy, v2w, v2h);
+
+        boolean val1 = hasher.isSimilar(hasher.hash(crop1), onPlayHash, 10);
+        boolean val2 = hasher.isSimilar(hasher.hash(crop2), onPlay1Hash, 10);
+        boolean result = val1 && val2;
+        log.debug("isPlayScreen: val1={}, val2={}, result={}", val1, val2, result);
+        return result;
+    }
+
+    /**
+     * Returns {@code true} when {@code frame} shows the game title logo or a
+     * transition screen, mirroring Python {@code is_onlogo()} in
+     * {@code sdvx_helper.pyw:1141}.
+     *
+     * <p>
+     * The {@code onlogo_*} region is cropped and compared against the pre-loaded
+     * {@code logo.png} reference using a Hamming-distance threshold of 10.
+     * </p>
+     *
+     * @param frame
+     *            full-frame capture to test
+     * @param params
+     *            detection parameters from {@code params.json}
+     * @return {@code true} if the frame is a logo/transition screen
+     */
+    public boolean isLogoScreen(BufferedImage frame, Map<String, String> params) {
+        if (frame == null || onLogoHash == null) {
+            return false;
+        }
+        int sx = ParamUtils.getInt(params, "onlogo_sx", 460);
+        int sy = ParamUtils.getInt(params, "onlogo_sy", 850);
+        int w = ParamUtils.getInt(params, "onlogo_w", 200);
+        int h = ParamUtils.getInt(params, "onlogo_h", 200);
+        BufferedImage cropRegion = crop(frame, sx, sy, w, h);
+        boolean result = hasher.isSimilar(hasher.hash(cropRegion), onLogoHash, 10);
+        log.debug("isLogoScreen: result={}", result);
+        return result;
+    }
+
+    /**
+     * Returns {@code true} when {@code frame} is the song-commit (detect) screen,
+     * mirroring Python {@code is_ondetect()} in {@code sdvx_helper.pyw:1128}.
+     *
+     * <p>
+     * The {@code ondetect_*} region is cropped and compared against the pre-loaded
+     * {@code ondetect.png} reference using a Hamming-distance threshold of 10.
+     * </p>
+     *
+     * @param frame
+     *            full-frame capture to test
+     * @param params
+     *            detection parameters from {@code params.json}
+     * @return {@code true} if the frame is the song-commit screen
+     */
+    public boolean isDetectScreen(BufferedImage frame, Map<String, String> params) {
+        if (frame == null || onDetectHash == null) {
+            return false;
+        }
+        int sx = ParamUtils.getInt(params, "ondetect_sx", 240);
+        int sy = ParamUtils.getInt(params, "ondetect_sy", 1253);
+        int w = ParamUtils.getInt(params, "ondetect_w", 170);
+        int h = ParamUtils.getInt(params, "ondetect_h", 130);
+        BufferedImage cropRegion = crop(frame, sx, sy, w, h);
+        boolean result = hasher.isSimilar(hasher.hash(cropRegion), onDetectHash, 10);
+        log.debug("isDetectScreen: result={}", result);
+        return result;
+    }
+
+    /**
      * Opens a resource stream for the given relative path. Tries the file system
      * first (production deployment where {@code resources/} sits next to the JAR),
      * then falls back to the classpath (test context and JAR-only deployments).
@@ -391,6 +557,86 @@ public class ImageAnalysisService {
             log.warn("identifyJacket failed: {}", e.getMessage());
             return null;
         }
+    }
+
+    /**
+     * Identifies a song from an already-cropped jacket image.
+     *
+     * <p>
+     * Use this overload when the jacket has already been cropped (e.g. the
+     * {@code log_crop_jacket} region on the result screen) to avoid cropping the
+     * same region twice.
+     * </p>
+     *
+     * @param jacketCrop
+     *            pre-cropped jacket image
+     * @return {@code String[]{title, difficulty}} if found, or {@code null}
+     */
+    public String[] identifyJacket(BufferedImage jacketCrop) {
+        try {
+            String hash = hasher.hash(jacketCrop);
+            return musicListRepo.findByJacketHash(hash);
+        } catch (java.awt.image.RasterFormatException | IllegalArgumentException e) {
+            log.warn("identifyJacket (pre-cropped) failed: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Detects the currently selected difficulty by comparing the pixel-brightness
+     * sums of the four difficulty-button regions on the select or detect screen.
+     *
+     * <p>
+     * Mirrors Python {@code ocr_only_jacket()} in {@code gen_summary.py} (lines
+     * 470-482): the difficulty button with the highest pixel sum is the one that is
+     * highlighted / currently selected.
+     * </p>
+     *
+     * @param frame
+     *            full-frame capture of the select or detect screen
+     * @param params
+     *            application params map (must contain {@code select_nov_*},
+     *            {@code select_adv_*}, {@code select_exh_*},
+     *            {@code select_APPEND_*} coordinate keys)
+     * @return detected difficulty: {@code "nov"}, {@code "adv"}, {@code "exh"}, or
+     *         {@code "APPEND"}; falls back to {@code "exh"} if coordinates are not
+     *         configured
+     */
+    public String detectDifficultyFromButtons(BufferedImage frame, Map<String, String> params) {
+        String[] diffs = {"nov", "adv", "exh", "APPEND"};
+        long[] sums = new long[4];
+        for (int i = 0; i < diffs.length; i++) {
+            String key = "select_" + diffs[i];
+            int sx = ParamUtils.getInt(params, key + "_sx", 0);
+            int sy = ParamUtils.getInt(params, key + "_sy", 0);
+            int w = ParamUtils.getInt(params, key + "_w", 0);
+            int h = ParamUtils.getInt(params, key + "_h", 0);
+            if (sx == 0 && sy == 0) {
+                log.debug("detectDifficultyFromButtons: coords not configured for '{}', defaulting to exh", diffs[i]);
+                return "exh";
+            }
+            sums[i] = pixelSum(crop(frame, sx, sy, w, h));
+        }
+        int maxIdx = 0;
+        for (int i = 1; i < 4; i++) {
+            if (sums[i] > sums[maxIdx]) {
+                maxIdx = i;
+            }
+        }
+        log.debug("detectDifficultyFromButtons: nov={} adv={} exh={} APPEND={} → {}", sums[0], sums[1], sums[2],
+                sums[3], diffs[maxIdx]);
+        return diffs[maxIdx];
+    }
+
+    private static long pixelSum(BufferedImage img) {
+        long sum = 0;
+        for (int y = 0; y < img.getHeight(); y++) {
+            for (int x = 0; x < img.getWidth(); x++) {
+                int rgb = img.getRGB(x, y);
+                sum += ((rgb >> 16) & 0xFF) + ((rgb >> 8) & 0xFF) + (rgb & 0xFF);
+            }
+        }
+        return sum;
     }
 
     /**

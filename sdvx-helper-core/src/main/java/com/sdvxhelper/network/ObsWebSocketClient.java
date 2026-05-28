@@ -21,6 +21,7 @@ import io.obswebsocket.community.client.OBSRemoteController;
 import io.obswebsocket.community.client.OBSRemoteControllerBuilder;
 import io.obswebsocket.community.client.message.event.outputs.RecordStateChangedEvent;
 import io.obswebsocket.community.client.message.event.outputs.StreamStateChangedEvent;
+import io.obswebsocket.community.client.message.request.inputs.PressInputPropertiesButtonRequest;
 import io.obswebsocket.community.client.message.request.inputs.SetInputSettingsRequest;
 import io.obswebsocket.community.client.message.request.sceneitems.GetSceneItemIdRequest;
 import io.obswebsocket.community.client.message.request.sceneitems.GetSceneItemListRequest;
@@ -28,13 +29,13 @@ import io.obswebsocket.community.client.message.request.sceneitems.SetSceneItemE
 import io.obswebsocket.community.client.message.request.scenes.GetSceneListRequest;
 import io.obswebsocket.community.client.message.request.scenes.SetCurrentProgramSceneRequest;
 import io.obswebsocket.community.client.message.request.sources.GetSourceScreenshotRequest;
+import io.obswebsocket.community.client.message.response.inputs.PressInputPropertiesButtonResponse;
 import io.obswebsocket.community.client.message.response.sceneitems.GetSceneItemIdResponse;
 import io.obswebsocket.community.client.message.response.sceneitems.GetSceneItemListResponse;
 import io.obswebsocket.community.client.message.response.scenes.GetSceneListResponse;
 import io.obswebsocket.community.client.message.response.sources.GetSourceScreenshotResponse;
 import io.obswebsocket.community.client.model.Scene;
 import io.obswebsocket.community.client.model.SceneItem;
-import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -68,6 +69,17 @@ public class ObsWebSocketClient implements Closeable {
 
     /** Timeout in seconds for each synchronous OBS request. */
     private static final int REQUEST_TIMEOUT_SECONDS = 10;
+
+    /**
+     * Maximum WebSocket message size in bytes (8 MB).
+     *
+     * <p>
+     * OBS can send very large messages when the scene list or screenshot payload is
+     * big (observed: ~3 MB). The Jetty default of 1 MB causes a 1009 disconnect;
+     * this limit is raised to 8 MB to give ample headroom.
+     * </p>
+     */
+    private static final int MAX_WS_MESSAGE_BYTES = 8 * 1024 * 1024;
 
     /** Screenshot image format requested from OBS. */
     private static final String IMAGE_FORMAT = "png";
@@ -123,7 +135,14 @@ public class ObsWebSocketClient implements Closeable {
                 .connectionTimeout(REQUEST_TIMEOUT_SECONDS)
                 .registerEventListener(RecordStateChangedEvent.class, this::handleRecordStateChanged)
                 .registerEventListener(StreamStateChangedEvent.class, this::handleStreamStateChanged).lifecycle()
-                .onReady(() -> {
+                .onConnect(session -> {
+                    // OBSCommunicator has @WebSocket(maxTextMessageSize = 1MB) hardcoded,
+                    // which overrides the WebSocketClient policy. Setting the limit on the
+                    // session object after connect is the only reliable way to raise it.
+                    session.getPolicy().setMaxTextMessageSize(MAX_WS_MESSAGE_BYTES);
+                    session.getPolicy().setMaxBinaryMessageSize(MAX_WS_MESSAGE_BYTES);
+                    log.info("OBS session max message size overridden to {} bytes", MAX_WS_MESSAGE_BYTES);
+                }).onReady(() -> {
                     connected = true;
                     ready.complete(null);
                 }).onCommunicatorError(rt -> {
@@ -137,8 +156,7 @@ public class ObsWebSocketClient implements Closeable {
                             new IOException("OBS connection error: " + rt.getReason(), rt.getThrowable()));
                 }).and();
 
-        WebSocketClient webSocketClient = builder.getWebSocketClient();
-        webSocketClient.getHttpClient().setMaxConnectionsPerDestination(1);
+        builder.getWebSocketClient().getHttpClient().setMaxConnectionsPerDestination(1);
 
         controller = builder.build();
         controller.connect();
@@ -423,6 +441,46 @@ public class ObsWebSocketClient implements Closeable {
     }
 
     // -------------------------------------------------------------------------
+    // Browser source refresh
+    // -------------------------------------------------------------------------
+
+    /**
+     * Presses the {@code refreshnocache} properties button on a browser source,
+     * causing OBS to reload the page — equivalent to Python's
+     * {@code obs.press_input_properties_button(name, 'refreshnocache')}.
+     *
+     * <p>
+     * Errors are logged at DEBUG level and silently swallowed so that a missing or
+     * non-browser source does not abort the detection loop.
+     * </p>
+     *
+     * @param sourceName
+     *            the name of the OBS browser-source input to refresh
+     */
+    public void refreshBrowserSource(String sourceName) {
+        if (!connected) {
+            log.debug("refreshBrowserSource: not connected, skipping '{}'", sourceName);
+            return;
+        }
+        log.debug("refreshBrowserSource: refreshing '{}'", sourceName);
+        try {
+            CompletableFuture<PressInputPropertiesButtonResponse> future = new CompletableFuture<>();
+            controller
+                    .sendRequest(
+                            PressInputPropertiesButtonRequest.builder().inputName(sourceName)
+                                    .propertyName("refreshnocache").build(),
+                            (PressInputPropertiesButtonResponse resp) -> future.complete(resp));
+            PressInputPropertiesButtonResponse resp = await(future, "PressInputPropertiesButton");
+            if (!resp.isSuccessful()) {
+                log.debug("refreshBrowserSource: OBS request not successful for '{}': {}", sourceName,
+                        resp.getMessageData().getRequestStatus().getComment());
+            }
+        } catch (IOException e) {
+            log.debug("refreshBrowserSource failed for '{}': {}", sourceName, e.getMessage());
+        }
+    }
+
+    // -------------------------------------------------------------------------
     // Event listener
     // -------------------------------------------------------------------------
 
@@ -493,5 +551,9 @@ public class ObsWebSocketClient implements Closeable {
             Thread.currentThread().interrupt();
             throw new IOException("OBS request '" + requestName + "' was interrupted", e);
         }
+    }
+
+    public int getMaxMessageSize() {
+        return MAX_WS_MESSAGE_BYTES;
     }
 }

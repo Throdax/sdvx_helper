@@ -9,6 +9,8 @@ import java.util.List;
 import java.util.Map;
 
 import com.sdvxhelper.model.OnePlayData;
+import com.sdvxhelper.model.WebhookConfig;
+import com.sdvxhelper.model.WebhookConfigBuilder;
 import com.sdvxhelper.network.DiscordWebhookClient;
 import com.sdvxhelper.service.SdvxLoggerService;
 import org.junit.jupiter.api.BeforeEach;
@@ -23,14 +25,17 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 /**
  * Unit tests for {@link WebhookDispatcher}.
+ *
  * <p>
  * {@link DiscordWebhookClient} and {@link SdvxLoggerService} are mocked so no
- * real network calls are made. All filter logic is exercised by varying the
- * settings map.
+ * real network calls are made. Webhook configurations are built via
+ * {@link WebhookConfigBuilder} and supplied directly to the dispatcher.
  * </p>
  */
 @ExtendWith(MockitoExtension.class)
 class WebhookDispatcherTest {
+
+    private static final String HOOK_URL = "https://discord.com/api/webhooks/test";
 
     @Mock
     private DiscordWebhookClient discordClient;
@@ -44,31 +49,23 @@ class WebhookDispatcherTest {
     @BeforeEach
     void setUp() {
         settings = new HashMap<>();
-        dispatcher = new WebhookDispatcher(discordClient, loggerService, settings);
+        dispatcher = new WebhookDispatcher(discordClient, loggerService, settings, null);
     }
 
     // -------------------------------------------------------------------------
-    // send — no webhooks configured
+    // send — no webhook configs
     // -------------------------------------------------------------------------
 
     @Test
-    void sendSkipsWhenNoWebhooksConfigured() {
+    void sendSkipsWhenWebhookConfigsIsNull() {
         OnePlayData play = new OnePlayData("Song", 9_000_000, 0, "clear", "exh", "2024-01-01");
         assertDoesNotThrow(() -> dispatcher.send(play, null));
         Mockito.verifyNoInteractions(discordClient);
     }
 
     @Test
-    void sendSkipsWhenNamesConfiguredButNoUrls() {
-        settings.put("webhook_names", "['Hook1']");
-        OnePlayData play = new OnePlayData("Song", 9_000_000, 0, "clear", "exh", "2024-01-01");
-        assertDoesNotThrow(() -> dispatcher.send(play, null));
-        Mockito.verifyNoInteractions(discordClient);
-    }
-
-    @Test
-    void sendSkipsWhenUrlsConfiguredButNoNames() {
-        settings.put("webhook_urls", "['https://discord.com/api/webhooks/test']");
+    void sendSkipsWhenWebhookConfigsIsEmpty() {
+        dispatcher.setWebhookConfigs(Collections.emptyList());
         OnePlayData play = new OnePlayData("Song", 9_000_000, 0, "clear", "exh", "2024-01-01");
         assertDoesNotThrow(() -> dispatcher.send(play, null));
         Mockito.verifyNoInteractions(discordClient);
@@ -79,16 +76,15 @@ class WebhookDispatcherTest {
     // -------------------------------------------------------------------------
 
     @Test
-    void sendCallsWebhookWhenConfiguredAndNoFilterSet() throws IOException {
-        settings.put("webhook_names", "['Hook1']");
-        settings.put("webhook_urls", "['https://discord.com/api/webhooks/test']");
+    void sendCallsWebhookWhenConfiguredAndAllFiltersEnabled() throws IOException {
+        WebhookConfig config = new WebhookConfigBuilder().name("Hook1").url(HOOK_URL).build();
+        dispatcher.setWebhookConfigs(List.of(config));
         Mockito.when(loggerService.getBestFor(ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(null);
 
         OnePlayData play = new OnePlayData("Song", 9_000_000, 0, "clear", "exh", "2024-01-01");
         dispatcher.send(play, null);
 
-        Mockito.verify(discordClient).sendMessage(ArgumentMatchers.eq("https://discord.com/api/webhooks/test"),
-                ArgumentMatchers.anyString());
+        Mockito.verify(discordClient).sendMessage(ArgumentMatchers.eq(HOOK_URL), ArgumentMatchers.anyString());
     }
 
     // -------------------------------------------------------------------------
@@ -96,14 +92,10 @@ class WebhookDispatcherTest {
     // -------------------------------------------------------------------------
 
     @Test
-    void sendSkipsWhenLampFilterExcludesCurrentLamp() throws IOException {
-        settings.put("webhook_names", "['Hook1']");
-        settings.put("webhook_urls", "['https://discord.com/api/webhooks/test']");
-        // LAMP_TABLE = {"puc"(0), "uc"(1), "exh"(2), "hard"(3), "clear"(4),
-        // "failed"(5), ""(6)}
-        // Lamp index for "clear" is 4. The lamp-flag list must have index 4 = false.
-        // Provide 5 flags, index 4 set to false, rest true.
-        settings.put("webhook_enable_lamps", "[\"['true','true','true','true','false']\"]");
+    void sendSkipsWhenLampFilterExcludesCurrentLamp() {
+        WebhookConfig config = new WebhookConfigBuilder().name("Hook1").url(HOOK_URL).enabledLamp("CLEAR", false)
+                .build();
+        dispatcher.setWebhookConfigs(List.of(config));
         Mockito.when(loggerService.getBestFor(ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(null);
 
         OnePlayData play = new OnePlayData("Song", 9_000_000, 0, "clear", "exh", "2024-01-01");
@@ -114,16 +106,73 @@ class WebhookDispatcherTest {
 
     @Test
     void sendPassesWhenLampFilterAllowsCurrentLamp() throws IOException {
-        settings.put("webhook_names", "['Hook1']");
-        settings.put("webhook_urls", "['https://discord.com/api/webhooks/test']");
-        // Lamp "puc" is index 0 — set index 0 to true
-        settings.put("webhook_enable_lamps", "[\"['true']\"]");
+        WebhookConfig config = new WebhookConfigBuilder().name("Hook1").url(HOOK_URL).enabledLamp("PUC", true).build();
+        dispatcher.setWebhookConfigs(List.of(config));
         Mockito.when(loggerService.getBestFor(ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(null);
 
         OnePlayData play = new OnePlayData("Song", 10_000_000, 0, "puc", "exh", "2024-01-01");
         dispatcher.send(play, null);
 
         Mockito.verify(discordClient).sendMessage(ArgumentMatchers.anyString(), ArgumentMatchers.anyString());
+    }
+
+    @Test
+    void sendMapsExhLampToMaxxiveKey() throws IOException {
+        WebhookConfig config = new WebhookConfigBuilder().name("Hook1").url(HOOK_URL).enabledLamp("MAXXIVE", true)
+                .build();
+        dispatcher.setWebhookConfigs(List.of(config));
+        Mockito.when(loggerService.getBestFor(ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(null);
+
+        OnePlayData play = new OnePlayData("Song", 9_800_000, 0, "exh", "exh", "2024-01-01");
+        dispatcher.send(play, null);
+
+        Mockito.verify(discordClient).sendMessage(ArgumentMatchers.anyString(), ArgumentMatchers.anyString());
+    }
+
+    // -------------------------------------------------------------------------
+    // send — result message content
+    // -------------------------------------------------------------------------
+
+    @Test
+    void sendMessageContainsScoreAndDiffInSdvxFormat() throws IOException {
+        WebhookConfig config = new WebhookConfigBuilder().name("Hook1").url(HOOK_URL).build();
+        dispatcher.setWebhookConfigs(List.of(config));
+        Mockito.when(loggerService.getBestFor(ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(null);
+
+        // curScore=9_000_000 → "**900**,0000" diff=+1_000_000 → "+100,0000"
+        OnePlayData play = new OnePlayData("Song", 9_000_000, 8_000_000, "clear", "exh", "2024-01-01");
+        dispatcher.send(play, null);
+
+        Mockito.verify(discordClient).sendMessage(ArgumentMatchers.anyString(),
+                ArgumentMatchers.argThat(msg -> msg.contains("**900**,0000") && msg.contains("+100,0000")));
+    }
+
+    @Test
+    void sendMessageShowsNegativeDiffWhenScoreDropped() throws IOException {
+        WebhookConfig config = new WebhookConfigBuilder().name("Hook1").url(HOOK_URL).build();
+        dispatcher.setWebhookConfigs(List.of(config));
+        Mockito.when(loggerService.getBestFor(ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(null);
+
+        // curScore=393_081, preScore=9_583_334 → diff=-9_190_253 → "-919,0253"
+        OnePlayData play = new OnePlayData("Song", 393_081, 9_583_334, "failed", "exh", "2024-01-01");
+        dispatcher.send(play, null);
+
+        Mockito.verify(discordClient).sendMessage(ArgumentMatchers.anyString(),
+                ArgumentMatchers.argThat(msg -> msg.contains("**39**,3081") && msg.contains("-919,0253")));
+    }
+
+    @Test
+    void sendMessageShowsDiffEqualToScoreWhenPreScoreIsZero() throws IOException {
+        WebhookConfig config = new WebhookConfigBuilder().name("Hook1").url(HOOK_URL).build();
+        dispatcher.setWebhookConfigs(List.of(config));
+        Mockito.when(loggerService.getBestFor(ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(null);
+
+        // curScore=393_081, preScore=0 → diff=+393_081 → "+39,3081"
+        OnePlayData play = new OnePlayData("Unknown", 393_081, 0, "failed", "exh", "2024-01-01");
+        dispatcher.send(play, null);
+
+        Mockito.verify(discordClient).sendMessage(ArgumentMatchers.anyString(),
+                ArgumentMatchers.argThat(msg -> msg.contains("**39**,3081") && msg.contains("+39,3081")));
     }
 
     // -------------------------------------------------------------------------
@@ -137,14 +186,13 @@ class WebhookDispatcherTest {
     }
 
     // -------------------------------------------------------------------------
-    // sendPlaylistSummary — no webhooks with playlist enabled
+    // sendPlaylistSummary — playlist flag
     // -------------------------------------------------------------------------
 
     @Test
     void sendPlaylistSummarySkipsWhenPlaylistFlagFalse() {
-        settings.put("webhook_names", "['Hook1']");
-        settings.put("webhook_urls", "['https://discord.com/api/webhooks/test']");
-        settings.put("webhook_playlist", "['false']");
+        WebhookConfig config = new WebhookConfigBuilder().name("Hook1").url(HOOK_URL).sendPlaylist(false).build();
+        dispatcher.setWebhookConfigs(List.of(config));
         settings.put("webhook_player_name", "Throdax");
 
         OnePlayData play = new OnePlayData("Song", 9_000_000, 0, "clear", "exh", "2024-01-01");
@@ -155,16 +203,14 @@ class WebhookDispatcherTest {
 
     @Test
     void sendPlaylistSummaryCallsWebhookWhenFlagTrue() {
-        settings.put("webhook_names", "['Hook1']");
-        settings.put("webhook_urls", "['https://discord.com/api/webhooks/test']");
-        settings.put("webhook_playlist", "['true']");
+        WebhookConfig config = new WebhookConfigBuilder().name("Hook1").url(HOOK_URL).sendPlaylist(true).build();
+        dispatcher.setWebhookConfigs(List.of(config));
         settings.put("webhook_player_name", "Player1");
 
         OnePlayData play = new OnePlayData("Song", 9_000_000, 0, "clear", "exh", "2024-01-01");
         dispatcher.sendPlaylistSummary(List.of(play), List.of());
 
-        Mockito.verify(discordClient).sendMessage(ArgumentMatchers.eq("https://discord.com/api/webhooks/test"),
-                ArgumentMatchers.contains("Song"));
+        Mockito.verify(discordClient).sendMessage(ArgumentMatchers.eq(HOOK_URL), ArgumentMatchers.contains("Song"));
     }
 
     // -------------------------------------------------------------------------
@@ -173,9 +219,8 @@ class WebhookDispatcherTest {
 
     @Test
     void sendPlaylistSummaryFormatsTimestampWhenPresent() {
-        settings.put("webhook_names", "['Hook1']");
-        settings.put("webhook_urls", "['https://discord.com/api/webhooks/test']");
-        settings.put("webhook_playlist", "['true']");
+        WebhookConfig config = new WebhookConfigBuilder().name("Hook1").url(HOOK_URL).sendPlaylist(true).build();
+        dispatcher.setWebhookConfigs(List.of(config));
         settings.put("webhook_player_name", "Player1");
 
         OnePlayData play = new OnePlayData("My Song", 9_000_000, 0, "clear", "exh", "2024-01-01");
@@ -190,9 +235,8 @@ class WebhookDispatcherTest {
 
     @Test
     void sendPlaylistSummaryUsesNumberedPrefixWhenTimestampIsNull() {
-        settings.put("webhook_names", "['Hook1']");
-        settings.put("webhook_urls", "['https://discord.com/api/webhooks/test']");
-        settings.put("webhook_playlist", "['true']");
+        WebhookConfig config = new WebhookConfigBuilder().name("Hook1").url(HOOK_URL).sendPlaylist(true).build();
+        dispatcher.setWebhookConfigs(List.of(config));
         settings.put("webhook_player_name", "Player1");
 
         OnePlayData play = new OnePlayData("My Song", 9_000_000, 0, "clear", "exh", "2024-01-01");
@@ -207,9 +251,8 @@ class WebhookDispatcherTest {
 
     @Test
     void sendPlaylistSummaryUsesNumberedPrefixWhenTimestampsListEmpty() {
-        settings.put("webhook_names", "['Hook1']");
-        settings.put("webhook_urls", "['https://discord.com/api/webhooks/test']");
-        settings.put("webhook_playlist", "['true']");
+        WebhookConfig config = new WebhookConfigBuilder().name("Hook1").url(HOOK_URL).sendPlaylist(true).build();
+        dispatcher.setWebhookConfigs(List.of(config));
         settings.put("webhook_player_name", "Player1");
 
         OnePlayData play = new OnePlayData("My Song", 9_000_000, 0, "clear", "exh", "2024-01-01");
@@ -222,9 +265,8 @@ class WebhookDispatcherTest {
 
     @Test
     void sendPlaylistSummaryMixesTimestampAndNumberedPrefixes() {
-        settings.put("webhook_names", "['Hook1']");
-        settings.put("webhook_urls", "['https://discord.com/api/webhooks/test']");
-        settings.put("webhook_playlist", "['true']");
+        WebhookConfig config = new WebhookConfigBuilder().name("Hook1").url(HOOK_URL).sendPlaylist(true).build();
+        dispatcher.setWebhookConfigs(List.of(config));
         settings.put("webhook_player_name", "Player1");
 
         OnePlayData play1 = new OnePlayData("Song A", 9_000_000, 0, "clear", "exh", "2024-01-01");
@@ -241,9 +283,8 @@ class WebhookDispatcherTest {
 
     @Test
     void sendPlaylistSummaryUsesHhMmSsWhenLastTimestampExceedsOneHour() {
-        settings.put("webhook_names", "['Hook1']");
-        settings.put("webhook_urls", "['https://discord.com/api/webhooks/test']");
-        settings.put("webhook_playlist", "['true']");
+        WebhookConfig config = new WebhookConfigBuilder().name("Hook1").url(HOOK_URL).sendPlaylist(true).build();
+        dispatcher.setWebhookConfigs(List.of(config));
         settings.put("webhook_player_name", "Player1");
 
         OnePlayData play1 = new OnePlayData("Song A", 9_000_000, 0, "clear", "exh", "2024-01-01");
@@ -260,9 +301,8 @@ class WebhookDispatcherTest {
 
     @Test
     void sendPlaylistSummaryUsesMmSsWhenLastTimestampBelowOneHour() {
-        settings.put("webhook_names", "['Hook1']");
-        settings.put("webhook_urls", "['https://discord.com/api/webhooks/test']");
-        settings.put("webhook_playlist", "['true']");
+        WebhookConfig config = new WebhookConfigBuilder().name("Hook1").url(HOOK_URL).sendPlaylist(true).build();
+        dispatcher.setWebhookConfigs(List.of(config));
         settings.put("webhook_player_name", "Player1");
 
         OnePlayData play1 = new OnePlayData("Song A", 9_000_000, 0, "clear", "exh", "2024-01-01");
@@ -279,9 +319,8 @@ class WebhookDispatcherTest {
 
     @Test
     void sendPlaylistSummaryUsesHhMmSsForEarlierSongsWhenLastExceedsOneHour() {
-        settings.put("webhook_names", "['Hook1']");
-        settings.put("webhook_urls", "['https://discord.com/api/webhooks/test']");
-        settings.put("webhook_playlist", "['true']");
+        WebhookConfig config = new WebhookConfigBuilder().name("Hook1").url(HOOK_URL).sendPlaylist(true).build();
+        dispatcher.setWebhookConfigs(List.of(config));
         settings.put("webhook_player_name", "Player1");
 
         OnePlayData play1 = new OnePlayData("Song A", 9_000_000, 0, "clear", "exh", "2024-01-01");
@@ -297,17 +336,18 @@ class WebhookDispatcherTest {
     }
 
     // -------------------------------------------------------------------------
-    // setSettings
+    // setWebhookConfigs — dynamic update
     // -------------------------------------------------------------------------
 
     @Test
-    void setSettingsUpdatesInternalMap() throws IOException {
-        Map<String, String> newSettings = new HashMap<>();
-        newSettings.put("webhook_names", "['Updated']");
-        newSettings.put("webhook_urls", "['https://discord.com/api/webhooks/new']");
+    void setWebhookConfigsUpdatesActiveConfigs() throws IOException {
+        dispatcher.setWebhookConfigs(Collections.emptyList());
         Mockito.when(loggerService.getBestFor(ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(null);
 
-        dispatcher.setSettings(newSettings);
+        WebhookConfig newConfig = new WebhookConfigBuilder().name("Updated").url("https://discord.com/api/webhooks/new")
+                .build();
+        dispatcher.setWebhookConfigs(List.of(newConfig));
+
         OnePlayData play = new OnePlayData("Song", 9_000_000, 0, "clear", "exh", "2024-01-01");
         dispatcher.send(play, null);
 
@@ -321,10 +361,11 @@ class WebhookDispatcherTest {
 
     @Test
     void sendFiresOnlyEnabledWebhooks() throws IOException {
-        settings.put("webhook_names", "['A', 'B']");
-        settings.put("webhook_urls", "['https://hook-a', 'https://hook-b']");
-        // Lamp "puc" = index 0. Hook A allows index 0 (true), Hook B does not (false).
-        settings.put("webhook_enable_lamps", "[\"['true']\", \"['false']\"]");
+        WebhookConfig hookA = new WebhookConfigBuilder().name("A").url("https://hook-a").enabledLamp("PUC", true)
+                .build();
+        WebhookConfig hookB = new WebhookConfigBuilder().name("B").url("https://hook-b").enabledLamp("PUC", false)
+                .build();
+        dispatcher.setWebhookConfigs(List.of(hookA, hookB));
         Mockito.when(loggerService.getBestFor(ArgumentMatchers.any(), ArgumentMatchers.any())).thenReturn(null);
 
         OnePlayData play = new OnePlayData("Song", 10_000_000, 0, "puc", "exh", "2024-01-01");
@@ -333,5 +374,12 @@ class WebhookDispatcherTest {
         Mockito.verify(discordClient).sendMessage(ArgumentMatchers.eq("https://hook-a"), ArgumentMatchers.anyString());
         Mockito.verify(discordClient, Mockito.never()).sendMessage(ArgumentMatchers.eq("https://hook-b"),
                 ArgumentMatchers.anyString());
+    }
+
+    @Test
+    void sendSkipsWhenNoWebhookConfigsAndPlaylistNotCalled() {
+        OnePlayData play = new OnePlayData("Song", 9_000_000, 0, "clear", "exh", "2024-01-01");
+        assertDoesNotThrow(() -> dispatcher.sendPlaylistSummary(List.of(play), List.of()));
+        Mockito.verifyNoInteractions(discordClient);
     }
 }

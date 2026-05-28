@@ -90,6 +90,28 @@ public class SummaryImageService {
      *            regions within the result screenshot
      */
     public void generateAndSave(List<OnePlayData> plays, Path outDir, Map<String, String> params) {
+        String name = "summary_" + LocalDateTime.now().format(TS_FMT) + ".png";
+        File outFile = outDir.resolve(name).toFile();
+        generateAndSave(plays, outFile, params);
+    }
+
+    /**
+     * Builds a composite PNG from the given play list and writes it to the
+     * specified target file.
+     *
+     * <p>
+     * Mirrors Python's {@code GenSummary.generate_today_all(dst)} call on app exit,
+     * which saves to {@code {autosave_dir}/{YYYYMMDD}_summary.png}.
+     * </p>
+     *
+     * @param plays
+     *            plays to include (most-recent last)
+     * @param targetFile
+     *            the file to write the summary PNG to
+     * @param params
+     *            detection parameters from {@code params.json}
+     */
+    public void generateAndSave(List<OnePlayData> plays, File targetFile, Map<String, String> params) {
         int rows = Math.max(1, plays.size());
         int imgH = rows * ROW_HEIGHT;
         BufferedImage canvas = new BufferedImage(ROW_WIDTH, imgH, BufferedImage.TYPE_INT_ARGB);
@@ -125,15 +147,13 @@ public class SummaryImageService {
         g.dispose();
 
         try {
-            File dir = outDir.toFile();
-            if (!dir.exists() && !dir.mkdirs()) {
-                log.warn("Could not create output directory: {}", outDir);
+            File dir = targetFile.getParentFile();
+            if (dir != null && !dir.exists() && !dir.mkdirs()) {
+                log.warn("Could not create output directory: {}", dir);
                 return;
             }
-            String name = "summary_" + LocalDateTime.now().format(TS_FMT) + ".png";
-            File outFile = outDir.resolve(name).toFile();
-            ImageIO.write(canvas, "png", outFile);
-            log.info("Summary image saved to {}", outFile.getAbsolutePath());
+            ImageIO.write(canvas, "png", targetFile);
+            log.info("Summary image saved to {}", targetFile.getAbsolutePath());
         } catch (IOException e) {
             log.error("Failed to save summary image", e);
         }

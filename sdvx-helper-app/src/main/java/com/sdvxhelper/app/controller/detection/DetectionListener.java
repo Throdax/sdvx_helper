@@ -59,4 +59,25 @@ public interface DetectionListener {
      *            {@code "Recording"} or {@code "Streaming"}
      */
     void onObsOutputStarted(String outputType);
+
+    /**
+     * Called after a result screen is processed, reporting which capture steps
+     * succeeded. Mirrors Python {@code self.window['*_icon'].update(visible=True)}.
+     *
+     * <p>
+     * Called on a background thread; implementors must wrap UI updates in
+     * {@code Platform.runLater()}.
+     * </p>
+     *
+     * @param screenshotSaved
+     *            {@code true} if the result screenshot was saved to
+     *            {@code autosave_dir}
+     * @param summaryGenerated
+     *            {@code true} if {@code out/summary_full.png} and
+     *            {@code out/summary_small.png} were updated
+     * @param vfCaptured
+     *            {@code true} if {@code out/vf_cur.png} and
+     *            {@code out/class_cur.png} were written
+     */
+    void onResultCaptured(boolean screenshotSaved, boolean summaryGenerated, boolean vfCaptured);
 }

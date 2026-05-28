@@ -115,14 +115,56 @@ public class MusicListRepository extends JaxbRepository<MusicList> {
     }
 
     /**
+     * Maximum Hamming distance allowed for a fuzzy jacket-hash match. Mirrors
+     * Python's {@code hash_threshold = 4}.
+     */
+    private static final int JACKET_HASH_THRESHOLD = 4;
+
+    /**
      * Looks up the song title and difficulty for a given jacket perceptual hash.
+     *
+     * <p>
+     * First tries an exact string match (O(1)). If that fails, falls back to a
+     * fuzzy search using Hamming distance, accepting the closest entry whose
+     * distance is strictly less than {@value #JACKET_HASH_THRESHOLD} bits —
+     * matching Python's {@code abs(hash_cur - hash_jacket) < 4} comparison.
+     * </p>
      *
      * @param hash
      *            perceptual hash hex string
      * @return {@code String[]{title, difficulty}} or {@code null} if not found
      */
     public String[] findByJacketHash(String hash) {
-        return jacketHashIndex.get(hash);
+        String[] exact = jacketHashIndex.get(hash);
+        if (exact != null) {
+            return exact;
+        }
+        String[] best = null;
+        int bestDist = JACKET_HASH_THRESHOLD;
+        for (Map.Entry<String, String[]> entry : jacketHashIndex.entrySet()) {
+            String candidate = entry.getKey();
+            if (candidate.length() != hash.length()) {
+                continue;
+            }
+            int dist = hammingDistance(hash, candidate);
+            if (dist < bestDist) {
+                bestDist = dist;
+                best = entry.getValue();
+            }
+        }
+        if (best != null) {
+            log.debug("findByJacketHash: fuzzy match (dist={}) for hash {}", bestDist, hash);
+        }
+        return best;
+    }
+
+    private static int hammingDistance(String h1, String h2) {
+        int dist = 0;
+        for (int i = 0; i < h1.length(); i++) {
+            int diff = Integer.parseInt(h1.substring(i, i + 1), 16) ^ Integer.parseInt(h2.substring(i, i + 1), 16);
+            dist += Integer.bitCount(diff);
+        }
+        return dist;
     }
 
     /**

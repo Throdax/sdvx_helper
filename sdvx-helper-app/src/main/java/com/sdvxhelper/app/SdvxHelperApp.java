@@ -69,6 +69,7 @@ public class SdvxHelperApp extends Application {
     public void stop() {
         log.info("SDVX Helper shutting down");
         if (currentController != null) {
+            currentController.onWindowClose();
             currentController.cleanup();
         }
         // Force JVM exit after JavaFX has shut down. Third-party libraries such as

@@ -6,13 +6,18 @@ import java.io.File;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+
 import javax.imageio.ImageIO;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.UnsupportedAudioFileException;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.sdvxhelper.model.MusicInfo;
 import com.sdvxhelper.model.OnePlayData;
@@ -20,11 +25,10 @@ import com.sdvxhelper.ocr.PerceptualHasher;
 import com.sdvxhelper.service.CsvExportService;
 import com.sdvxhelper.service.ImageAnalysisService;
 import com.sdvxhelper.service.SdvxLoggerService;
+import com.sdvxhelper.service.SummaryGeneratorService;
 import com.sdvxhelper.service.XmlExportService;
 import com.sdvxhelper.util.ParamUtils;
 import com.sdvxhelper.util.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Handles per-screen image analysis, file exports, and stateful Volforce
@@ -52,6 +56,7 @@ public class ScreenHandler {
     private SdvxLoggerService loggerService;
     private XmlExportService xmlExportService;
     private CsvExportService csvExportService;
+    private SummaryGeneratorService summaryGeneratorService;
     private PerceptualHasher perceptualHasher;
     private Map<String, String> params;
     private Map<String, String> settings;
@@ -66,6 +71,10 @@ public class ScreenHandler {
     private double currentTotalVf = 0.0;
     private double previousTotalVf = 0.0;
 
+    // Capture indicators — set by handleResultScreen, read by DetectionEngine
+    private boolean lastScreenshotSaved = false;
+    private boolean lastSummaryGenerated = false;
+
     /**
      * @param imageAnalysisService
      *            image analysis service
@@ -75,6 +84,8 @@ public class ScreenHandler {
      *            XML overlay export service
      * @param csvExportService
      *            CSV export service (for Google Drive sync)
+     * @param summaryGeneratorService
+     *            summary image compositor service
      * @param perceptualHasher
      *            perceptual hashing utility
      * @param params
@@ -83,12 +94,14 @@ public class ScreenHandler {
      *            application settings map
      */
     public ScreenHandler(ImageAnalysisService imageAnalysisService, SdvxLoggerService loggerService,
-            XmlExportService xmlExportService, CsvExportService csvExportService, PerceptualHasher perceptualHasher,
+            XmlExportService xmlExportService, CsvExportService csvExportService,
+            SummaryGeneratorService summaryGeneratorService, PerceptualHasher perceptualHasher,
             Map<String, String> params, Map<String, String> settings) {
         this.imageAnalysisService = imageAnalysisService;
         this.loggerService = loggerService;
         this.xmlExportService = xmlExportService;
         this.csvExportService = csvExportService;
+        this.summaryGeneratorService = summaryGeneratorService;
         this.perceptualHasher = perceptualHasher;
         this.params = params;
         this.settings = settings;
@@ -127,6 +140,14 @@ public class ScreenHandler {
         return sessionPlayTimestamps;
     }
 
+    public boolean wasLastScreenshotSaved() {
+        return lastScreenshotSaved;
+    }
+
+    public boolean wasLastSummaryGenerated() {
+        return lastSummaryGenerated;
+    }
+
     // -------------------------------------------------------------------------
     // Result screen
     // -------------------------------------------------------------------------
@@ -145,9 +166,15 @@ public class ScreenHandler {
      * @param songTimestamp
      *            elapsed time since OBS recording/streaming started at the point
      *            the song was detected, or {@code null} when no output was active
+     * @param lastKnownDiff
+     *            difficulty detected on the preceding select/detect screen via
+     *            button brightness; used as the authoritative source since the
+     *            result screen does not show difficulty buttons. May be
+     *            {@code null} or blank, in which case the hash-index value is used
+     *            as a fallback.
      * @return the recorded play, or {@code null} if processing failed
      */
-    public OnePlayData handleResultScreen(BufferedImage frame, Duration songTimestamp) {
+    public OnePlayData handleResultScreen(BufferedImage frame, Duration songTimestamp, String lastKnownDiff) {
         if (frame == null) {
             log.debug("handleResultScreen: frame is null, skipping");
             return null;
@@ -156,19 +183,23 @@ public class ScreenHandler {
             log.warn("handleResultScreen: frame does not match result-screen layout — skipping");
             return null;
         }
+        lastScreenshotSaved = false;
+        lastSummaryGenerated = false;
         try {
             String lamp = detectLampFromFrame(frame);
             BufferedImage jacketCrop = cropJacketLog(frame);
-            String[] identified = identifyResultJacket(frame);
+            String[] identified = identifyResultJacket(jacketCrop);
             String title = identified != null ? identified[0] : "Unknown";
-            String difficulty = identified != null ? identified[1] : "exh";
+            String difficulty = (lastKnownDiff != null && !lastKnownDiff.isBlank())
+                    ? lastKnownDiff
+                    : (identified != null ? identified[1] : "exh");
 
             MusicInfo best = loggerService.getBestFor(title, difficulty);
             int preScore = best != null ? best.getBestScore() : 0;
             int score = readScore(frame);
 
-            OnePlayData play = new OnePlayData(title, score, preScore, lamp, difficulty,
-                    LocalDateTime.now().toString());
+            String dateStr = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+            OnePlayData play = new OnePlayData(title, score, preScore, lamp, difficulty, dateStr);
             loggerService.pushPlay(play);
             sessionPlays.add(play);
             sessionPlayTimestamps.add(songTimestamp);
@@ -176,10 +207,15 @@ public class ScreenHandler {
             previousTotalVf = currentTotalVf;
             currentTotalVf = loggerService.getTotalVfInt() / 1000.0;
 
-            saveResultFiles(frame, jacketCrop, title, difficulty, lamp, score);
+            String screenshotPath = saveResultFiles(frame, jacketCrop, title, difficulty, lamp, score);
+            play.setScreenshotFile(screenshotPath);
+            lastScreenshotSaved = true;
+
             writeResultXml(title, difficulty);
             saveGoogleDriveCsv();
-            captureVolforce(frame);
+
+            String resourcesDir = settings.getOrDefault("resources_dir", "resources");
+            lastSummaryGenerated = summaryGeneratorService.generate(sessionPlays, params, settings, resourcesDir);
 
             return play;
         } catch (IOException e) {
@@ -204,40 +240,62 @@ public class ScreenHandler {
         return safeCrop(frame, jSx, jSy, jW, jH);
     }
 
-    private String[] identifyResultJacket(BufferedImage frame) {
-        int jacketSx = ParamUtils.getInt(params, "info_jacket_sx", 237);
-        int jacketSy = ParamUtils.getInt(params, "info_jacket_sy", 387);
-        int jacketW = ParamUtils.getInt(params, "info_jacket_w", 607);
-        int jacketH = ParamUtils.getInt(params, "info_jacket_h", 607);
-        return imageAnalysisService.identifyJacket(frame, new Rectangle(jacketSx, jacketSy, jacketW, jacketH), "");
+    private String[] identifyResultJacket(BufferedImage jacketCrop) {
+        return imageAnalysisService.identifyJacket(jacketCrop);
     }
 
     private int readScore(BufferedImage frame) {
-        int score = 0;
-        for (int i = 0; i < 4; i++) {
-            score = score * 10 + digitAt(frame, "result_score_large_" + i, 52, 51);
-        }
-        for (int i = 4; i < 8; i++) {
-            score = score * 10 + digitAt(frame, "result_score_small_" + i, 32, 31);
-        }
-        return score;
+        return imageAnalysisService.getScoreOnResult(frame, params);
     }
 
-    private void saveResultFiles(BufferedImage frame, BufferedImage jacketCrop, String title, String difficulty,
+    private String saveResultFiles(BufferedImage frame, BufferedImage jacketCrop, String title, String difficulty,
             String lamp, int score) throws IOException {
         String autosaveDir = settings.getOrDefault("autosave_dir", "out");
         File autosaveDirFile = new File(autosaveDir);
         if (!autosaveDirFile.exists()) {
             autosaveDirFile.mkdirs();
         }
-        String diff4 = difficulty.toUpperCase();
-        String score4 = String.format("%04d", score / 10000);
-        String timestamp = LocalDateTime.now().toString().replace(":", "-").replace(".", "-");
-        String fileName = "sdvx_" + StringUtils.sanitize(title) + "_" + diff4 + "_" + lamp + "_" + score4 + "_"
-                + timestamp + ".png";
-        ImageIO.write(frame, "png", new File(autosaveDir, fileName));
+
+        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+        String fileName;
+        boolean isUnknown = "Unknown".equalsIgnoreCase(title) || title == null || title.isBlank();
+        if (isUnknown) {
+            fileName = "sdvx_" + timestamp + ".png";
+        } else {
+            String sanitizedTitle = StringUtils.sanitize(title);
+            if (sanitizedTitle.length() > 120) {
+                sanitizedTitle = sanitizedTitle.substring(0, 120);
+            }
+            String diff4 = difficulty.toUpperCase();
+            String scoreStr = String.valueOf(score / 10000);
+            fileName = "sdvx_" + sanitizedTitle + "_" + diff4 + "_" + lamp + "_" + scoreStr + "_" + timestamp + ".png";
+        }
+
+        File screenshotFile = new File(autosaveDir, fileName);
+        ImageIO.write(frame, "png", screenshotFile);
+        log.info("Result screenshot saved: {}", screenshotFile.getAbsolutePath());
+
         if ("true".equalsIgnoreCase(settings.get("save_jacketimg"))) {
-            ImageIO.write(jacketCrop, "png", new File(autosaveDir, StringUtils.sanitize(title) + "_jacket.png"));
+            saveJacketFile(jacketCrop);
+        }
+
+        return screenshotFile.getAbsolutePath();
+    }
+
+    private void saveJacketFile(BufferedImage jacketCrop) {
+        try {
+            File jacketsDir = new File("jackets");
+            jacketsDir.mkdirs();
+            String hashStr = perceptualHasher.hash(jacketCrop);
+            File jacketFile = new File(jacketsDir, hashStr + ".png");
+            if (!jacketFile.exists()) {
+                ImageIO.write(jacketCrop, "png", jacketFile);
+                log.info("Jacket saved: {}", jacketFile.getAbsolutePath());
+            } else {
+                log.debug("Jacket already exists: {}", jacketFile.getName());
+            }
+        } catch (IOException e) {
+            log.warn("Failed to save jacket file: {}", e.getMessage());
         }
     }
 
@@ -304,7 +362,7 @@ public class ScreenHandler {
                 return null;
             }
             String title = identified[0];
-            String difficulty = identified[1];
+            String difficulty = imageAnalysisService.detectDifficultyFromButtons(frame, params);
             writeRivalViewXml(title, difficulty);
             OnePlayData importedPlay = null;
             if ("true".equalsIgnoreCase(settings.get("import_from_select"))) {
@@ -385,7 +443,12 @@ public class ScreenHandler {
         int jSy = ParamUtils.getInt(params, "select_jacket_sy", 242);
         int jW = ParamUtils.getInt(params, "select_jacket_w", 352);
         int jH = ParamUtils.getInt(params, "select_jacket_h", 352);
-        return imageAnalysisService.identifyJacket(freshFrame, new Rectangle(jSx, jSy, jW, jH), "");
+        String[] identified = imageAnalysisService.identifyJacket(freshFrame, new Rectangle(jSx, jSy, jW, jH), "");
+        if (identified == null) {
+            return null;
+        }
+        String detectedDiff = imageAnalysisService.detectDifficultyFromButtons(freshFrame, params);
+        return new String[]{identified[0], detectedDiff};
     }
 
     /**
@@ -395,14 +458,39 @@ public class ScreenHandler {
      * @param frame
      *            full-frame detect screen capture
      */
+    /**
+     * Saves 8 region crops from the detect screen to {@code out/select_*.png} for
+     * OBS browser source overlays.
+     *
+     * <p>
+     * Mirrors Python {@code GenSummary.update_musicinfo()} in
+     * {@code gen_summary.py:707}. All crops use the {@code info_*} param keys
+     * (detect-screen info panel), not the {@code select_*} params (which are for
+     * the small select-screen jacket only). The whole frame is also saved as
+     * {@code select_whole.png}.
+     * </p>
+     *
+     * @param frame
+     *            full-frame detect screen capture
+     */
     public void updateMusicInfo(BufferedImage frame) {
         File outDir = new File("out");
         outDir.mkdirs();
-        String[][] crops = {{"select_jacket", "jacket"}, {"select_title", "title"}, {"select_level", "level"},
-                {"select_difficulty", "difficulty"}, {"select_bpm", "bpm"}, {"select_effector", "effector"},
-                {"select_illustrator", "illustrator"}, {"select_whole", "whole"},};
+        // Each entry: {paramPrefix, outputName}
+        // Param keys (e.g. info_jacket_sx) mirror Python's
+        // get_detect_points('info_jacket')
+        String[][] crops = {{"info_jacket", "jacket"}, {"info_title", "title"}, {"info_lv", "level"},
+                {"info_diff", "difficulty"}, {"info_bpm", "bpm"}, {"info_ef", "effector"},
+                {"info_illust", "illustrator"},};
         for (String[] c : crops) {
             saveMusicInfoCrop(frame, outDir, c[0], c[1]);
+        }
+        // Save full rotated frame as select_whole.png (mirrors Python line 724:
+        // img.save('out/select_whole.png'))
+        try {
+            ImageIO.write(frame, "png", new File(outDir, "select_whole.png"));
+        } catch (IOException e) {
+            log.debug("updateMusicInfo: failed to save select_whole.png: {}", e.getMessage());
         }
     }
 
@@ -413,7 +501,7 @@ public class ScreenHandler {
             int w = ParamUtils.getInt(params, prefix + "_w", 100);
             int h = ParamUtils.getInt(params, prefix + "_h", 100);
             if (x == 0 && y == 0) {
-                log.debug("saveMusicInfoCrop: coords not configured for crop '{}', skipping", name);
+                log.debug("saveMusicInfoCrop: coords not configured for '{}', skipping", name);
                 return;
             }
             BufferedImage crop = safeCrop(frame, x, y, w, h);
@@ -435,10 +523,20 @@ public class ScreenHandler {
      * @param frame
      *            full-frame capture from which to crop
      */
-    public void captureVolforce(BufferedImage frame) {
+    /**
+     * Crops the Volforce and class-badge regions from the given frame, saves them
+     * as PNG files for OBS browser sources, and skips unchanged frames using
+     * perceptual hashing.
+     *
+     * @param frame
+     *            full-frame capture from which to crop
+     * @return {@code true} if {@code vf_cur.png} and {@code class_cur.png} were
+     *         written (i.e. the frame was bright enough and the content changed)
+     */
+    public boolean captureVolforce(BufferedImage frame) {
         if (frame == null) {
             log.debug("captureVolforce: frame is null, skipping");
-            return;
+            return false;
         }
         try {
             long pixelSum = computeTopLeftPixelSum(frame);
@@ -446,7 +544,7 @@ public class ScreenHandler {
             if (pixelSum < threshold && !"true".equalsIgnoreCase(settings.get("always_update_vf"))) {
                 log.debug("captureVolforce: pixel brightness {} below threshold {}, skipping unchanged frame", pixelSum,
                         threshold);
-                return;
+                return false;
             }
             BufferedImage vfCrop = cropVf(frame);
             BufferedImage classCrop = cropClass(frame);
@@ -467,8 +565,10 @@ public class ScreenHandler {
                 ImageIO.write(classCrop, "png", new File("out/class_pre.png"));
                 genFirstVf = true;
             }
+            return changed;
         } catch (IOException e) {
             log.warn("captureVolforce failed: {}", e.getMessage());
+            return false;
         }
     }
 
@@ -596,18 +696,6 @@ public class ScreenHandler {
     // -------------------------------------------------------------------------
     // Low-level image helpers
     // -------------------------------------------------------------------------
-
-    private int digitAt(BufferedImage frame, String keyPrefix, int defaultW, int defaultH) {
-        int sx = ParamUtils.getInt(params, keyPrefix + "_sx", 0);
-        int sy = ParamUtils.getInt(params, keyPrefix + "_sy", 0);
-        int w = ParamUtils.getInt(params, keyPrefix + "_w", defaultW);
-        int h = ParamUtils.getInt(params, keyPrefix + "_h", defaultH);
-        if (sx == 0 && sy == 0) {
-            return 0;
-        }
-        safeCrop(frame, sx, sy, w, h);
-        return 0;
-    }
 
     /**
      * Crops a region from the source image, clamping coordinates to valid bounds to

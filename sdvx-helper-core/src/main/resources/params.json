@@ -305,7 +305,7 @@
 
     "detect_wait":1.5,
 
-    "url_musiclist":"https://github.com/Throdax/sdvx_helper/raw/refs/heads/main/resources/musiclist.pkl",
+    "url_musiclist_xml":"https://github.com/Throdax/sdvx_helper/raw/refs/heads/main/sdvx-helper-core/src/main/resources/musiclist.xml",
 
     "$comment": "none"
 }

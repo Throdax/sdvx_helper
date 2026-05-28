@@ -10,24 +10,84 @@ import java.util.Locale;
  * across all views and OBS overlay XML files.
  * </p>
  *
+ * <p>
+ * SDVX scores are formatted with a comma after every <em>four</em> digits
+ * counted from the right (e.g. {@code 9950000} → {@code "995,0000"}), matching
+ * the Python reference implementation's {@code format_score} helper.
+ * </p>
+ *
  * @author Throdax
  * @since 2.0.0
  */
 public final class ScoreFormatter {
 
+    /**
+     * Utility class — not meant to be instantiated.
+     */
     private ScoreFormatter() {
-        // utility class
     }
 
     /**
-     * Formats a raw score as a comma-separated string (e.g. {@code "9,950,000"}).
+     * Formats a raw score using SDVX's four-digit grouping convention (e.g.
+     * {@code 9950000} → {@code "995,0000"}, {@code 393081} → {@code "39,3081"}).
+     *
+     * <p>
+     * Negative values (score differences) are handled transparently:
+     * {@code -9583334} → {@code "-958,3334"}. Values with four or fewer characters
+     * (including any leading minus) are returned as-is without a comma.
+     * </p>
      *
      * @param score
-     *            raw play score
+     *            raw play score or score difference
      * @return formatted score string
      */
     public static String formatScore(int score) {
-        return String.format(Locale.ROOT, "%,d", score);
+        String str = String.valueOf(score);
+        if (str.length() <= 4) {
+            return str;
+        }
+        return str.substring(0, str.length() - 4) + "," + str.substring(str.length() - 4);
+    }
+
+    /**
+     * Formats a raw score using SDVX's four-digit grouping convention and wraps the
+     * leading part in Discord bold markdown, matching the Python
+     * {@code format_score(score, bold=True)} output (e.g. {@code 393081} →
+     * {@code "**39**,3081"}).
+     *
+     * @param score
+     *            raw play score
+     * @return Discord-bold formatted score string
+     */
+    public static String formatScoreBold(int score) {
+        String str = String.valueOf(score);
+        if (str.length() <= 4) {
+            return "**" + str + "**";
+        }
+        return "**" + str.substring(0, str.length() - 4) + "**," + str.substring(str.length() - 4);
+    }
+
+    /**
+     * Formats a score difference with an explicit sign using SDVX's four-digit
+     * grouping convention (e.g. {@code 1000000} → {@code "+100,0000"},
+     * {@code -9583334} → {@code "-958,3334"}).
+     *
+     * <p>
+     * A {@code "+"} prefix is prepended for positive values. Negative values
+     * already carry their {@code "-"} from {@link #formatScore(int)}. Zero is
+     * returned without a sign prefix.
+     * </p>
+     *
+     * @param diff
+     *            score difference (may be negative)
+     * @return signed, SDVX-formatted string
+     */
+    public static String formatDiff(int diff) {
+        String formatted = formatScore(diff);
+        if (diff > 0) {
+            return "+" + formatted;
+        }
+        return formatted;
     }
 
     /**
@@ -65,18 +125,6 @@ public final class ScoreFormatter {
      */
     public static String formatTotalVf(int totalVfInt) {
         return String.format(Locale.ROOT, "%.3f", totalVfInt / 1000.0);
-    }
-
-    /**
-     * Formats a score difference with an explicit sign (e.g. {@code "+50,000"} or
-     * {@code "-20,000"}).
-     *
-     * @param diff
-     *            score difference (may be negative)
-     * @return signed, comma-separated string
-     */
-    public static String formatDiff(int diff) {
-        return String.format(Locale.ROOT, "%+,d", diff);
     }
 
     /**

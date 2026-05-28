@@ -3,7 +3,11 @@ package com.sdvxhelper.app.controller;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -42,6 +46,7 @@ import com.sdvxhelper.app.controller.factories.DetectionThreadFactory;
 import com.sdvxhelper.app.controller.listeners.GlobalHotkeyService;
 import com.sdvxhelper.i18n.LocaleManager;
 import com.sdvxhelper.model.OnePlayData;
+import com.sdvxhelper.model.WebhookConfig;
 import com.sdvxhelper.model.enums.DetectMode;
 import com.sdvxhelper.network.DiscordPresenceClient;
 import com.sdvxhelper.network.DiscordWebhookClient;
@@ -54,9 +59,11 @@ import com.sdvxhelper.repository.MusicListRepository;
 import com.sdvxhelper.repository.ParamsRepository;
 import com.sdvxhelper.repository.PlayLogRepository;
 import com.sdvxhelper.repository.SettingsRepository;
+import com.sdvxhelper.repository.WebhookConfigRepository;
 import com.sdvxhelper.service.CsvExportService;
 import com.sdvxhelper.service.ImageAnalysisService;
 import com.sdvxhelper.service.SdvxLoggerService;
+import com.sdvxhelper.service.SummaryGeneratorService;
 import com.sdvxhelper.service.SummaryImageService;
 import com.sdvxhelper.service.XmlExportService;
 import com.sdvxhelper.util.ScoreFormatter;
@@ -113,6 +120,12 @@ public class MainController implements Initializable, DetectionListener {
     @FXML
     private Label detectModeLabel;
     @FXML
+    private Label captureScreenshotIcon;
+    @FXML
+    private Label captureSummaryIcon;
+    @FXML
+    private Label captureVfIcon;
+    @FXML
     private Label statusLabel;
     @FXML
     private Button startStopButton;
@@ -143,6 +156,7 @@ public class MainController implements Initializable, DetectionListener {
 
     private SdvxLoggerService loggerService;
     private SummaryImageService summaryImageService;
+    private SummaryGeneratorService summaryGeneratorService;
     private CsvExportService csvExportService;
     private XmlExportService xmlExportService;
     private DiscordPresenceClient discordPresenceClient;
@@ -161,6 +175,7 @@ public class MainController implements Initializable, DetectionListener {
     private ExecutorService executor;
     private GlobalHotkeyService hotkeyService;
     private Map<String, String> settings = Collections.emptyMap();
+    private boolean windowCloseDone = false;
 
     // -------------------------------------------------------------------------
     // Initializable
@@ -217,6 +232,10 @@ public class MainController implements Initializable, DetectionListener {
         Map<String, String> params = new ParamsRepository().load(paramsPath);
 
         MusicListRepository musicListRepo = new MusicListRepository();
+        if ("true".equalsIgnoreCase(settings.get("autoload_musiclist"))) {
+            downloadMusicListOnStartup(params, musicListRepo);
+        }
+
         PlayLogRepository playLogRepo = new PlayLogRepository();
         loggerService = new SdvxLoggerService(playLogRepo, musicListRepo);
         ImageAnalysisService imageAnalysisService = new ImageAnalysisService(musicListRepo);
@@ -232,11 +251,33 @@ public class MainController implements Initializable, DetectionListener {
             downloadRivalsOnStartup();
         }
 
+        summaryGeneratorService = new SummaryGeneratorService();
         ScreenHandler screenHandler = new ScreenHandler(imageAnalysisService, loggerService, xmlExportService,
-                csvExportService, perceptualHasher, params, settings);
+                csvExportService, summaryGeneratorService, perceptualHasher, params, settings);
+
+        String autosaveDir = settings.getOrDefault("autosave_dir", "out");
+        String resourcesDir = settings.getOrDefault("resources_dir", "resources");
+        int logpicOffsetHours = Integer.parseInt(settings.getOrDefault("logpic_offset_time", "2"));
+        log.info("Generating startup summary overlays from '{}' ({}h window)", autosaveDir, logpicOffsetHours);
+        summaryGeneratorService.generateFromResultsDir(autosaveDir, logpicOffsetHours, params, settings, resourcesDir);
 
         ObsOverlayService obsOverlayService = new ObsOverlayService(settings);
-        WebhookDispatcher webhookDispatcher = new WebhookDispatcher(discordWebhookClient, loggerService, settings);
+
+        WebhookConfigRepository webhookRepo = new WebhookConfigRepository();
+        boolean migrated = webhookRepo.migrateFromLegacySettings(settings);
+        if (migrated) {
+            try {
+                new SettingsRepository().save(settings);
+                log.info("Legacy webhook keys removed from settings.json after migration");
+            } catch (IOException e) {
+                log.warn("Could not persist cleaned settings.json after webhook migration: {}", e.getMessage());
+            }
+        }
+        List<WebhookConfig> webhookConfigs = webhookRepo.load();
+        log.info("Loaded {} webhook configuration(s)", webhookConfigs.size());
+
+        WebhookDispatcher webhookDispatcher = new WebhookDispatcher(discordWebhookClient, loggerService, settings,
+                webhookConfigs);
 
         detectionEngine = DetectionEngine.builder().listener(this).imageAnalysisService(imageAnalysisService)
                 .discordPresenceClient(discordPresenceClient).screenHandler(screenHandler)
@@ -271,6 +312,42 @@ public class MainController implements Initializable, DetectionListener {
         } catch (IOException e) {
             log.warn("Discord Rich Presence unavailable: {}", e.getMessage());
             return null;
+        }
+    }
+
+    /**
+     * Downloads the latest {@code musiclist.xml} from the URL configured in
+     * {@code params["url_musiclist_xml"]} and saves it to
+     * {@code resources/musiclist.xml}, then reloads the repository.
+     *
+     * <p>
+     * Mirrors Python's {@code update_musiclist()} at line 259 of
+     * {@code sdvx_helper.pyw}.
+     * </p>
+     *
+     * @param params
+     *            loaded params map
+     * @param musicListRepo
+     *            repository to reload after download
+     */
+    private void downloadMusicListOnStartup(Map<String, String> params, MusicListRepository musicListRepo) {
+        String url = params.get("url_musiclist_xml");
+        if (url == null || url.isBlank()) {
+            log.warn("autoload_musiclist: url_musiclist_xml not set in params.json, skipping");
+            return;
+        }
+        log.info("autoload_musiclist: downloading musiclist.xml from {}", url);
+        try {
+            java.net.URI uri = java.net.URI.create(url);
+            byte[] data = uri.toURL().openStream().readAllBytes();
+            java.io.File destDir = new java.io.File("resources");
+            destDir.mkdirs();
+            java.io.File destFile = new java.io.File(destDir, "musiclist.xml");
+            java.nio.file.Files.write(destFile.toPath(), data);
+            musicListRepo.load();
+            log.info("autoload_musiclist: musiclist.xml updated ({} bytes)", data.length);
+        } catch (IOException e) {
+            log.warn("autoload_musiclist: failed to download musiclist.xml: {}", e.getMessage());
         }
     }
 
@@ -317,7 +394,12 @@ public class MainController implements Initializable, DetectionListener {
 
     @Override
     public void onModeChanged(DetectMode mode) {
-        Platform.runLater(() -> detectModeLabel.setText(mode.name()));
+        Platform.runLater(() -> {
+            detectModeLabel.setText(mode.name());
+            if (mode != DetectMode.RESULT) {
+                hideCaptureIndicators();
+            }
+        });
     }
 
     @Override
@@ -337,6 +419,29 @@ public class MainController implements Initializable, DetectionListener {
     @Override
     public void onObsOutputStarted(String outputType) {
         Platform.runLater(() -> showObsOutputLabel(outputType));
+    }
+
+    @Override
+    public void onResultCaptured(boolean screenshotSaved, boolean summaryGenerated, boolean vfCaptured) {
+        Platform.runLater(() -> {
+            showCaptureIndicator(captureScreenshotIcon, screenshotSaved);
+            showCaptureIndicator(captureSummaryIcon, summaryGenerated);
+            showCaptureIndicator(captureVfIcon, vfCaptured);
+        });
+    }
+
+    private void showCaptureIndicator(Label icon, boolean visible) {
+        if (icon == null) {
+            return;
+        }
+        icon.setVisible(visible);
+        icon.setManaged(visible);
+    }
+
+    private void hideCaptureIndicators() {
+        showCaptureIndicator(captureScreenshotIcon, false);
+        showCaptureIndicator(captureSummaryIcon, false);
+        showCaptureIndicator(captureVfIcon, false);
     }
 
     // -------------------------------------------------------------------------
@@ -770,17 +875,41 @@ public class MainController implements Initializable, DetectionListener {
     /**
      * Performs on-close actions: generate today summary, OBS quit event, Maya2
      * upload, play-count CSV, send playlist.
+     *
+     * <p>
+     * This method is idempotent — subsequent calls after the first are silently
+     * ignored. This allows both the Exit button handler and
+     * {@link com.sdvxhelper.app.SdvxHelperApp#stop()} to call it without
+     * duplicating work.
+     * </p>
      */
     public void onWindowClose() {
+        if (windowCloseDone) {
+            log.debug("onWindowClose: already executed, skipping");
+            return;
+        }
+        windowCloseDone = true;
         log.info("Performing on-close actions");
         if (loggerService == null) {
             log.warn("onWindowClose: loggerService not initialised, skipping on-close actions");
             return;
         }
         String autosaveDir = settings.getOrDefault("autosave_dir", "out");
-        List<OnePlayData> todayPlays = loggerService.getTodayLog();
-        Map<String, String> params = detectionEngine != null ? detectionEngine.getParams() : Collections.emptyMap();
-        summaryImageService.generateAndSave(todayPlays, Path.of(autosaveDir), params);
+        String summaryFilename = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + "_summary.png";
+        File summaryFile = Path.of(autosaveDir).resolve(summaryFilename).toFile();
+        File summarySource = new File("out", "summary_full.png");
+        if (summarySource.exists()) {
+            try {
+                summaryFile.getParentFile().mkdirs();
+                Files.copy(summarySource.toPath(), summaryFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                log.info("Session summary copied from {} to {}", summarySource.getAbsolutePath(),
+                        summaryFile.getAbsolutePath());
+            } catch (IOException e) {
+                log.warn("Failed to copy session summary: {}", e.getMessage());
+            }
+        } else {
+            log.warn("Session summary source not found: {}, skipping save", summarySource.getAbsolutePath());
+        }
 
         if (detectionEngine != null) {
             detectionEngine.triggerQuitSources();

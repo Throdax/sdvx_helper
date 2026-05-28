@@ -116,15 +116,10 @@ public final class DefaultSettings {
 
         defaults.put("clip_lxly", "false");
 
-        // Webhooks
+        // Webhooks — per-webhook config is stored in webhooks.json (see
+        // WebhookConfigRepository)
         defaults.put("webhook_player_name", "");
         defaults.put("webhook_reg_url", "");
-        defaults.put("webhook_names", Collections.emptyList().toString());
-        defaults.put("webhook_urls", Collections.emptyList().toString());
-        defaults.put("webhook_enable_pics", Collections.emptyList().toString());
-        defaults.put("webhook_playlist", Collections.emptyList().toString());
-        defaults.put("webhook_enable_lvs", Collections.emptyList().toString());
-        defaults.put("webhook_enable_lamps", Collections.emptyList().toString());
 
         // Google Drive / rival
         defaults.put("get_rival_score", "false");

@@ -111,6 +111,14 @@
                 <Separator/>
                 <Label text="%label.main.detection.state" styleClass="sub-heading"/>
                 <Label fx:id="detectModeLabel" text="INIT" styleClass="status-label"/>
+                <HBox spacing="6">
+                    <Label fx:id="captureScreenshotIcon" text="%indicator.main.capture.screenshot"
+                           styleClass="capture-indicator" visible="false" managed="false"/>
+                    <Label fx:id="captureSummaryIcon" text="%indicator.main.capture.summary"
+                           styleClass="capture-indicator" visible="false" managed="false"/>
+                    <Label fx:id="captureVfIcon" text="%indicator.main.capture.vf"
+                           styleClass="capture-indicator" visible="false" managed="false"/>
+                </HBox>
                 <HBox spacing="8">
                     <Button fx:id="startStopButton" text="%button.main.start.detection"
                             onAction="#onStartStop" styleClass="button-success"/>
