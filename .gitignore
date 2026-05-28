@@ -11,7 +11,6 @@ python/tmp/*
 python/jackets/*
 python/*.zip
 python/log/*
-python/params_secret.py
 python/out/*
 python/alllog.pkl
 python/settings.json
