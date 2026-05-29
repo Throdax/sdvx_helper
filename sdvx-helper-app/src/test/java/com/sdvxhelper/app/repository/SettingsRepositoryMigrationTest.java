@@ -88,8 +88,17 @@ class SettingsRepositoryMigrationTest {
         SettingsRepository repo = new SettingsRepository(fixture("settings-bad.json"));
         Map<String, String> settings = repo.load();
 
-        // "detect_wait": 2.2 (bare JSON float)
-        Assertions.assertEquals("2.2", settings.get("detect_wait"));
+        // "autosave_prewait": 0.0 (bare JSON float)
+        Assertions.assertEquals("0.0", settings.get("autosave_prewait"));
+    }
+
+    @Test
+    void detectWaitRemovedFromLegacySettings() {
+        SettingsRepository repo = new SettingsRepository(fixture("settings-bad.json"));
+        Map<String, String> settings = repo.load();
+
+        Assertions.assertFalse(settings.containsKey("detect_wait"),
+                "'detect_wait' must not appear in settings — it belongs in params.json");
     }
 
     @Test
@@ -177,7 +186,6 @@ class SettingsRepositoryMigrationTest {
         Assertions.assertEquals("localhost", settings.get("host"));
         Assertions.assertEquals("4444", settings.get("port"));
         Assertions.assertEquals("false", settings.get("autosave_always"));
-        Assertions.assertEquals("2.7", settings.get("detect_wait"));
     }
 
     @Test

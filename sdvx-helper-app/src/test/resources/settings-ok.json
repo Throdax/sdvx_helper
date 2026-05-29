@@ -17,7 +17,6 @@
     "autosave_interval": "60",
     "play0_interval": "10",
     "autosave_prewait": "0.0",
-    "detect_wait": "2.7",
     "obs_source": "",
     "orientation": "top",
     "orientation_top": "top",

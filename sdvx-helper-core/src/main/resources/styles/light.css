@@ -185,6 +185,7 @@ TableView .column-header-background {
 TableView .column-header Label {
     -fx-text-fill: #333333;
     -fx-font-weight: bold;
+    -fx-alignment: CENTER-LEFT;
 }
 
 /*

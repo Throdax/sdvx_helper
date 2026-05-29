@@ -1,16 +1,23 @@
 package com.sdvxhelper.app;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
+import java.util.Collections;
+import java.util.List;
 import java.util.Locale;
 import java.util.ResourceBundle;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
+import javafx.scene.image.Image;
 import javafx.stage.Stage;
 
 import com.sdvxhelper.app.controller.MainController;
+import com.sdvxhelper.app.controller.detection.DetectionEngine;
+import com.sdvxhelper.model.OnePlayData;
+import com.sdvxhelper.model.enums.DetectMode;
 import com.sdvxhelper.i18n.LocaleManager;
 import com.sdvxhelper.repository.SettingsRepository;
 import com.sdvxhelper.ui.WindowPositionHelper;
@@ -59,6 +66,7 @@ public class SdvxHelperApp extends Application {
             }
         }));
         buildScene(LocaleManager.getInstance().getCurrentLocale());
+        applyIcon(stage);
         stage.setTitle("SDVX Helper " + VersionUtil.getVersion("helper"));
         WindowPositionHelper.applyAndPersist(stage, repo, "lx", "ly");
         stage.show();
@@ -100,9 +108,32 @@ public class SdvxHelperApp extends Application {
     }
 
     private void rebuildScene(Locale locale) throws IOException {
+        List<OnePlayData> savedPlays = Collections.emptyList();
+        String savedOutput = "";
+        DetectMode savedMode = DetectMode.INIT;
         if (currentController != null) {
+            savedPlays = currentController.getSessionLogSnapshot();
+            savedOutput = currentController.getOutputText();
+            DetectionEngine oldEngine = currentController.getDetectionEngine();
+            if (oldEngine != null) {
+                savedMode = oldEngine.getCurrentMode();
+            }
             currentController.cleanup();
         }
         buildScene(locale);
+        currentController.setInitialDetectMode(savedMode);
+        currentController.restoreSessionData(savedPlays, savedOutput);
+    }
+
+    private void applyIcon(Stage stage) {
+        try (InputStream iconStream = getClass().getResourceAsStream("/icon.ico")) {
+            if (iconStream != null) {
+                stage.getIcons().add(new Image(iconStream));
+            } else {
+                log.warn("icon.ico not found on classpath, window icon will not be set");
+            }
+        } catch (IOException e) {
+            log.warn("Failed to load window icon: {}", e.getMessage());
+        }
     }
 }

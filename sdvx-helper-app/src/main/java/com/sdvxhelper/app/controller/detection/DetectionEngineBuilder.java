@@ -3,6 +3,7 @@ package com.sdvxhelper.app.controller.detection;
 import java.util.Map;
 import java.util.Objects;
 
+import com.sdvxhelper.model.enums.DetectMode;
 import com.sdvxhelper.network.DiscordPresenceClient;
 import com.sdvxhelper.service.ImageAnalysisService;
 
@@ -34,6 +35,7 @@ public class DetectionEngineBuilder {
     private WebhookDispatcher webhookDispatcher;
     private Map<String, String> params;
     private Map<String, String> settings;
+    private DetectMode initialMode = DetectMode.INIT;
 
     /**
      * Sets the UI callback target that receives detection results.
@@ -132,6 +134,21 @@ public class DetectionEngineBuilder {
     }
 
     /**
+     * Sets the initial detection mode for the engine. Defaults to
+     * {@link DetectMode#INIT}. Pass the previous engine's mode when rebuilding
+     * after a locale switch so the engine does not falsely re-trigger a
+     * transition for a screen that was already processed.
+     *
+     * @param initialMode
+     *            the mode the engine should start in
+     * @return this builder
+     */
+    public DetectionEngineBuilder initialMode(DetectMode initialMode) {
+        this.initialMode = initialMode;
+        return this;
+    }
+
+    /**
      * Validates all mandatory fields, constructs and returns a fully initialised
      * {@link DetectionEngine}.
      *
@@ -157,6 +174,7 @@ public class DetectionEngineBuilder {
         engine.setWebhookDispatcher(webhookDispatcher);
         engine.setParams(params);
         engine.setSettings(settings);
+        engine.setCurrentMode(initialMode);
         return engine;
     }
 }

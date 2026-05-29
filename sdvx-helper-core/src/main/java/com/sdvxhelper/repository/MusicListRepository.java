@@ -206,11 +206,15 @@ public class MusicListRepository extends JaxbRepository<MusicList> {
         jacketHashIndex = new HashMap<>();
         titleIndex = new HashMap<>();
 
-        // Build jacket hash index
+        // Build jacket hash index.
+        // putIfAbsent ensures the first difficulty entry for a given hash wins
+        // (nov/adv/exh appear before APPEND in the XML), so songs that share
+        // their jacket across multiple difficulties are not incorrectly labelled
+        // as APPEND — mirroring Python's per-difficulty bucket search.
         for (DifficultyHashGroup group : musicList.getJacket()) {
             String diff = group.getDifficulty();
             for (HashEntry entry : group.getHashes().getEntries()) {
-                jacketHashIndex.put(entry.getHash(), new String[]{entry.getTitle(), diff});
+                jacketHashIndex.putIfAbsent(entry.getHash(), new String[]{entry.getTitle(), diff});
             }
         }
 

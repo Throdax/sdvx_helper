@@ -22,16 +22,6 @@ public interface DetectionListener {
     void onPlayRecorded(OnePlayData play);
 
     /**
-     * Called when the currently selected song title or difficulty changes.
-     *
-     * @param title
-     *            song title
-     * @param diff
-     *            difficulty string (e.g. "exh")
-     */
-    void onTitleAndDiffChanged(String title, String diff);
-
-    /**
      * Called when the detected game state changes.
      *
      * @param mode

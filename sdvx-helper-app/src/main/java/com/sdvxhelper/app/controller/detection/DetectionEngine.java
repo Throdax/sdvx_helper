@@ -124,7 +124,7 @@ public class DetectionEngine {
             try {
                 captureCurrentFrame();
                 processCurrentFrame();
-                Thread.sleep(500);
+                Thread.sleep(100);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 break;
@@ -556,7 +556,16 @@ public class DetectionEngine {
     }
 
     private void processDetectMode(BufferedImage frame) {
-        String[] titleDiff = screenHandler.handleDetectMode(frame, currentFrame);
+        double detectWait = ParamUtils.parseDoubleParam(params.get("detect_wait"), 1.5);
+        try {
+            Thread.sleep((long) (detectWait * 1000));
+        } catch (InterruptedException ie) {
+            Thread.currentThread().interrupt();
+            return;
+        }
+        captureCurrentFrame();
+        BufferedImage freshFrame = currentFrame != null ? currentFrame : frame;
+        String[] titleDiff = screenHandler.handleDetectMode(freshFrame);
         doneThisSong = true;
         if (Objects.nonNull(outputStartTime)) {
             pendingSongTimestamp = Duration.between(outputStartTime, Instant.now());
@@ -579,9 +588,6 @@ public class DetectionEngine {
             discordPresenceClient.updatePresence(PlayState.PLAYING, lastKnownTitle, lastKnownDiff,
                     ScoreFormatter.formatTotalVf((int) (screenHandler.getCurrentTotalVf() * 1000)), null);
         }
-        final String ftitle = titleDiff[0];
-        final String fdiff = titleDiff[1];
-        Platform.runLater(() -> listener.onTitleAndDiffChanged(ftitle, fdiff));
         log.info("Detect mode processed for: {}", lastKnownTitle);
     }
 
@@ -721,6 +727,19 @@ public class DetectionEngine {
      */
     public void setSettings(Map<String, String> settings) {
         this.settings = settings;
+    }
+
+    /**
+     * Sets the initial detection mode. Used by {@link DetectionEngineBuilder} to
+     * restore the previous engine's mode when rebuilding after a locale switch,
+     * preventing a false re-trigger of the transition handler for a screen that
+     * was already processed before the switch.
+     *
+     * @param currentMode
+     *            the mode the engine should start in
+     */
+    public void setCurrentMode(DetectMode currentMode) {
+        this.currentMode = currentMode;
     }
 
 }

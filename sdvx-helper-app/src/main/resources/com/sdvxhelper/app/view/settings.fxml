@@ -142,9 +142,6 @@
                     <ColumnConstraints hgrow="ALWAYS" />
                 </columnConstraints>
 
-                <Label text="%label.settings.detect.wait" GridPane.columnIndex="0" GridPane.rowIndex="0" styleClass="muted" />
-                <TextField fx:id="detectWaitField" GridPane.columnIndex="1" GridPane.rowIndex="0" prefColumnCount="10" maxWidth="120" />
-
                 <Label text="%text.settings.resultsAutoSaveFolder" GridPane.columnIndex="0" GridPane.rowIndex="1" styleClass="muted" />
                 <HBox spacing="6" GridPane.columnIndex="1" GridPane.rowIndex="1">
                     <TextField fx:id="autosaveDirField" prefColumnCount="100" HBox.hgrow="ALWAYS" />

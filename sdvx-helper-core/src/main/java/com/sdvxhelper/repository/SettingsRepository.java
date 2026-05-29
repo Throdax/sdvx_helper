@@ -85,6 +85,16 @@ public class SettingsRepository {
             log.info("settings.json not found; using defaults");
         }
 
+        // Remove keys that have moved out of settings into params.json
+        java.util.List<String> obsoleteKeys = java.util.List.of("detect_wait");
+        for (String key : obsoleteKeys) {
+            if (settings.containsKey(key)) {
+                String oldValue = settings.remove(key);
+                log.info("Removed obsolete settings key '{}' (was '{}'); value is now calibrated in params.json",
+                        key, oldValue);
+            }
+        }
+
         // Merge missing keys from defaults
         Map<String, String> defaults = DefaultSettings.getDefaults();
         int added = 0;

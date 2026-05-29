@@ -7,6 +7,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -32,6 +33,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
+import javafx.beans.property.SimpleStringProperty;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
@@ -106,18 +108,6 @@ public class MainController implements Initializable, DetectionListener {
     @FXML
     private Label playCountLabel;
     @FXML
-    private Label titleLabel;
-    @FXML
-    private Label diffLabel;
-    @FXML
-    private Label levelLabel;
-    @FXML
-    private Label bestLabel;
-    @FXML
-    private Label lampLabel;
-    @FXML
-    private Label vfLabel;
-    @FXML
     private Label detectModeLabel;
     @FXML
     private Label captureScreenshotIcon;
@@ -128,10 +118,6 @@ public class MainController implements Initializable, DetectionListener {
     @FXML
     private Label statusLabel;
     @FXML
-    private Button startStopButton;
-    @FXML
-    private Button popPlayButton;
-    @FXML
     private Button f9Button;
     @FXML
     private TableView<OnePlayData> sessionLogTable;
@@ -140,7 +126,7 @@ public class MainController implements Initializable, DetectionListener {
     @FXML
     private TableColumn<OnePlayData, String> logDiffColumn;
     @FXML
-    private TableColumn<OnePlayData, Integer> logScoreColumn;
+    private TableColumn<OnePlayData, String> logScoreColumn;
     @FXML
     private TableColumn<OnePlayData, String> logLampColumn;
     @FXML
@@ -176,6 +162,7 @@ public class MainController implements Initializable, DetectionListener {
     private GlobalHotkeyService hotkeyService;
     private Map<String, String> settings = Collections.emptyMap();
     private boolean windowCloseDone = false;
+    private volatile DetectMode initialDetectMode = DetectMode.INIT;
 
     // -------------------------------------------------------------------------
     // Initializable
@@ -183,11 +170,24 @@ public class MainController implements Initializable, DetectionListener {
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
+        DateTimeFormatter logDateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
         logTitleColumn.setCellValueFactory(new PropertyValueFactory<>("title"));
-        logDiffColumn.setCellValueFactory(new PropertyValueFactory<>("difficulty"));
-        logScoreColumn.setCellValueFactory(new PropertyValueFactory<>("curScore"));
-        logLampColumn.setCellValueFactory(new PropertyValueFactory<>("lamp"));
-        logDateColumn.setCellValueFactory(new PropertyValueFactory<>("date"));
+        logDiffColumn.setCellValueFactory(cell -> {
+            String diff = cell.getValue().getDifficulty();
+            return new SimpleStringProperty(diff != null ? diff.toUpperCase() : "");
+        });
+        logScoreColumn.setCellValueFactory(cell ->
+            new SimpleStringProperty(ScoreFormatter.formatScore(cell.getValue().getCurScore()))
+        );
+        logLampColumn.setCellValueFactory(cell -> {
+            String lamp = cell.getValue().getLamp();
+            return new SimpleStringProperty(lamp != null ? lamp.toUpperCase() : "");
+        });
+        logDateColumn.setCellValueFactory(cell -> {
+            LocalDateTime date = cell.getValue().getDate();
+            return new SimpleStringProperty(date != null ? date.format(logDateFormatter) : "");
+        });
         sessionLogTable.setItems(sessionLogData);
         sessionLogTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
 
@@ -251,7 +251,7 @@ public class MainController implements Initializable, DetectionListener {
             downloadRivalsOnStartup();
         }
 
-        summaryGeneratorService = new SummaryGeneratorService();
+        summaryGeneratorService = new SummaryGeneratorService(imageAnalysisService);
         ScreenHandler screenHandler = new ScreenHandler(imageAnalysisService, loggerService, xmlExportService,
                 csvExportService, summaryGeneratorService, perceptualHasher, params, settings);
 
@@ -259,7 +259,9 @@ public class MainController implements Initializable, DetectionListener {
         String resourcesDir = settings.getOrDefault("resources_dir", "resources");
         int logpicOffsetHours = Integer.parseInt(settings.getOrDefault("logpic_offset_time", "2"));
         log.info("Generating startup summary overlays from '{}' ({}h window)", autosaveDir, logpicOffsetHours);
-        summaryGeneratorService.generateFromResultsDir(autosaveDir, logpicOffsetHours, params, settings, resourcesDir);
+        List<OnePlayData> preloadedPlays = summaryGeneratorService.generateFromResultsDir(autosaveDir,
+                logpicOffsetHours, params, settings, resourcesDir);
+        screenHandler.addPreloadedPlays(preloadedPlays);
 
         ObsOverlayService obsOverlayService = new ObsOverlayService(settings);
 
@@ -282,7 +284,7 @@ public class MainController implements Initializable, DetectionListener {
         detectionEngine = DetectionEngine.builder().listener(this).imageAnalysisService(imageAnalysisService)
                 .discordPresenceClient(discordPresenceClient).screenHandler(screenHandler)
                 .obsOverlayService(obsOverlayService).webhookDispatcher(webhookDispatcher).params(params)
-                .settings(settings).build();
+                .settings(settings).initialMode(initialDetectMode).build();
 
         Platform.runLater(() -> {
             refreshVfDisplay();
@@ -378,17 +380,14 @@ public class MainController implements Initializable, DetectionListener {
     @Override
     public void onPlayRecorded(OnePlayData play) {
         Platform.runLater(() -> {
-            sessionLogData.add(play);
+            sessionLogData.add(0, play);
             sessionLogTable.scrollTo(play);
             refreshVfDisplay();
-        });
-    }
-
-    @Override
-    public void onTitleAndDiffChanged(String title, String diff) {
-        Platform.runLater(() -> {
-            titleLabel.setText(title);
-            diffLabel.setText(diff.toUpperCase());
+            if (play.getScreenshotFile() != null && !play.getScreenshotFile().isBlank()) {
+                ResourceBundle bundle = LocaleManager.getInstance().getBundle();
+                String msg = bundle.getString("message.screenshot.saved") + " -> " + play.getScreenshotFile();
+                outputArea.appendText(msg + "\n");
+            }
         });
     }
 
@@ -455,70 +454,13 @@ public class MainController implements Initializable, DetectionListener {
             return;
         }
         detectionEngine.start();
-        startStopButton.setText("Stop Detection");
-        startStopButton.getStyleClass().removeAll("button-success");
-        startStopButton.getStyleClass().add("button-danger");
         setStatus("Detection running…");
         executor.submit(detectionEngine::runDetectionLoop);
-    }
-
-    private void stopDetection() {
-        if (detectionEngine != null) {
-            detectionEngine.stop();
-        }
-        startStopButton.setText("Start Detection");
-        startStopButton.getStyleClass().removeAll("button-danger");
-        startStopButton.getStyleClass().add("button-success");
-        setStatus("Detection stopped");
     }
 
     // -------------------------------------------------------------------------
     // FXML action handlers
     // -------------------------------------------------------------------------
-
-    /**
-     * Toggles the detection loop on or off.
-     *
-     * @param event
-     *            action event from the start/stop button
-     */
-    @FXML
-    public void onStartStop(ActionEvent event) {
-        if (detectionEngine != null && detectionEngine.isRunning()) {
-            stopDetection();
-        } else {
-            startDetection();
-        }
-    }
-
-    /**
-     * Removes the most recently recorded play (undo).
-     *
-     * @param event
-     *            action event
-     */
-    @FXML
-    public void onPopPlay(ActionEvent event) {
-        if (loggerService == null) {
-            log.warn("onPopPlay: loggerService not initialised, ignoring action");
-            return;
-        }
-        executor.submit(() -> {
-            try {
-                OnePlayData removed = loggerService.popLastPlay();
-                Platform.runLater(() -> {
-                    if (removed != null) {
-                        sessionLogData.remove(removed);
-                        refreshVfDisplay();
-                        setStatus("Removed last play: " + removed.getTitle());
-                    }
-                });
-            } catch (IOException e) {
-                log.error("Failed to undo last play", e);
-                Platform.runLater(() -> setStatus("Error: " + e.getMessage()));
-            }
-        });
-    }
 
     /**
      * Saves the Volforce and class-badge images to disk (F4).
@@ -962,6 +904,68 @@ public class MainController implements Initializable, DetectionListener {
         } catch (IOException e) {
             log.debug("Maya2 upload failed: {}", e.getMessage());
         }
+    }
+
+    /**
+     * Returns the current detection engine instance, or {@code null} if
+     * initialisation has not yet completed. Used by
+     * {@link com.sdvxhelper.app.SdvxHelperApp} to capture the active mode before
+     * a locale-triggered scene rebuild so it can be forwarded to the replacement
+     * controller.
+     *
+     * @return the detection engine, or {@code null}
+     */
+    public DetectionEngine getDetectionEngine() {
+        return detectionEngine;
+    }
+
+    /**
+     * Sets the detection mode that the new engine should start in. Must be called
+     * before the background {@code initialise()} job reads the field. Used by
+     * {@link com.sdvxhelper.app.SdvxHelperApp} during a locale-triggered scene
+     * rebuild to prevent the replacement engine from falsely re-triggering a
+     * screen transition for a screen that was already processed before the switch.
+     *
+     * @param mode
+     *            the mode to start in
+     */
+    public void setInitialDetectMode(DetectMode mode) {
+        initialDetectMode = mode;
+    }
+
+    /**
+     * Returns a snapshot of the current session log entries so they can be
+     * restored after a locale-triggered scene rebuild.
+     *
+     * @return immutable copy of the session log items
+     */
+    public List<OnePlayData> getSessionLogSnapshot() {
+        return List.copyOf(sessionLogData);
+    }
+
+    /**
+     * Returns the current text of the output log area so it can be restored
+     * after a locale-triggered scene rebuild.
+     *
+     * @return output area text
+     */
+    public String getOutputText() {
+        return outputArea.getText();
+    }
+
+    /**
+     * Restores session log rows and output log text that were captured before a
+     * locale-triggered scene rebuild. Must be called on the JavaFX application
+     * thread.
+     *
+     * @param plays
+     *            session log entries to restore
+     * @param outputText
+     *            output area text to restore
+     */
+    public void restoreSessionData(List<OnePlayData> plays, String outputText) {
+        sessionLogData.setAll(plays);
+        outputArea.setText(outputText);
     }
 
     /**

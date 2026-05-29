@@ -62,8 +62,8 @@ class StringUtilsTest {
     }
 
     @Test
-    void sanitizeLeavesNormalTitleUnchanged() {
-        Assertions.assertEquals("Normal Song Title 123", StringUtils.sanitize("Normal Song Title 123"));
+    void sanitizeReplacesSpacesWithUnderscores() {
+        Assertions.assertEquals("Normal_Song_Title_123", StringUtils.sanitize("Normal Song Title 123"));
     }
 
     @Test
@@ -81,8 +81,8 @@ class StringUtilsTest {
     // -------------------------------------------------------------------------
 
     @Test
-    void sanitizeDoesNotReplaceSpaces() {
-        Assertions.assertEquals("Song A B", StringUtils.sanitize("Song A B"));
+    void sanitizeReplacesSpaces() {
+        Assertions.assertEquals("Song_A_B", StringUtils.sanitize("Song A B"));
     }
 
     @Test

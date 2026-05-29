@@ -1,0 +1,19 @@
+# Set the default behaviour, in case people don't have core.autocrlf set.
+# Enable auto-detection of text files and enable line ending normalization.
+* text=lf
+
+# Declare files that will not undergo automatic line ending normalization.
+# *.csv -text
+
+# Declare files that will always have CRLF line endings on checkout.
+*.bat text eol=crlf
+*.ps1 text eol=crlf
+
+# Declare files that will always have LF line endings on checkout.
+*.sh text eol=lf
+pom.xml text eol=lf
+
+# Declare files that are truly binary and should never be modified.
+# *.xls binary
+# *.xlsx binary
+# *.xlsm binary

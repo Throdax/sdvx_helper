@@ -28,9 +28,6 @@ public class ScoreDetector {
     /** Number of score digits (8 digits: {@code 00000000} – {@code 10000000}). */
     public static final int DIGIT_COUNT = 8;
 
-    /** Maximum Hamming distance to consider a digit match. */
-    private static final int MATCH_THRESHOLD = 10;
-
     private final PerceptualHasher hasher;
 
     /**
@@ -51,11 +48,13 @@ public class ScoreDetector {
     }
 
     /**
-     * Detects a single digit from a cropped digit image.
+     * Detects a single digit from a cropped digit image by finding the closest
+     * template hash. Always returns the best matching digit, mirroring Python's
+     * behaviour of taking the minimum-distance entry unconditionally.
      *
      * @param digitImage
      *            cropped image of one score digit
-     * @return detected digit character ('0'–'9'), or {@code '?'} if unrecognised
+     * @return detected digit character ('0'–'9')
      */
     public char detectDigit(BufferedImage digitImage) {
         String candidateHash = hasher.hash(digitImage);
@@ -74,23 +73,16 @@ public class ScoreDetector {
             }
         }
 
-        if (bestDistance > MATCH_THRESHOLD) {
-            log.debug("No digit match found (best distance={}), returning '?'", bestDistance);
-            return '?';
-        }
+        log.debug("Digit matched '{}' with Hamming distance {}", best, bestDistance);
         return best;
     }
 
     /**
      * Assembles an 8-digit score integer from a list of cropped digit images.
      *
-     * <p>
-     * If any digit cannot be recognised, returns {@code -1} to signal failure.
-     * </p>
-     *
      * @param digitImages
      *            list of 8 cropped digit images, left-to-right
-     * @return detected score (0–10 000 000), or {@code -1} on recognition failure
+     * @return detected score (0–10 000 000), or {@code -1} on parse failure
      */
     public int detectScore(java.util.List<BufferedImage> digitImages) {
         if (digitImages.size() != DIGIT_COUNT) {
@@ -99,12 +91,7 @@ public class ScoreDetector {
         }
         StringBuilder sb = new StringBuilder(DIGIT_COUNT);
         for (BufferedImage img : digitImages) {
-            char d = detectDigit(img);
-            if (d == '?') {
-                log.debug("Digit recognition failed");
-                return -1;
-            }
-            sb.append(d);
+            sb.append(detectDigit(img));
         }
         try {
             return Integer.parseInt(sb.toString());

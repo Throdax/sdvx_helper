@@ -87,63 +87,36 @@
         </VBox>
     </top>
 
-    <!-- Centre: split panel -->
+    <!-- Centre: detection state + session log -->
     <center>
-        <SplitPane dividerPositions="0.42">
-            <!-- Left: current song detection panel -->
-            <VBox spacing="8">
-                <padding><Insets top="12" right="12" bottom="12" left="12"/></padding>
-                <Label text="%label.main.current.song" styleClass="section-heading"/>
-                <GridPane hgap="8" vgap="6">
-                    <Label text="%label.main.title"      GridPane.columnIndex="0" GridPane.rowIndex="0" styleClass="muted"/>
-                    <Label fx:id="titleLabel"            GridPane.columnIndex="1" GridPane.rowIndex="0" text="-" styleClass="value-label"/>
-                    <Label text="%label.main.diff"       GridPane.columnIndex="0" GridPane.rowIndex="1" styleClass="muted"/>
-                    <Label fx:id="diffLabel"             GridPane.columnIndex="1" GridPane.rowIndex="1" text="-" styleClass="value-label"/>
-                    <Label text="%label.main.level"      GridPane.columnIndex="0" GridPane.rowIndex="2" styleClass="muted"/>
-                    <Label fx:id="levelLabel"            GridPane.columnIndex="1" GridPane.rowIndex="2" text="-" styleClass="value-label"/>
-                    <Label text="%label.main.best.score" GridPane.columnIndex="0" GridPane.rowIndex="3" styleClass="muted"/>
-                    <Label fx:id="bestLabel"             GridPane.columnIndex="1" GridPane.rowIndex="3" text="-" styleClass="value-label"/>
-                    <Label text="%label.main.best.lamp"  GridPane.columnIndex="0" GridPane.rowIndex="4" styleClass="muted"/>
-                    <Label fx:id="lampLabel"             GridPane.columnIndex="1" GridPane.rowIndex="4" text="-" styleClass="value-label"/>
-                    <Label text="%label.main.best.vf"    GridPane.columnIndex="0" GridPane.rowIndex="5" styleClass="muted"/>
-                    <Label fx:id="vfLabel"               GridPane.columnIndex="1" GridPane.rowIndex="5" text="-" styleClass="value-label"/>
-                </GridPane>
-                <Separator/>
-                <Label text="%label.main.detection.state" styleClass="sub-heading"/>
-                <Label fx:id="detectModeLabel" text="INIT" styleClass="status-label"/>
-                <HBox spacing="6">
-                    <Label fx:id="captureScreenshotIcon" text="%indicator.main.capture.screenshot"
-                           styleClass="capture-indicator" visible="false" managed="false"/>
-                    <Label fx:id="captureSummaryIcon" text="%indicator.main.capture.summary"
-                           styleClass="capture-indicator" visible="false" managed="false"/>
-                    <Label fx:id="captureVfIcon" text="%indicator.main.capture.vf"
-                           styleClass="capture-indicator" visible="false" managed="false"/>
-                </HBox>
-                <HBox spacing="8">
-                    <Button fx:id="startStopButton" text="%button.main.start.detection"
-                            onAction="#onStartStop" styleClass="button-success"/>
-                    <Button fx:id="popPlayButton"   text="%button.main.undo.play"
-                            onAction="#onPopPlay"  styleClass="button-danger"/>
-                </HBox>
-            </VBox>
-
-            <!-- Right: session log -->
-            <VBox spacing="8">
-                <padding><Insets top="12" right="12" bottom="12" left="12"/></padding>
-                <Label text="%label.main.session.log" styleClass="section-heading"/>
-                <TableView fx:id="sessionLogTable" VBox.vgrow="ALWAYS">
+        <VBox spacing="8">
+            <padding><Insets top="12" right="12" bottom="12" left="12"/></padding>
+            <Label text="%label.main.detection.state" styleClass="sub-heading"/>
+            <Label fx:id="detectModeLabel" text="INIT" styleClass="status-label"/>
+            <HBox spacing="6">
+                <Label fx:id="captureScreenshotIcon" text="%indicator.main.capture.screenshot"
+                       styleClass="capture-indicator" visible="false" managed="false"/>
+                <Label fx:id="captureSummaryIcon" text="%indicator.main.capture.summary"
+                       styleClass="capture-indicator" visible="false" managed="false"/>
+                <Label fx:id="captureVfIcon" text="%indicator.main.capture.vf"
+                       styleClass="capture-indicator" visible="false" managed="false"/>
+            </HBox>
+            <Separator/>
+            <Label text="%label.main.session.log" styleClass="section-heading"/>
+            <SplitPane VBox.vgrow="ALWAYS" orientation="VERTICAL" dividerPositions="0.75">
+                <TableView fx:id="sessionLogTable">
                     <columns>
-                        <TableColumn fx:id="logTitleColumn" text="%table.header.title"      prefWidth="220"/>
+                        <TableColumn fx:id="logTitleColumn" text="%table.header.title"      prefWidth="280"/>
                         <TableColumn fx:id="logDiffColumn"  text="%table.header.difficulty" prefWidth="60"/>
                         <TableColumn fx:id="logScoreColumn" text="%table.header.score"      prefWidth="90"/>
                         <TableColumn fx:id="logLampColumn"  text="%table.header.lamp"       prefWidth="60"/>
-                        <TableColumn fx:id="logDateColumn"  text="%table.header.date"       prefWidth="120"/>
+                        <TableColumn fx:id="logDateColumn"  text="%table.header.date"       prefWidth="100"/>
                     </columns>
                 </TableView>
-                <TextArea fx:id="outputArea" prefRowCount="10" editable="false"
+                <TextArea fx:id="outputArea" editable="false"
                           style="-fx-font-family: monospace;"/>
-            </VBox>
-        </SplitPane>
+            </SplitPane>
+        </VBox>
     </center>
 
     <!-- Bottom: status bar -->

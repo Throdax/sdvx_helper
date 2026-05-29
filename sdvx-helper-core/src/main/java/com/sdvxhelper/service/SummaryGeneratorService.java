@@ -36,6 +36,18 @@ public class SummaryGeneratorService {
 
     private static final Logger log = LoggerFactory.getLogger(SummaryGeneratorService.class);
 
+    private ImageAnalysisService imageAnalysisService;
+
+    /**
+     * @param imageAnalysisService
+     *            used to detect the lamp from a result screenshot when the
+     *            {@link OnePlayData} stub has no lamp set (e.g. plays pre-loaded
+     *            from disk at startup)
+     */
+    public SummaryGeneratorService(ImageAnalysisService imageAnalysisService) {
+        this.imageAnalysisService = imageAnalysisService;
+    }
+
     /**
      * Hard-coded resize targets that mirror Python
      * {@code GenSummary.cut_result_parts()}. Title parts are pasted at their
@@ -76,10 +88,14 @@ public class SummaryGeneratorService {
      *            application settings (supplies {@code logpic_bg_alpha})
      * @param resourcesDir
      *            path to the resources directory containing lamp icons
-     * @return {@code true} if the overlay images were written successfully
+     * @return list of pre-loaded plays (oldest-first) that are within the time
+     *         window; an empty list is returned when no matching files are found.
+     *         The caller should seed its session-play list with this result so that
+     *         subsequent {@link #generate} calls include both the startup history
+     *         and any new session plays.
      */
-    public boolean generateFromResultsDir(String autosaveDir, int logpicOffsetHours, Map<String, String> params,
-            Map<String, String> settings, String resourcesDir) {
+    public List<OnePlayData> generateFromResultsDir(String autosaveDir, int logpicOffsetHours,
+            Map<String, String> params, Map<String, String> settings, String resourcesDir) {
         File dir = new File(autosaveDir);
         List<OnePlayData> existingPlays = new ArrayList<>();
 
@@ -88,10 +104,10 @@ public class SummaryGeneratorService {
             File[] files = dir.listFiles(filter);
             if (files != null && files.length > 0) {
                 long cutoffMs = System.currentTimeMillis() - (long) logpicOffsetHours * 3600 * 1000;
-                Arrays.sort(files, Comparator.comparingLong(File::lastModified).reversed());
+                Arrays.sort(files, Comparator.comparingLong(File::lastModified));
                 for (File file : files) {
                     if (file.lastModified() < cutoffMs) {
-                        break;
+                        continue;
                     }
                     OnePlayData play = new OnePlayData();
                     play.setScreenshotFile(file.getAbsolutePath());
@@ -106,7 +122,8 @@ public class SummaryGeneratorService {
             log.debug("generateFromResultsDir: autosave directory does not exist: '{}'", autosaveDir);
         }
 
-        return generate(existingPlays, params, settings, resourcesDir);
+        generate(existingPlays, params, settings, resourcesDir);
+        return existingPlays;
     }
 
     /**
@@ -202,7 +219,13 @@ public class SummaryGeneratorService {
         BufferedImage score = resize(safeCrop(img, params, "log_crop_score"), SCORE_W, SCORE_H);
         BufferedImage rank = resize(safeCrop(img, params, "log_crop_rank"), RANK_W, RANK_H);
         BufferedImage rate = resize(safeCrop(img, params, "log_crop_rate"), RATE_W, RATE_H);
-        BufferedImage lampIcon = loadLampIcon(play.getLamp(), resourcesDir);
+
+        String lamp = play.getLamp();
+        if ((lamp == null || lamp.isBlank()) && imageAnalysisService != null) {
+            lamp = imageAnalysisService.detectLampOnResult(img, params);
+            log.debug("putResult: lamp not set on play, detected from screenshot: '{}'", lamp);
+        }
+        BufferedImage lampIcon = loadLampIcon(lamp, resourcesDir);
 
         int yOffset = logMargin + rowSize * idx;
 

@@ -21,10 +21,11 @@ public final class StringUtils {
      *
      * @param name
      *            raw title string
-     * @return sanitized string with {@code \/:*?"<>|} replaced by underscores
+     * @return sanitized string with {@code \/:*?"<>|} and spaces replaced by
+     *         underscores
      */
     public static String sanitize(String name) {
-        return name.replaceAll("[\\\\/:*?\"<>|]", "_");
+        return name.replaceAll("[\\\\/:*?\"<>| ]", "_");
     }
 
     /**

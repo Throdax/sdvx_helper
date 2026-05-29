@@ -11,22 +11,25 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+
 import javax.imageio.ImageIO;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.UnsupportedAudioFileException;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.sdvxhelper.model.MusicInfo;
 import com.sdvxhelper.model.OnePlayData;
 import com.sdvxhelper.ocr.PerceptualHasher;
 import com.sdvxhelper.service.CsvExportService;
 import com.sdvxhelper.service.ImageAnalysisService;
+import com.sdvxhelper.service.ImageCropNotParsed;
 import com.sdvxhelper.service.SdvxLoggerService;
 import com.sdvxhelper.service.SummaryGeneratorService;
 import com.sdvxhelper.service.XmlExportService;
 import com.sdvxhelper.util.ParamUtils;
 import com.sdvxhelper.util.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Handles per-screen image analysis, file exports, and stateful Volforce
@@ -64,6 +67,7 @@ public class ScreenHandler {
     private boolean genFirstVf = false;
 
     // Result tracking state
+    private List<OnePlayData> preloadedPlays = new ArrayList<>();
     private List<OnePlayData> sessionPlays = new ArrayList<>();
     private List<Duration> sessionPlayTimestamps = new ArrayList<>();
     private double currentTotalVf = 0.0;
@@ -136,6 +140,32 @@ public class ScreenHandler {
 
     public List<Duration> getSessionPlayTimestamps() {
         return sessionPlayTimestamps;
+    }
+
+    /**
+     * Stores plays loaded from the autosave directory at startup into a separate
+     * history list.
+     *
+     * <p>
+     * These stub entries (screenshot path only, no in-memory metadata) are kept
+     * apart from {@code sessionPlays} so that the webhook playlist only contains
+     * plays actually recorded during the current session. Every subsequent
+     * {@link #handleResultScreen} call combines both lists when calling
+     * {@link com.sdvxhelper.service.SummaryGeneratorService#generate}, so the
+     * summary image always includes the full history.
+     * </p>
+     *
+     * <p>
+     * The caller supplies the list in oldest-first order (as returned by
+     * {@link com.sdvxhelper.service.SummaryGeneratorService#generateFromResultsDir}).
+     * </p>
+     *
+     * @param plays
+     *            plays scanned from disk at startup; must not be {@code null}
+     */
+    public void addPreloadedPlays(List<OnePlayData> plays) {
+        preloadedPlays.addAll(plays);
+        log.debug("addPreloadedPlays: stored {} pre-loaded play(s) in history", plays.size());
     }
 
     public boolean wasLastScreenshotSaved() {
@@ -213,7 +243,9 @@ public class ScreenHandler {
             saveGoogleDriveCsv();
 
             String resourcesDir = settings.getOrDefault("resources_dir", "resources");
-            lastSummaryGenerated = summaryGeneratorService.generate(sessionPlays, params, settings, resourcesDir);
+            List<OnePlayData> allPlays = new ArrayList<>(preloadedPlays);
+            allPlays.addAll(sessionPlays);
+            lastSummaryGenerated = summaryGeneratorService.generate(allPlays, params, settings, resourcesDir);
 
             return play;
         } catch (IOException e) {
@@ -418,34 +450,44 @@ public class ScreenHandler {
     // -------------------------------------------------------------------------
 
     /**
-     * Handles the DETECT screen: sleeps {@code detect_wait} seconds, saves info
-     * crops, then identifies the jacket.
+     * Handles the DETECT screen using a frame captured <em>after</em> the
+     * {@code detect_wait} delay has already elapsed in the caller.
+     *
+     * <p>
+     * Mirrors Python {@code GenSummary.update_musicinfo()} /
+     * {@code GenSummary.ocr_from_detect()} in {@code gen_summary.py}, which are
+     * invoked only after {@code time.sleep(detect_wait)} and a fresh OBS capture
+     * in the main loop. The caller ({@link DetectionEngine#processDetectMode}) is
+     * responsible for the sleep and the re-capture.
+     * </p>
      *
      * @param frame
-     *            frame at the time detect was triggered
-     * @param latestFrame
-     *            more recent frame to use for identification (may be same)
+     *            fresh frame captured after {@code detect_wait} seconds have elapsed
      * @return {@code {title, diff}} array if identified, {@code null} otherwise
      */
-    public String[] handleDetectMode(BufferedImage frame, BufferedImage latestFrame) {
-        double detectWait = ParamUtils.parseDoubleParam(settings.get("detect_wait"), 2.7);
-        try {
-            Thread.sleep((long) (detectWait * 1000));
-        } catch (InterruptedException ie) {
-            Thread.currentThread().interrupt();
-            return null;
-        }
-        BufferedImage freshFrame = latestFrame != null ? latestFrame : frame;
-        updateMusicInfo(freshFrame);
+    public String[] handleDetectMode(BufferedImage frame) {
+        updateMusicInfo(frame);
         int jSx = ParamUtils.getInt(params, "select_jacket_sx", 94);
         int jSy = ParamUtils.getInt(params, "select_jacket_sy", 242);
         int jW = ParamUtils.getInt(params, "select_jacket_w", 352);
         int jH = ParamUtils.getInt(params, "select_jacket_h", 352);
-        String[] identified = imageAnalysisService.identifyJacket(freshFrame, new Rectangle(jSx, jSy, jW, jH), "");
+        String[] identified = imageAnalysisService.identifyJacket(frame, new Rectangle(jSx, jSy, jW, jH), "");
         if (identified == null) {
             return null;
         }
-        String detectedDiff = imageAnalysisService.detectDifficultyFromButtons(freshFrame, params);
+        int dSx = ParamUtils.getInt(params, "info_diff_sx", 917);
+        int dSy = ParamUtils.getInt(params, "info_diff_sy", 1172);
+        int dW = ParamUtils.getInt(params, "info_diff_w", 73);
+        int dH = ParamUtils.getInt(params, "info_diff_h", 12);
+        String detectedDiff;
+        try {
+            BufferedImage diffBand = frame.getSubimage(dSx, dSy, dW, dH);
+            detectedDiff = ImageAnalysisService.detectDifficultyFromBand(diffBand);
+        } catch (ImageCropNotParsed | java.awt.image.RasterFormatException e) {
+            log.warn("handleDetectMode: could not read difficulty band, falling back to jacket hash diff ({})",
+                    e.getMessage());
+            detectedDiff = identified[1];
+        }
         return new String[]{identified[0], detectedDiff};
     }
 

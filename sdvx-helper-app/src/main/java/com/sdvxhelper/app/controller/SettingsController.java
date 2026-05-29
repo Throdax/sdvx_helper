@@ -51,8 +51,6 @@ public class SettingsController implements Initializable {
     private PasswordField obsPasswordField;
 
     @FXML
-    private TextField detectWaitField;
-    @FXML
     private TextField autosaveDirField;
     @FXML
     private TextField autosaveIntervalField;
@@ -194,7 +192,6 @@ public class SettingsController implements Initializable {
         obsPortField.setText(settings.get("port"));
         obsPasswordField.setText(settings.get("passwd"));
 
-        detectWaitField.setText(settings.get("detect_wait"));
         autosaveDirField.setText(settings.get("autosave_dir"));
         autosaveIntervalField.setText(settings.get("autosave_interval"));
 
@@ -231,7 +228,6 @@ public class SettingsController implements Initializable {
         settings.put("port", obsPortField.getText().trim());
         settings.put("passwd", obsPasswordField.getText());
 
-        settings.put("detect_wait", detectWaitField.getText().trim());
         settings.put("autosave_dir", autosaveDirField.getText().trim());
         settings.put("autosave_interval", autosaveIntervalField.getText().trim());
 

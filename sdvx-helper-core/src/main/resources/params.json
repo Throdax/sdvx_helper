@@ -303,7 +303,7 @@
     "select_arcade_w":50,
     "select_arcade_h":10,
 
-    "detect_wait":1.5,
+    "detect_wait":1.3,
 
     "url_musiclist_xml":"https://github.com/Throdax/sdvx_helper/raw/refs/heads/main/sdvx-helper-core/src/main/resources/musiclist.xml",
 

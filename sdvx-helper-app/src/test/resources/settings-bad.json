@@ -9,7 +9,6 @@
   "autosave_interval": 60,
   "play0_interval": 10,
   "autosave_prewait": "0.0",
-  "detect_wait": 2.2,
   "obs_source": "SDVX Game Window - Main",
   "obs_enable_boot": [],
   "obs_disable_boot": [],
