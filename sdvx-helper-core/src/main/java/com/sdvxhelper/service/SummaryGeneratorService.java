@@ -8,6 +8,9 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -167,35 +170,74 @@ public class SummaryGeneratorService {
         List<OnePlayData> reversed = new ArrayList<>(plays);
         java.util.Collections.reverse(reversed);
 
+        int totalPlays = plays.size();
+        int playsWithScreenshot = 0;
+        for (OnePlayData p : plays) {
+            if (p.getScreenshotFile() != null) {
+                playsWithScreenshot++;
+            }
+        }
+        log.info("generate: compositing {} play(s) ({} with screenshots, max {})", totalPlays, playsWithScreenshot,
+                logMaxNum);
+
         int idx = 0;
         for (OnePlayData play : reversed) {
             if (idx >= logMaxNum) {
                 break;
             }
             if (play.getScreenshotFile() == null) {
-                log.debug("generate: play '{}' has no screenshot file, skipping", play.getTitle());
+                log.info("generate: play '{}' has no screenshot file, skipping", play.getTitle());
                 continue;
             }
             try {
                 boolean placed = putResult(play, bg, bgSmall, idx, logRowSize, logMargin, params, resourcesDir);
                 if (placed) {
                     idx++;
+                } else {
+                    log.info("generate: row skipped for '{}' (screenshot unreadable or missing: {})", play.getTitle(),
+                            play.getScreenshotFile());
                 }
             } catch (IOException e) {
                 log.warn("generate: failed to composite row {} for '{}': {}", idx, play.getTitle(), e.getMessage());
             }
         }
 
+        if (idx == 0 && totalPlays > 0) {
+            log.warn("generate: {} play(s) passed but 0 rows placed - summary will be blank", totalPlays);
+        }
+
         try {
             File outDir = new File("out");
             outDir.mkdirs();
-            ImageIO.write(bg, "png", new File(outDir, "summary_full.png"));
-            ImageIO.write(bgSmall, "png", new File(outDir, "summary_small.png"));
+            writeAtomically(bg, outDir, "summary_full.png");
+            writeAtomically(bgSmall, outDir, "summary_small.png");
             log.info("Summary images saved ({} rows)", idx);
             return true;
         } catch (IOException e) {
             log.warn("generate: failed to save summary images: {}", e.getMessage());
             return false;
+        }
+    }
+
+    /**
+     * Writes {@code image} as a PNG to {@code dir/filename} using a
+     * write-then-rename strategy so that OBS (or any other reader polling the file)
+     * never sees a partially-written PNG. The image is first written to a
+     * {@code _tmp} sidecar file and then atomically renamed, eliminating the "blank
+     * flash" that occurs when {@link ImageIO#write} truncates the target file
+     * before the new data is fully flushed.
+     */
+    private void writeAtomically(BufferedImage image, File dir, String filename) throws IOException {
+        File tmp = new File(dir, filename + "_tmp");
+        File dest = new File(dir, filename);
+        ImageIO.write(image, "png", tmp);
+        try {
+            Files.move(tmp.toPath(), dest.toPath(), StandardCopyOption.REPLACE_EXISTING,
+                    StandardCopyOption.ATOMIC_MOVE);
+        } catch (AtomicMoveNotSupportedException e) {
+            log.debug("writeAtomically: atomic move not supported for '{}', falling back to replace ({})", filename,
+                    e.getMessage());
+            Files.move(tmp.toPath(), dest.toPath(), StandardCopyOption.REPLACE_EXISTING);
         }
     }
 

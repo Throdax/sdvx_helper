@@ -201,7 +201,7 @@ public class DiscordPresenceClient implements Closeable {
             sendFrame(OP_FRAME, payload);
             readFrame(); // consume Discord's ACK
         } catch (IOException e) {
-            log.warn("Failed to send Rich Presence update — marking as disconnected", e);
+            log.warn("Failed to send Rich Presence update - marking as disconnected", e);
             connected = false;
         }
     }
@@ -328,7 +328,7 @@ public class DiscordPresenceClient implements Closeable {
         pipeOut.write(header);
         pipeOut.write(data);
         pipeOut.flush();
-        log.trace("→ op={} len={} payload={}", opcode, data.length, payload);
+        log.trace("-> op={} len={} payload={}", opcode, data.length, payload);
     }
 
     /**
@@ -348,7 +348,7 @@ public class DiscordPresenceClient implements Closeable {
         int length = buf.getInt();
         byte[] data = length > 0 ? pipeIn.readNBytes(length) : new byte[0];
         String json = new String(data, java.nio.charset.StandardCharsets.UTF_8);
-        log.trace("← op={} len={} payload={}", opcode, length, json);
+        log.trace("<- op={} len={} payload={}", opcode, length, json);
         return json;
     }
 

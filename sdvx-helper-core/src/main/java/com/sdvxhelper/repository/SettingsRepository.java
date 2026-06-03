@@ -90,8 +90,8 @@ public class SettingsRepository {
         for (String key : obsoleteKeys) {
             if (settings.containsKey(key)) {
                 String oldValue = settings.remove(key);
-                log.info("Removed obsolete settings key '{}' (was '{}'); value is now calibrated in params.json",
-                        key, oldValue);
+                log.info("Removed obsolete settings key '{}' (was '{}'); value is now calibrated in params.json", key,
+                        oldValue);
             }
         }
 

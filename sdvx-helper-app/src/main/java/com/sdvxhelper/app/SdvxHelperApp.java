@@ -16,9 +16,9 @@ import javafx.stage.Stage;
 
 import com.sdvxhelper.app.controller.MainController;
 import com.sdvxhelper.app.controller.detection.DetectionEngine;
+import com.sdvxhelper.i18n.LocaleManager;
 import com.sdvxhelper.model.OnePlayData;
 import com.sdvxhelper.model.enums.DetectMode;
-import com.sdvxhelper.i18n.LocaleManager;
 import com.sdvxhelper.repository.SettingsRepository;
 import com.sdvxhelper.ui.WindowPositionHelper;
 import com.sdvxhelper.util.VersionUtil;

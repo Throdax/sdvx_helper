@@ -284,7 +284,7 @@ public class ImageAnalysisService {
             return false;
         }
         if (onresult0Hash == null || onresult1Hash == null) {
-            log.warn("isResultScreen: reference images not loaded — returning true to avoid blocking all processing");
+            log.warn("isResultScreen: reference images not loaded - returning true to avoid blocking all processing");
             return true;
         }
         int v0sx = ParamUtils.getInt(params, "onresult_val0_sx", 340);
@@ -623,7 +623,7 @@ public class ImageAnalysisService {
                 maxIdx = i;
             }
         }
-        log.debug("detectDifficultyFromButtons: nov={} adv={} exh={} APPEND={} → {}", sums[0], sums[1], sums[2],
+        log.debug("detectDifficultyFromButtons: nov={} adv={} exh={} APPEND={} -> {}", sums[0], sums[1], sums[2],
                 sums[3], diffs[maxIdx]);
         return diffs[maxIdx];
     }
@@ -987,7 +987,7 @@ public class ImageAnalysisService {
         }
         // No NOV / ADV / EXH threshold matched — treat as APPEND (mirrors Python
         // gen_summary.py:591).
-        log.debug("detectDifficultyFromBand: no NOV/ADV/EXH match (rT={}, gT={}, bT={}) — returning APPEND", rT, gT,
+        log.debug("detectDifficultyFromBand: no NOV/ADV/EXH match (rT={}, gT={}, bT={}) - returning APPEND", rT, gT,
                 bT);
         return "APPEND";
     }
@@ -1045,7 +1045,7 @@ public class ImageAnalysisService {
                     // Mirrors gen_summary.py:355-366.
                     if ("clear".equals(bestName)) {
                         String fromGauge = detectLampFromGauge(frame, params);
-                        log.debug("detectLampOnResult: 'clear' hash match dist={}, gauge → '{}'", bestDist, fromGauge);
+                        log.debug("detectLampOnResult: 'clear' hash match dist={}, gauge -> '{}'", bestDist, fromGauge);
                         return fromGauge;
                     }
                     log.debug("detectLampOnResult: hash match '{}' dist={}", bestName, bestDist);

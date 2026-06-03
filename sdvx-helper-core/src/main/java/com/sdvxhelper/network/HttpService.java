@@ -196,9 +196,9 @@ public class HttpService {
      */
     private <T> HttpResponse<T> send(HttpRequest request, HttpResponse.BodyHandler<T> handler) throws IOException {
         try {
-            log.debug("→ {} {}", request.method(), request.uri());
+            log.debug("-> {} {}", request.method(), request.uri());
             HttpResponse<T> response = client.send(request, handler);
-            log.debug("← HTTP {}", response.statusCode());
+            log.debug("<- HTTP {}", response.statusCode());
             return response;
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();

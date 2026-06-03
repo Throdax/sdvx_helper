@@ -74,7 +74,7 @@ public class TesseractLanguageInstaller {
 
         List<String> missing = collectMissing(languages, dir);
         if (missing.isEmpty()) {
-            log.info("TesseractLanguageInstaller: all language files already present — no download needed");
+            log.info("TesseractLanguageInstaller: all language files already present - no download needed");
             return true;
         }
 

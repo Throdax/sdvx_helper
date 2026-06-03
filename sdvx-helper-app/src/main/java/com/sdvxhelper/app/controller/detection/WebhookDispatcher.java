@@ -118,11 +118,11 @@ public class WebhookDispatcher {
 
         for (WebhookConfig config : webhookConfigs) {
             if (!config.isLevelEnabled(lv)) {
-                log.debug("send: webhook '{}' filtered out — level {} not enabled", config.getName(), lv);
+                log.debug("send: webhook '{}' filtered out - level {} not enabled", config.getName(), lv);
                 continue;
             }
             if (!config.isLampEnabled(lampKey)) {
-                log.debug("send: webhook '{}' filtered out — lamp '{}' not enabled", config.getName(), lampKey);
+                log.debug("send: webhook '{}' filtered out - lamp '{}' not enabled", config.getName(), lampKey);
                 continue;
             }
             String msg = buildPlayMessage(play, lv);
@@ -169,7 +169,7 @@ public class WebhookDispatcher {
             if (ok) {
                 log.info("sendPlaylistSummary: sent {} entries to webhook '{}'", sessionPlays.size(), config.getName());
             } else {
-                log.warn("sendPlaylistSummary: webhook '{}' returned a failure response — check URL", config.getName());
+                log.warn("sendPlaylistSummary: webhook '{}' returned a failure response - check URL", config.getName());
             }
         }
     }

@@ -58,7 +58,13 @@ public class OcrReporterApp extends Application {
                 log.error("Failed to rebuild scene after locale change", e);
             }
         }));
-        buildScene(LocaleManager.getInstance().getCurrentLocale());
+        try {
+            buildScene(LocaleManager.getInstance().getCurrentLocale());
+        } catch (IOException | RuntimeException e) {
+            log.error("Fatal: could not build OCR Reporter scene - app will exit", e);
+            Platform.exit();
+            return;
+        }
         stage.setTitle("SDVX OCR Reporter " + VersionUtil.getVersion("ocr"));
         // Restore saved position without wiring a handler so we can combine with
         // controller.onWindowClose() in a single setOnCloseRequest below.

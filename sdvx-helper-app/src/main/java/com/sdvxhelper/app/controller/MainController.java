@@ -17,6 +17,7 @@ import java.util.ResourceBundle;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import javafx.application.Platform;
+import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
@@ -33,7 +34,6 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
-import javafx.beans.property.SimpleStringProperty;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
@@ -177,9 +177,8 @@ public class MainController implements Initializable, DetectionListener {
             String diff = cell.getValue().getDifficulty();
             return new SimpleStringProperty(diff != null ? diff.toUpperCase() : "");
         });
-        logScoreColumn.setCellValueFactory(cell ->
-            new SimpleStringProperty(ScoreFormatter.formatScore(cell.getValue().getCurScore()))
-        );
+        logScoreColumn.setCellValueFactory(
+                cell -> new SimpleStringProperty(ScoreFormatter.formatScore(cell.getValue().getCurScore())));
         logLampColumn.setCellValueFactory(cell -> {
             String lamp = cell.getValue().getLamp();
             return new SimpleStringProperty(lamp != null ? lamp.toUpperCase() : "");
@@ -224,7 +223,7 @@ public class MainController implements Initializable, DetectionListener {
     // -------------------------------------------------------------------------
 
     private void initialise() {
-        log.info("Initialising repositories and services…");
+        log.info("Initialising repositories and services...");
         installTesseractLanguages();
 
         settings = new SettingsRepository().load();
@@ -421,6 +420,11 @@ public class MainController implements Initializable, DetectionListener {
     }
 
     @Override
+    public void onObsOutputStopped(String outputType) {
+        Platform.runLater(() -> hideObsOutputLabel(outputType));
+    }
+
+    @Override
     public void onResultCaptured(boolean screenshotSaved, boolean summaryGenerated, boolean vfCaptured) {
         Platform.runLater(() -> {
             showCaptureIndicator(captureScreenshotIcon, screenshotSaved);
@@ -552,7 +556,7 @@ public class MainController implements Initializable, DetectionListener {
             if (obsClient != null && obsClient.isConnected()) {
                 Maya2Client maya2 = buildMaya2Client();
                 if (maya2 != null && maya2.isAlive()) {
-                    log.debug("Maya2 alive — rival cross-reference would go here");
+                    log.debug("Maya2 alive - rival cross-reference would go here");
                 }
             }
             try {
@@ -909,8 +913,8 @@ public class MainController implements Initializable, DetectionListener {
     /**
      * Returns the current detection engine instance, or {@code null} if
      * initialisation has not yet completed. Used by
-     * {@link com.sdvxhelper.app.SdvxHelperApp} to capture the active mode before
-     * a locale-triggered scene rebuild so it can be forwarded to the replacement
+     * {@link com.sdvxhelper.app.SdvxHelperApp} to capture the active mode before a
+     * locale-triggered scene rebuild so it can be forwarded to the replacement
      * controller.
      *
      * @return the detection engine, or {@code null}
@@ -923,8 +927,8 @@ public class MainController implements Initializable, DetectionListener {
      * Sets the detection mode that the new engine should start in. Must be called
      * before the background {@code initialise()} job reads the field. Used by
      * {@link com.sdvxhelper.app.SdvxHelperApp} during a locale-triggered scene
-     * rebuild to prevent the replacement engine from falsely re-triggering a
-     * screen transition for a screen that was already processed before the switch.
+     * rebuild to prevent the replacement engine from falsely re-triggering a screen
+     * transition for a screen that was already processed before the switch.
      *
      * @param mode
      *            the mode to start in
@@ -934,8 +938,8 @@ public class MainController implements Initializable, DetectionListener {
     }
 
     /**
-     * Returns a snapshot of the current session log entries so they can be
-     * restored after a locale-triggered scene rebuild.
+     * Returns a snapshot of the current session log entries so they can be restored
+     * after a locale-triggered scene rebuild.
      *
      * @return immutable copy of the session log items
      */
@@ -944,8 +948,8 @@ public class MainController implements Initializable, DetectionListener {
     }
 
     /**
-     * Returns the current text of the output log area so it can be restored
-     * after a locale-triggered scene rebuild.
+     * Returns the current text of the output log area so it can be restored after a
+     * locale-triggered scene rebuild.
      *
      * @return output area text
      */
@@ -1019,6 +1023,16 @@ public class MainController implements Initializable, DetectionListener {
         } else if ("Streaming".equals(outputType)) {
             obsStreamingLabel.setVisible(true);
             obsStreamingLabel.setManaged(true);
+        }
+    }
+
+    private void hideObsOutputLabel(String outputType) {
+        if ("Recording".equals(outputType)) {
+            obsRecordingLabel.setVisible(false);
+            obsRecordingLabel.setManaged(false);
+        } else if ("Streaming".equals(outputType)) {
+            obsStreamingLabel.setVisible(false);
+            obsStreamingLabel.setManaged(false);
         }
     }
 

@@ -11,13 +11,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
 import javax.imageio.ImageIO;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.UnsupportedAudioFileException;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.sdvxhelper.model.MusicInfo;
 import com.sdvxhelper.model.OnePlayData;
@@ -30,6 +26,8 @@ import com.sdvxhelper.service.SummaryGeneratorService;
 import com.sdvxhelper.service.XmlExportService;
 import com.sdvxhelper.util.ParamUtils;
 import com.sdvxhelper.util.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Handles per-screen image analysis, file exports, and stateful Volforce
@@ -208,7 +206,7 @@ public class ScreenHandler {
             return null;
         }
         if (!imageAnalysisService.isResultScreen(frame, params)) {
-            log.warn("handleResultScreen: frame does not match result-screen layout — skipping");
+            log.warn("handleResultScreen: frame does not match result-screen layout - skipping");
             return null;
         }
         lastScreenshotSaved = false;
@@ -222,7 +220,7 @@ public class ScreenHandler {
                     ? lastKnownDiff
                     : (identified != null ? identified[1] : "exh");
 
-            MusicInfo best = loggerService.getBestFor(title, difficulty);
+            MusicInfo best = "Unknown".equals(title) ? null : loggerService.getBestFor(title, difficulty);
             int preScore = best != null ? best.getBestScore() : 0;
             int score = readScore(frame);
 
@@ -255,11 +253,7 @@ public class ScreenHandler {
     }
 
     private String detectLampFromFrame(BufferedImage frame) {
-        int sx = ParamUtils.getInt(params, "lamp_sx", 630);
-        int sy = ParamUtils.getInt(params, "lamp_sy", 930);
-        int lw = ParamUtils.getInt(params, "lamp_w", 230);
-        int lh = ParamUtils.getInt(params, "lamp_h", 50);
-        return imageAnalysisService.detectLamp(safeCrop(frame, sx, sy, lw, lh));
+        return imageAnalysisService.detectLampOnResult(frame, params);
     }
 
     private BufferedImage cropJacketLog(BufferedImage frame) {
@@ -456,39 +450,50 @@ public class ScreenHandler {
      * <p>
      * Mirrors Python {@code GenSummary.update_musicinfo()} /
      * {@code GenSummary.ocr_from_detect()} in {@code gen_summary.py}, which are
-     * invoked only after {@code time.sleep(detect_wait)} and a fresh OBS capture
-     * in the main loop. The caller ({@link DetectionEngine#processDetectMode}) is
+     * invoked only after {@code time.sleep(detect_wait)} and a fresh OBS capture in
+     * the main loop. The caller ({@link DetectionEngine#processDetectMode}) is
      * responsible for the sleep and the re-capture.
      * </p>
      *
      * @param frame
-     *            fresh frame captured after {@code detect_wait} seconds have elapsed
+     *            fresh frame captured after {@code detect_wait} seconds have
+     *            elapsed
      * @return {@code {title, diff}} array if identified, {@code null} otherwise
      */
     public String[] handleDetectMode(BufferedImage frame) {
         updateMusicInfo(frame);
+
+        int dSx = ParamUtils.getInt(params, "info_diff_sx", 917);
+        int dSy = ParamUtils.getInt(params, "info_diff_sy", 1172);
+        int dW = ParamUtils.getInt(params, "info_diff_w", 73);
+        int dH = ParamUtils.getInt(params, "info_diff_h", 12);
+        String detectedDiff = detectDiffFromBandOrFallback(frame, dSx, dSy, dW, dH, "exh");
+
         int jSx = ParamUtils.getInt(params, "select_jacket_sx", 94);
         int jSy = ParamUtils.getInt(params, "select_jacket_sy", 242);
         int jW = ParamUtils.getInt(params, "select_jacket_w", 352);
         int jH = ParamUtils.getInt(params, "select_jacket_h", 352);
         String[] identified = imageAnalysisService.identifyJacket(frame, new Rectangle(jSx, jSy, jW, jH), "");
         if (identified == null) {
-            return null;
-        }
-        int dSx = ParamUtils.getInt(params, "info_diff_sx", 917);
-        int dSy = ParamUtils.getInt(params, "info_diff_sy", 1172);
-        int dW = ParamUtils.getInt(params, "info_diff_w", 73);
-        int dH = ParamUtils.getInt(params, "info_diff_h", 12);
-        String detectedDiff;
-        try {
-            BufferedImage diffBand = frame.getSubimage(dSx, dSy, dW, dH);
-            detectedDiff = ImageAnalysisService.detectDifficultyFromBand(diffBand);
-        } catch (ImageCropNotParsed | java.awt.image.RasterFormatException e) {
-            log.warn("handleDetectMode: could not read difficulty band, falling back to jacket hash diff ({})",
-                    e.getMessage());
-            detectedDiff = identified[1];
+            log.debug("handleDetectMode: jacket not identified, returning Unknown with detected diff '{}'",
+                    detectedDiff);
+            return new String[]{"Unknown", detectedDiff};
         }
         return new String[]{identified[0], detectedDiff};
+    }
+
+    private String detectDiffFromBandOrFallback(BufferedImage frame, int dSx, int dSy, int dW, int dH,
+            String fallback) {
+        try {
+            BufferedImage diffBand = frame.getSubimage(dSx, dSy, dW, dH);
+            String diff = ImageAnalysisService.detectDifficultyFromBand(diffBand);
+            log.debug("handleDetectMode: detected difficulty from band: '{}'", diff);
+            return diff;
+        } catch (ImageCropNotParsed | java.awt.image.RasterFormatException e) {
+            log.warn("handleDetectMode: could not read difficulty band, falling back to '{}' ({})", fallback,
+                    e.getMessage());
+            return fallback;
+        }
     }
 
     /**

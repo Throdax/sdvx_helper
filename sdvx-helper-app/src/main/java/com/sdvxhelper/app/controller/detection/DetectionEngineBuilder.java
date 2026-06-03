@@ -136,8 +136,8 @@ public class DetectionEngineBuilder {
     /**
      * Sets the initial detection mode for the engine. Defaults to
      * {@link DetectMode#INIT}. Pass the previous engine's mode when rebuilding
-     * after a locale switch so the engine does not falsely re-trigger a
-     * transition for a screen that was already processed.
+     * after a locale switch so the engine does not falsely re-trigger a transition
+     * for a screen that was already processed.
      *
      * @param initialMode
      *            the mode the engine should start in

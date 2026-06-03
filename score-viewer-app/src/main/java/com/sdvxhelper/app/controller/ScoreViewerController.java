@@ -254,7 +254,7 @@ public class ScoreViewerController implements Initializable {
     public void onDelete(ActionEvent event) {
         OnePlayData selected = playsList.getSelectionModel().getSelectedItem();
         if (selected == null || playLog == null || playLogRepo == null) {
-            log.warn("onDelete: selected={}, playLog={}, playLogRepo={} — cannot proceed",
+            log.warn("onDelete: selected={}, playLog={}, playLogRepo={} - cannot proceed",
                     selected == null ? "null" : selected, playLog == null ? "null" : "present",
                     playLogRepo == null ? "null" : "present");
             return;

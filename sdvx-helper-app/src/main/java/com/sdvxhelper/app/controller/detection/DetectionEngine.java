@@ -272,7 +272,9 @@ public class DetectionEngine {
 
             ObsWebSocketClient client = new ObsWebSocketClient(host, port, pass);
             client.setOnRecordingStarted(this::handleRecordingStarted);
+            client.setOnRecordingStopped(this::handleRecordingStopped);
             client.setOnStreamingStarted(this::handleStreamingStarted);
+            client.setOnStreamingStopped(this::handleStreamingStopped);
 
             client.connect();
 
@@ -291,18 +293,31 @@ public class DetectionEngine {
         handleOutputStarted("Recording");
     }
 
+    private void handleRecordingStopped() {
+        handleOutputStopped("Recording");
+    }
+
     private void handleStreamingStarted() {
         handleOutputStarted("Streaming");
+    }
+
+    private void handleStreamingStopped() {
+        handleOutputStopped("Streaming");
     }
 
     private void handleOutputStarted(String outputType) {
         if (Objects.isNull(outputStartTime)) {
             outputStartTime = Instant.now();
-            log.info("OBS {} started — playlist timer started", outputType);
+            log.info("OBS {} started - playlist timer started", outputType);
         } else {
-            log.debug("OBS {} started — playlist timer already running", outputType);
+            log.debug("OBS {} started - playlist timer already running", outputType);
         }
         listener.onObsOutputStarted(outputType);
+    }
+
+    private void handleOutputStopped(String outputType) {
+        log.info("OBS {} stopped", outputType);
+        listener.onObsOutputStopped(outputType);
     }
 
     // -------------------------------------------------------------------------
@@ -316,7 +331,7 @@ public class DetectionEngine {
         }
         String source = settings.getOrDefault("obs_source", "");
         if (source.isBlank()) {
-            log.warn("Cannot capture frame: obs_source setting is blank — set it in OBS Control Settings");
+            log.warn("Cannot capture frame: obs_source setting is blank - set it in OBS Control Settings");
             return;
         }
         try {
@@ -392,7 +407,7 @@ public class DetectionEngine {
         }
 
         if (newMode != currentMode) {
-            log.info("Mode transition: {} → {}", currentMode, newMode);
+            log.info("Mode transition: {} -> {}", currentMode, newMode);
             DetectMode previousMode = currentMode;
             currentMode = newMode;
             handleModeTransition(previousMode, newMode, frame);
@@ -557,14 +572,35 @@ public class DetectionEngine {
 
     private void processDetectMode(BufferedImage frame) {
         double detectWait = ParamUtils.parseDoubleParam(params.get("detect_wait"), 1.5);
-        try {
-            Thread.sleep((long) (detectWait * 1000));
-        } catch (InterruptedException ie) {
-            Thread.currentThread().interrupt();
-            return;
+        int sampleCount = ParamUtils.parseIntParam(settings.get("detect_sample_count"), 3);
+        if (sampleCount < 1) {
+            sampleCount = 1;
         }
-        captureCurrentFrame();
-        BufferedImage freshFrame = currentFrame != null ? currentFrame : frame;
+        long intervalMs = (long) ((detectWait * 1000) / sampleCount);
+        BufferedImage bestFrame = null;
+        for (int sampleIndex = 0; sampleIndex < sampleCount; sampleIndex++) {
+            try {
+                Thread.sleep(intervalMs);
+            } catch (InterruptedException ie) {
+                Thread.currentThread().interrupt();
+                return;
+            }
+            captureCurrentFrame();
+            if (currentFrame != null && imageAnalysisService.isDetectScreen(currentFrame, params)) {
+                bestFrame = currentFrame;
+                log.debug("processDetectMode: sample {}/{} passed isDetectScreen - bestFrame updated", sampleIndex + 1,
+                        sampleCount);
+            } else {
+                log.debug("processDetectMode: sample {}/{} did not pass isDetectScreen - skipped", sampleIndex + 1,
+                        sampleCount);
+            }
+        }
+        if (bestFrame == null) {
+            log.error(
+                    "processDetectMode: no sample passed isDetectScreen (all {} samples rejected) — falling back to original frame",
+                    sampleCount);
+        }
+        BufferedImage freshFrame = bestFrame != null ? bestFrame : frame;
         String[] titleDiff = screenHandler.handleDetectMode(freshFrame);
         doneThisSong = true;
         if (Objects.nonNull(outputStartTime)) {
@@ -572,11 +608,12 @@ public class DetectionEngine {
             log.debug("Playlist timestamp captured at detect screen: {}", pendingSongTimestamp);
         }
         if (titleDiff == null) {
-            log.debug("Detect mode: jacket not identified, marking song as done");
+            log.debug("Detect mode: frame unreadable, skipping title/diff update");
             return;
         }
         lastKnownTitle = titleDiff[0];
         lastKnownDiff = titleDiff[1];
+        log.debug("Detect mode: title='{}', diff='{}'", lastKnownTitle, lastKnownDiff);
         if (obsClient != null && obsClient.isConnected()) {
             // Refresh the browser source so OBS reloads the updated select_*.png files.
             // Mirrors Python: obs.refresh_source('nowplaying.html') /
@@ -633,7 +670,7 @@ public class DetectionEngine {
             // Python img.resize((1080,1920)) — already portrait orientation
             default -> resizeImage(frame, 1080, 1920);
         };
-        log.debug("applyOrientation: orientation_top='{}' {}x{} → {}x{}", orientationTop, frame.getWidth(),
+        log.debug("applyOrientation: orientation_top='{}' {}x{} -> {}x{}", orientationTop, frame.getWidth(),
                 frame.getHeight(), oriented.getWidth(), oriented.getHeight());
         return oriented;
     }
@@ -732,8 +769,8 @@ public class DetectionEngine {
     /**
      * Sets the initial detection mode. Used by {@link DetectionEngineBuilder} to
      * restore the previous engine's mode when rebuilding after a locale switch,
-     * preventing a false re-trigger of the transition handler for a screen that
-     * was already processed before the switch.
+     * preventing a false re-trigger of the transition handler for a screen that was
+     * already processed before the switch.
      *
      * @param currentMode
      *            the mode the engine should start in

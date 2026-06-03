@@ -150,7 +150,7 @@ public class UpdaterController implements Initializable {
     @FXML
     public void onUpdate(ActionEvent event) {
         if (latestVersion == null) {
-            log.warn("onUpdate: latestVersion is null, cannot update — check version must be run first");
+            log.warn("onUpdate: latestVersion is null, cannot update - check version must be run first");
             return;
         }
         updateButton.setDisable(true);

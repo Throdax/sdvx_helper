@@ -11,6 +11,8 @@ import javafx.fxml.Initializable;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.RadioButton;
+import javafx.scene.control.Spinner;
+import javafx.scene.control.SpinnerValueFactory;
 import javafx.scene.control.TextField;
 import javafx.scene.control.ToggleGroup;
 import javafx.stage.DirectoryChooser;
@@ -66,6 +68,8 @@ public class SettingsController implements Initializable {
     @FXML
     private TextField autosavePrewaitField;
     @FXML
+    private Spinner<Integer> detectSampleCountSpinner;
+    @FXML
     private CheckBox discordEnableCheck;
     @FXML
     private TextField rtaTargetVfField;
@@ -114,6 +118,9 @@ public class SettingsController implements Initializable {
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
+        detectSampleCountSpinner.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 10, 3));
+        detectSampleCountSpinner.setEditable(true);
+
         settings = settingsRepo.load();
         populateFields();
 
@@ -200,6 +207,13 @@ public class SettingsController implements Initializable {
         saveJacketImgCheck.setSelected(Boolean.parseBoolean(settings.get("save_jacketimg")));
         autosaveAlwaysCheck.setSelected(Boolean.parseBoolean(settings.get("autosave_always")));
         autosavePrewaitField.setText(settings.getOrDefault("autosave_prewait", ""));
+        int sampleCount = 3;
+        try {
+            sampleCount = Integer.parseInt(settings.getOrDefault("detect_sample_count", "3"));
+        } catch (NumberFormatException e) {
+            log.warn("Invalid detect_sample_count in settings, using default 3");
+        }
+        detectSampleCountSpinner.getValueFactory().setValue(Math.max(1, Math.min(10, sampleCount)));
         rtaTargetVfField.setText(settings.get("rta_target_vf"));
 
         String orientation = settings.get("orientation");
@@ -236,6 +250,7 @@ public class SettingsController implements Initializable {
         settings.put("save_jacketimg", Boolean.toString(saveJacketImgCheck.isSelected()));
         settings.put("autosave_always", Boolean.toString(autosaveAlwaysCheck.isSelected()));
         settings.put("autosave_prewait", autosavePrewaitField.getText().trim());
+        settings.put("detect_sample_count", String.valueOf(detectSampleCountSpinner.getValue()));
         settings.put("discord_enable", Boolean.toString(discordEnableCheck.isSelected()));
         settings.put("rta_target_vf", rtaTargetVfField.getText().trim());
 

@@ -92,8 +92,8 @@
         <VBox spacing="8">
             <padding><Insets top="12" right="12" bottom="12" left="12"/></padding>
             <Label text="%label.main.detection.state" styleClass="sub-heading"/>
-            <Label fx:id="detectModeLabel" text="INIT" styleClass="status-label"/>
-            <HBox spacing="6">
+            <HBox spacing="8" alignment="CENTER_LEFT">
+                <Label fx:id="detectModeLabel" text="INIT" styleClass="status-label"/>
                 <Label fx:id="captureScreenshotIcon" text="%indicator.main.capture.screenshot"
                        styleClass="capture-indicator" visible="false" managed="false"/>
                 <Label fx:id="captureSummaryIcon" text="%indicator.main.capture.summary"

@@ -87,7 +87,7 @@ public class RegistrationWebhookService {
         String msg = buildRegisterMessage(title, difficulty, hashJacket, hashInfo);
 
         if (sourceFile == null) {
-            log.debug("sendOnRegister: no source file — sending text-only message");
+            log.debug("sendOnRegister: no source file - sending text-only message");
             webhookClient.sendMessage(webhookUrl, msg);
             return;
         }
@@ -95,7 +95,7 @@ public class RegistrationWebhookService {
         try {
             BufferedImage awtImage = ImageIO.read(sourceFile);
             if (awtImage == null) {
-                log.warn("sendOnRegister: ImageIO could not decode '{}' — sending text-only message",
+                log.warn("sendOnRegister: ImageIO could not decode '{}' - sending text-only message",
                         sourceFile.getName());
                 webhookClient.sendMessage(webhookUrl, msg);
                 return;
@@ -125,7 +125,7 @@ public class RegistrationWebhookService {
      */
     public void sendOnClose(int sessionCount, int totalHashes) {
         if (sessionCount <= 1) {
-            log.info("sendOnClose: {} song(s) registered — skipping close webhook", sessionCount);
+            log.info("sendOnClose: {} song(s) registered - skipping close webhook", sessionCount);
             return;
         }
         String webhookUrl = secretConfig != null ? secretConfig.getWebhookRegUrl() : "";

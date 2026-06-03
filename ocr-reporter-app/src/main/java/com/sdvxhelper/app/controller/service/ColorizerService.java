@@ -112,7 +112,7 @@ public class ColorizerService {
                     continue;
                 }
                 if (imageAnalysisService != null && !imageAnalysisService.isResultScreen(img, paramsMap)) {
-                    log.debug("colorize: '{}' does not pass isResultScreen — skipping", f.getName());
+                    log.debug("colorize: '{}' does not pass isResultScreen - skipping", f.getName());
                     continue;
                 }
 
@@ -205,7 +205,7 @@ public class ColorizerService {
             return null;
         }
         if (f.renameTo(newFile)) {
-            log.info("Renamed: {} → {}", f.getName(), newFile.getName());
+            log.info("Renamed: {} -> {}", f.getName(), newFile.getName());
             return newFile;
         }
         log.warn("renameResultFile: failed to rename {} to {}", f.getName(), newName);

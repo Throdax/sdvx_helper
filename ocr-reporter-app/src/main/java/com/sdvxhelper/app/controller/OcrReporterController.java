@@ -312,7 +312,7 @@ public class OcrReporterController implements Initializable {
 
     private void refreshHashDb() {
         if (musicListRepo == null || hashItems == null) {
-            log.warn("refreshHashDb: musicListRepo={}, hashItems={} — cannot refresh",
+            log.warn("refreshHashDb: musicListRepo={}, hashItems={} - cannot refresh",
                     musicListRepo == null ? "null" : "present", hashItems == null ? "null" : "present");
             return;
         }
@@ -697,7 +697,7 @@ public class OcrReporterController implements Initializable {
                 return;
             }
             if (imageAnalysisService != null && !imageAnalysisService.isResultScreen(awtImage, paramsMap)) {
-                log.debug("showCurrentImage: '{}' does not pass isResultScreen — clearing preview", f.getName());
+                log.debug("showCurrentImage: '{}' does not pass isResultScreen - clearing preview", f.getName());
                 currentInfoCrop = null;
                 Platform.runLater(() -> {
                     jacketView.setImage(null);

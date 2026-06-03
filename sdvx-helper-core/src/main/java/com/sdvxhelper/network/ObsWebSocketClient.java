@@ -85,6 +85,7 @@ public class ObsWebSocketClient implements Closeable {
     private static final String IMAGE_FORMAT = "png";
 
     private static final String OUTPUT_STATE_STARTED = "OBS_WEBSOCKET_OUTPUT_STARTED";
+    private static final String OUTPUT_STATE_STOPPED = "OBS_WEBSOCKET_OUTPUT_STOPPED";
 
     private Executor obsConnectorExecutor = Executors.newFixedThreadPool(1);
 
@@ -96,7 +97,9 @@ public class ObsWebSocketClient implements Closeable {
     private volatile boolean connected = false;
 
     private Runnable onRecordingStarted;
+    private Runnable onRecordingStopped;
     private Runnable onStreamingStarted;
+    private Runnable onStreamingStopped;
 
     /**
      * Constructs an OBS WebSocket client.
@@ -199,6 +202,19 @@ public class ObsWebSocketClient implements Closeable {
     }
 
     /**
+     * Registers a callback that is invoked when OBS recording transitions to the
+     * stopped state ({@code OBS_WEBSOCKET_OUTPUT_STOPPED}). Must be called before
+     * {@link #connect()}.
+     *
+     * @param onRecordingStopped
+     *            callback to invoke when recording stops; may be {@code null} to
+     *            clear a previously registered callback
+     */
+    public void setOnRecordingStopped(Runnable onRecordingStopped) {
+        this.onRecordingStopped = onRecordingStopped;
+    }
+
+    /**
      * Registers a callback that is invoked when OBS streaming transitions to the
      * started state ({@code OBS_WEBSOCKET_OUTPUT_STARTED}). Must be called before
      * {@link #connect()}.
@@ -209,6 +225,19 @@ public class ObsWebSocketClient implements Closeable {
      */
     public void setOnStreamingStarted(Runnable onStreamingStarted) {
         this.onStreamingStarted = onStreamingStarted;
+    }
+
+    /**
+     * Registers a callback that is invoked when OBS streaming transitions to the
+     * stopped state ({@code OBS_WEBSOCKET_OUTPUT_STOPPED}). Must be called before
+     * {@link #connect()}.
+     *
+     * @param onStreamingStopped
+     *            callback to invoke when streaming stops; may be {@code null} to
+     *            clear a previously registered callback
+     */
+    public void setOnStreamingStopped(Runnable onStreamingStopped) {
+        this.onStreamingStopped = onStreamingStopped;
     }
 
     /**
@@ -489,22 +518,32 @@ public class ObsWebSocketClient implements Closeable {
     // -------------------------------------------------------------------------
 
     private void handleRecordStateChanged(RecordStateChangedEvent event) {
-        if (Objects.isNull(onRecordingStarted)) {
-            return;
-        }
-        if (OUTPUT_STATE_STARTED.equals(event.getOutputState())) {
+        String state = event.getOutputState();
+        if (OUTPUT_STATE_STARTED.equals(state)) {
             log.info("OBS recording started");
-            onRecordingStarted.run();
+            if (Objects.nonNull(onRecordingStarted)) {
+                onRecordingStarted.run();
+            }
+        } else if (OUTPUT_STATE_STOPPED.equals(state)) {
+            log.info("OBS recording stopped");
+            if (Objects.nonNull(onRecordingStopped)) {
+                onRecordingStopped.run();
+            }
         }
     }
 
     private void handleStreamStateChanged(StreamStateChangedEvent event) {
-        if (Objects.isNull(onStreamingStarted)) {
-            return;
-        }
-        if (OUTPUT_STATE_STARTED.equals(event.getOutputState())) {
+        String state = event.getOutputState();
+        if (OUTPUT_STATE_STARTED.equals(state)) {
             log.info("OBS streaming started");
-            onStreamingStarted.run();
+            if (Objects.nonNull(onStreamingStarted)) {
+                onStreamingStarted.run();
+            }
+        } else if (OUTPUT_STATE_STOPPED.equals(state)) {
+            log.info("OBS streaming stopped");
+            if (Objects.nonNull(onStreamingStopped)) {
+                onStreamingStopped.run();
+            }
         }
     }
 

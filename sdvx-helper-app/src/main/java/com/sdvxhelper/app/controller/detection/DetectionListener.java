@@ -51,6 +51,19 @@ public interface DetectionListener {
     void onObsOutputStarted(String outputType);
 
     /**
+     * Called when OBS stops recording or streaming.
+     *
+     * <p>
+     * Called on a background thread; implementors must wrap UI updates in
+     * {@code Platform.runLater()}.
+     * </p>
+     *
+     * @param outputType
+     *            {@code "Recording"} or {@code "Streaming"}
+     */
+    void onObsOutputStopped(String outputType);
+
+    /**
      * Called after a result screen is processed, reporting which capture steps
      * succeeded. Mirrors Python {@code self.window['*_icon'].update(visible=True)}.
      *

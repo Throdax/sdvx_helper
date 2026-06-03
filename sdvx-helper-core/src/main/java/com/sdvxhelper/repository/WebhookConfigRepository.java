@@ -238,7 +238,7 @@ public class WebhookConfigRepository {
 
         try {
             save(configs);
-            log.info("migrateFromLegacySettings: migration complete — {} webhook(s) written to {}", configs.size(),
+            log.info("migrateFromLegacySettings: migration complete - {} webhook(s) written to {}", configs.size(),
                     file.getAbsolutePath());
             removeLegacyKeysFromMap(settings);
             return true;

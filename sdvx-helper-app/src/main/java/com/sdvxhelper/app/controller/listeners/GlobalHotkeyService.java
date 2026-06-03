@@ -158,12 +158,12 @@ public class GlobalHotkeyService {
                 idToAction.put(nextId, entry.getValue());
                 log.debug("Registered global hotkey id={} VK=0x{}", nextId, Integer.toHexString(entry.getKey()));
             } else {
-                log.warn("Failed to register global hotkey VK=0x{} — another application may own this key",
+                log.warn("Failed to register global hotkey VK=0x{} - another application may own this key",
                         Integer.toHexString(entry.getKey()));
             }
             nextId++;
         }
-        log.info("Global hotkeys active (F4–F9)");
+        log.info("Global hotkeys active (F4-F9)");
 
         // GetMessage returns: 0 on WM_QUIT, -1 on error, positive for normal messages.
         // Exiting on <= 0 correctly handles both WM_QUIT and unexpected errors.
