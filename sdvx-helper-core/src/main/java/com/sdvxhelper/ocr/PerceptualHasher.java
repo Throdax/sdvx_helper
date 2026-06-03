@@ -1,6 +1,7 @@
 package com.sdvxhelper.ocr;
 
 import java.awt.image.BufferedImage;
+import java.util.Arrays;
 
 /**
  * Computes perceptual hashes for jacket and info-bar images.
@@ -194,6 +195,117 @@ public class PerceptualHasher {
             }
         }
         return out;
+    }
+
+    /**
+     * Computes a DCT-based perceptual hash (pHash) of the given image, replicating
+     * Python {@code imagehash.phash(image, hash_size=10, highfreq_factor=4)}.
+     *
+     * <p>
+     * Algorithm:
+     * <ol>
+     * <li>Convert to greyscale using Pillow's ITU-R 601 formula.</li>
+     * <li>Resize to {@code (HASH_SIZE * 4) x (HASH_SIZE * 4)} = 40x40 using
+     * Lanczos-3.</li>
+     * <li>Apply a 2-D DCT-II (separable row-then-column).</li>
+     * <li>Extract the top-left {@code HASH_SIZE x HASH_SIZE} = 10x10 block of
+     * low-frequency DCT coefficients.</li>
+     * <li>Produce a bit-string: {@code 1} if coefficient is above the block's
+     * median, {@code 0} otherwise.</li>
+     * <li>Pack bits MSB-first into a hex string.</li>
+     * </ol>
+     * </p>
+     *
+     * <p>
+     * The returned hex string is the same length as {@link #hash} (25 chars for
+     * {@code HASH_SIZE=10}), so {@link #hammingDistance} works with both.
+     * </p>
+     *
+     * @param image
+     *            input image (any size or colour model)
+     * @return lowercase hex pHash string of length {@code HASH_SIZE²/4}
+     */
+    public String phash(BufferedImage image) {
+        int imgSize = HASH_SIZE * 4;
+        int srcW = image.getWidth();
+        int srcH = image.getHeight();
+
+        int[] srcGrey = toGreyArray(image, srcW, srcH);
+        double[] resized = resizeLanczos(srcGrey, srcW, srcH, imgSize, imgSize);
+
+        double[][] pixels = new double[imgSize][imgSize];
+        for (int r = 0; r < imgSize; r++) {
+            for (int c = 0; c < imgSize; c++) {
+                pixels[r][c] = resized[r * imgSize + c];
+            }
+        }
+
+        double[][] dct = dct2d(pixels, imgSize, imgSize);
+
+        double[] lowFreq = new double[HASH_SIZE * HASH_SIZE];
+        for (int r = 0; r < HASH_SIZE; r++) {
+            System.arraycopy(dct[r], 0, lowFreq, r * HASH_SIZE, HASH_SIZE);
+        }
+
+        double[] sorted = lowFreq.clone();
+        Arrays.sort(sorted);
+        double median = (sorted[sorted.length / 2 - 1] + sorted[sorted.length / 2]) / 2.0;
+
+        StringBuilder hex = new StringBuilder(lowFreq.length / 4);
+        for (int i = 0; i < lowFreq.length; i += 4) {
+            int nibble = 0;
+            for (int bit = 0; bit < 4; bit++) {
+                if (lowFreq[i + bit] > median) {
+                    nibble |= (1 << (3 - bit));
+                }
+            }
+            hex.append(Integer.toHexString(nibble));
+        }
+        return hex.toString();
+    }
+
+    /**
+     * Applies a separable 2-D DCT-II: first along each row, then along each
+     * column.
+     */
+    private static double[][] dct2d(double[][] input, int rows, int cols) {
+        double[][] temp = new double[rows][cols];
+        for (int r = 0; r < rows; r++) {
+            dct1d(input[r], temp[r], cols);
+        }
+        double[][] out = new double[rows][cols];
+        double[] colIn = new double[rows];
+        double[] colOut = new double[rows];
+        for (int c = 0; c < cols; c++) {
+            for (int r = 0; r < rows; r++) {
+                colIn[r] = temp[r][c];
+            }
+            dct1d(colIn, colOut, rows);
+            for (int r = 0; r < rows; r++) {
+                out[r][c] = colOut[r];
+            }
+        }
+        return out;
+    }
+
+    /**
+     * Applies a 1-D DCT-II to {@code in} of length {@code n}, writing results to
+     * {@code out}: {@code out[k] = sum_{x=0}^{n-1} in[x] * cos(PI*k*(x+0.5)/n)}.
+     *
+     * <p>
+     * The scaling factor of 2 present in {@code scipy.fft.dct} is omitted because
+     * the pHash comparison uses only the relative order of coefficients vs. their
+     * median.
+     * </p>
+     */
+    private static void dct1d(double[] in, double[] out, int n) {
+        for (int k = 0; k < n; k++) {
+            double sum = 0;
+            for (int x = 0; x < n; x++) {
+                sum += in[x] * Math.cos(Math.PI * k * (x + 0.5) / n);
+            }
+            out[k] = sum;
+        }
     }
 
     /**

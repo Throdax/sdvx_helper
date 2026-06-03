@@ -593,7 +593,7 @@ public class ScreenHandler {
             }
             BufferedImage vfCrop = cropVf(frame);
             BufferedImage classCrop = cropClass(frame);
-            String vfHash = perceptualHasher.hash(vfCrop);
+            String vfHash = perceptualHasher.phash(vfCrop);
             boolean changed = (lastVfHash == null) || (perceptualHasher.hammingDistance(vfHash, lastVfHash) > 2);
             lastVfHash = vfHash;
 

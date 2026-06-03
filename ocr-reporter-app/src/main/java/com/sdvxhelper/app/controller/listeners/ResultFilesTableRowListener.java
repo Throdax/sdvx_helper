@@ -1,6 +1,7 @@
 package com.sdvxhelper.app.controller.listeners;
 
 import java.io.File;
+import javafx.application.Platform;
 import javafx.scene.control.TableRow;
 
 import com.sdvxhelper.app.controller.OcrReporterController;
@@ -66,9 +67,16 @@ public class ResultFilesTableRowListener extends TableRow<File> {
         // Modena sets its own -fx-text-fill on .table-cell. Propagate explicitly
         // only for dark-background rows that require white text; clear it otherwise
         // so selected/hovered rows restore the default (dark) cell text.
-        String cellTextStyle = propagateWhiteText ? "-fx-text-fill: white;" : "";
-        for (javafx.scene.Node child : getChildrenUnmodifiable()) {
-            child.setStyle(cellTextStyle);
-        }
+        //
+        // Platform.runLater is required here: when called from updateItem() during
+        // a table refresh, each TableCell.updateItem() fires *after* the row update
+        // and resets any inline style written synchronously. Deferring to the next
+        // JavaFX pulse ensures the cell style is applied last and therefore sticks.
+        final String cellTextStyle = propagateWhiteText ? "-fx-text-fill: white;" : "";
+        Platform.runLater(() -> {
+            for (javafx.scene.Node child : getChildrenUnmodifiable()) {
+                child.setStyle(cellTextStyle);
+            }
+        });
     }
 }

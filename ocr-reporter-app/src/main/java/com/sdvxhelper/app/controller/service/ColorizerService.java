@@ -116,7 +116,8 @@ public class ColorizerService {
                     continue;
                 }
 
-                String hash = hasher.hash(img);
+                BufferedImage jacketCrop = cropJacket(img);
+                String hash = jacketCrop != null ? hasher.hash(jacketCrop) : hasher.hash(img);
                 String[] match = musicListRepo.findByJacketHash(hash);
 
                 if (match != null) {
@@ -177,6 +178,18 @@ public class ColorizerService {
             callback.onFileColorized(f.getName(), ERROR_STYLE);
             callback.onLog("ERROR [" + f.getName() + "]: " + e.getMessage());
         }
+    }
+
+    private BufferedImage cropJacket(BufferedImage img) {
+        int sx = ParamUtils.getInt(paramsMap, "log_crop_jacket_sx", -1);
+        int sy = ParamUtils.getInt(paramsMap, "log_crop_jacket_sy", -1);
+        int w = ParamUtils.getInt(paramsMap, "log_crop_jacket_w", 0);
+        int h = ParamUtils.getInt(paramsMap, "log_crop_jacket_h", 0);
+        if (sx < 0 || sy < 0 || w <= 0 || h <= 0) {
+            log.warn("cropJacket: jacket params not configured, falling back to full image hash");
+            return null;
+        }
+        return OcrReporterHelper.cropAndScale(img, sx, sy, w, h, w, h);
     }
 
     private String detectDifficultyForRename(BufferedImage img) throws ImageCropNotParsed {

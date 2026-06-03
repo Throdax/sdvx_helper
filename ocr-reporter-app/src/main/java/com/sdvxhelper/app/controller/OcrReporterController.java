@@ -190,6 +190,12 @@ public class OcrReporterController implements Initializable {
     private BufferedImage currentInfoCrop;
 
     /**
+     * The {@code title_small} crop from the most recently selected result image,
+     * used as the primary input for Tesseract OCR in {@link #onSuggestTitle}.
+     */
+    private BufferedImage currentTitleCrop;
+
+    /**
      * Extended-language Tesseract instance for the Suggest feature. Handles
      * Japanese, Latin-script (incl. French), and Greek song titles.
      */
@@ -269,7 +275,7 @@ public class OcrReporterController implements Initializable {
         SettingsRepository settingsRepo = new SettingsRepository();
         settings = settingsRepo.load();
         paramsMap = new ParamsRepository().load(settings.getOrDefault("params_json", "resources/params.json"));
-        suggestOcr = new TesseractOcr("jpn+eng+fra+ell");
+        suggestOcr = new TesseractOcr("jpn+eng+fra");
         discordWebhookClient = new DiscordWebhookClient();
         secretConfig = new SecretConfig();
 
@@ -423,24 +429,23 @@ public class OcrReporterController implements Initializable {
         }
         if (currentInfoCrop == null) {
             log.debug("onSuggestTitle: no info crop available for current selection, skipping");
-            appendLog("Suggest: no result image loaded — select a result screenshot first");
+            appendLog("Suggest: no result image loaded - select a result screenshot first");
             return;
         }
         File selectedFile = imageFiles.get(selIdx);
         suggestButton.setDisable(true);
 
-        final BufferedImage infoCrop = currentInfoCrop;
+        final BufferedImage titleCrop = currentTitleCrop != null ? currentTitleCrop : currentInfoCrop;
         bgExecutor.submit(() -> {
             try {
-                int titleLeftTrim = 10;
-                BufferedImage titleLine = infoCrop.getSubimage(titleLeftTrim, 0, infoCrop.getWidth() - titleLeftTrim,
-                        infoCrop.getHeight() / 2);
-                OcrReporterHelper.saveDebugPart(titleLine, "info_title");
-                log.info("onSuggestTitle: OCR attempt on title-line sub-crop ({}x{}) from '{}'", titleLine.getWidth(),
-                        titleLine.getHeight(), selectedFile.getName());
-                String recognised = suggestOcr.recognizeText(titleLine);
+                BufferedImage preprocessed = OcrReporterHelper.preprocessForOcr(titleCrop);
+                OcrReporterHelper.saveDebugPart(preprocessed, "title_small_preprocessed");
+                log.info("onSuggestTitle: OCR attempt on title crop ({}x{}) from '{}'", titleCrop.getWidth(),
+                        titleCrop.getHeight(), selectedFile.getName());
+                String recognised = suggestOcr.recognizeText(preprocessed);
+                recognised = OcrReporterHelper.removeInterCjkSpaces(recognised);
                 log.info("onSuggestTitle: Tesseract result '{}'", recognised);
-                final String suggestion = (recognised != null) ? recognised : "";
+                final String suggestion = (recognised != null) ? recognised.strip() : "";
                 Platform.runLater(() -> {
                     appendLog("Suggest: Tesseract result: \"" + suggestion + "\"");
                     if (!suggestion.isBlank()) {
@@ -679,6 +684,7 @@ public class OcrReporterController implements Initializable {
         }
         if (!OcrReporterHelper.isResultFilename(f.getName())) {
             currentInfoCrop = null;
+            currentTitleCrop = null;
             Platform.runLater(() -> {
                 jacketView.setImage(null);
                 difficultyView.setImage(null);
@@ -699,6 +705,7 @@ public class OcrReporterController implements Initializable {
             if (imageAnalysisService != null && !imageAnalysisService.isResultScreen(awtImage, paramsMap)) {
                 log.debug("showCurrentImage: '{}' does not pass isResultScreen - clearing preview", f.getName());
                 currentInfoCrop = null;
+                currentTitleCrop = null;
                 Platform.runLater(() -> {
                     jacketView.setImage(null);
                     difficultyView.setImage(null);
@@ -732,12 +739,13 @@ public class OcrReporterController implements Initializable {
                     ? OcrReporterHelper.cropAndScale(infoRaw, 0, 0, infoRaw.getWidth(), infoRaw.getHeight(), 526, 64)
                     : null;
             currentInfoCrop = info;
+            currentTitleCrop = parts.get("title_small");
             infoView.setImage(info != null ? toFxImage(info) : null);
 
             String infoHash = hasher.hash(info);
             hashInfoField.setText(infoHash);
 
-            String hash = hasher.hash(awtImage);
+            String hash = jacketRaw != null ? hasher.hash(jacketRaw) : hasher.hash(awtImage);
             hashField.setText(hash);
 
             String detectedDiff = detectDifficulty(f, hash, diffBand);
