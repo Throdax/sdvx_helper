@@ -27,6 +27,8 @@
             <TextField fx:id="filterField" promptText="%text.score.search" prefWidth="220"/>
             <Label text="%label.score.level" styleClass="muted"/>
             <ComboBox fx:id="levelCombo" promptText="All"/>
+            <Label text="%label.score.diff" styleClass="muted"/>
+            <ComboBox fx:id="diffCombo" promptText="All"/>
             <Label text="%label.score.lamp" styleClass="muted"/>
             <ComboBox fx:id="lampCombo" promptText="All"/>
             <Label text="%label.score.color" styleClass="muted"/>
@@ -42,14 +44,14 @@
         <SplitPane dividerPositions="0.65" orientation="HORIZONTAL">
             <TableView fx:id="scoresTable">
                 <columns>
-                    <TableColumn fx:id="titleColumn"      text="%table.header.title"      prefWidth="280"/>
-                    <TableColumn fx:id="difficultyColumn" text="%table.header.difficulty" prefWidth="90"/>
-                    <TableColumn fx:id="levelColumn"      text="%table.header.level"      prefWidth="60"/>
-                    <TableColumn fx:id="scoreColumn"      text="%table.header.score"      prefWidth="100"/>
-                    <TableColumn fx:id="lampColumn"       text="%table.header.lamp"       prefWidth="80"/>
-                    <TableColumn fx:id="vfColumn"         text="%table.header.volforce"   prefWidth="80"/>
-                    <TableColumn fx:id="dateColumn"       text="%table.header.lastPlayed" prefWidth="140"/>
-                    <TableColumn fx:id="sTierColumn"      text="%table.header.tier"       prefWidth="70"/>
+                    <TableColumn fx:id="titleColumn"      text="%table.header.title"      prefWidth="330"/>
+                    <TableColumn fx:id="difficultyColumn" text="%table.header.difficulty" prefWidth="80"/>
+                    <TableColumn fx:id="levelColumn"      text="%table.header.level"      prefWidth="48"/>
+                    <TableColumn fx:id="scoreColumn"      text="%table.header.score"      prefWidth="90"/>
+                    <TableColumn fx:id="lampColumn"       text="%table.header.lamp"       prefWidth="90"/>
+                    <TableColumn fx:id="vfColumn"         text="%table.header.volforce"   prefWidth="58"/>
+                    <TableColumn fx:id="dateColumn"       text="%table.header.lastPlayed" prefWidth="88"/>
+                    <TableColumn fx:id="sTierColumn"      text="%table.header.tier"       prefWidth="35"/>
                 </columns>
             </TableView>
 

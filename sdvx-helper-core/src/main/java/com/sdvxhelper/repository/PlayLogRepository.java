@@ -71,6 +71,10 @@ public class PlayLogRepository extends JaxbRepository<PlayLog> {
             }
             Collections.sort(pl.getPlays());
             log.info("Loaded {} play records from {}", pl.getPlays().size(), file.getAbsolutePath());
+            if (!pl.getPlays().isEmpty()) {
+                OnePlayData first = pl.getPlays().get(0);
+                log.info("First play sample: title='{}', date={}", first.getTitle(), first.getDate());
+            }
             return pl;
         } catch (JAXBException e) {
             log.error("Failed to load alllog.xml; returning empty log", e);

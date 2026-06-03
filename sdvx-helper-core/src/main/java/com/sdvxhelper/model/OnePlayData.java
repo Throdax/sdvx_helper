@@ -60,7 +60,7 @@ public class OnePlayData implements Comparable<OnePlayData> {
      * {@link LocalDateTimeXMLAdapter}.
      */
     @XmlAttribute
-    @XmlJavaTypeAdapter(LocalDateTimeXMLAdapter.class)
+    @XmlJavaTypeAdapter(type = LocalDateTime.class, value = LocalDateTimeXMLAdapter.class)
     private LocalDateTime date;
 
     /**

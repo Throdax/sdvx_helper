@@ -75,7 +75,7 @@ public class MusicInfo implements Comparable<MusicInfo> {
      * {@link LocalDateTimeXMLAdapter}.
      */
     @XmlAttribute
-    @XmlJavaTypeAdapter(LocalDateTimeXMLAdapter.class)
+    @XmlJavaTypeAdapter(type = LocalDateTime.class, value = LocalDateTimeXMLAdapter.class)
     private LocalDateTime date;
 
     /**

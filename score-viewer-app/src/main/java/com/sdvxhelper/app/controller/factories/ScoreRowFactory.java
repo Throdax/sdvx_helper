@@ -12,18 +12,18 @@ import com.sdvxhelper.model.MusicInfo;
  * selected color mode (difficulty or lamp).
  *
  * <p>
- * When a row is selected, a 4-pixel blue stripe is painted on the left edge
- * using layered JavaFX backgrounds. Cells are forced transparent via
- * {@link Platform#runLater} so the row background shows through instead of
- * Modena's default selected-cell blue.
+ * When a row is selected the background is darkened by 25% to indicate
+ * selection without losing the color context. Cells are forced to a transparent
+ * background via {@link Platform#runLater} so the row background always shows
+ * through; text fill is applied directly to cells for the same reason (JavaFX
+ * CSS inheritance does not propagate {@code -fx-text-fill} from row to cell
+ * automatically).
  * </p>
  *
  * @author Throdax
  * @since 2.0.0
  */
 public class ScoreRowFactory extends TableRow<MusicInfo> {
-
-    private static final String SELECTION_COLOR = "#1565c0";
 
     private ScoreViewerController scoreViewerController;
 
@@ -46,18 +46,23 @@ public class ScoreRowFactory extends TableRow<MusicInfo> {
             Platform.runLater(this::clearCellStyles);
             return;
         }
-        String style = computeStyle(item);
-        setStyle(style);
-        if (style.isEmpty()) {
+        String[] colorText = computeColorAndText(item);
+        if (colorText == null) {
+            setStyle("");
             Platform.runLater(this::clearCellStyles);
-        } else {
-            Platform.runLater(this::applyTransparentCells);
+            return;
         }
+        String bgColor = isSelected() ? darken(colorText[0]) : colorText[0];
+        String textFill = colorText[1];
+        setStyle("-fx-background-color: " + bgColor + ";");
+        final String cellStyle = "-fx-background-color: transparent; -fx-text-fill: " + textFill + ";";
+        Platform.runLater(() -> {
+            for (Node child : getChildrenUnmodifiable()) {
+                child.setStyle(cellStyle);
+            }
+        });
     }
 
-    /**
-     * Clears any inline cell style, restoring Modena's default behaviour.
-     */
     private void clearCellStyles() {
         for (Node child : getChildrenUnmodifiable()) {
             child.setStyle("");
@@ -65,56 +70,51 @@ public class ScoreRowFactory extends TableRow<MusicInfo> {
     }
 
     /**
-     * Makes every child cell transparent so the row's background colour
-     * (including the selection stripe) shows through unobstructed.
+     * Returns {@code [bgColor, textFill]} for the given item under the current
+     * color mode, or {@code null} when no color should be applied.
      */
-    private void applyTransparentCells() {
-        for (Node child : getChildrenUnmodifiable()) {
-            child.setStyle("-fx-background-color: transparent; -fx-text-fill: inherit;");
-        }
-    }
-
-    private String computeStyle(MusicInfo item) {
+    private String[] computeColorAndText(MusicInfo item) {
         String mode = scoreViewerController.getColorModeCombo().getValue();
         if (mode == null || "None".equals(mode)) {
-            return "";
+            return null;
         }
-
-        String baseColor = null;
-        String textFill = "black";
-
         if ("By Difficulty".equals(mode)) {
             String diff = item.getDifficulty() == null ? "" : item.getDifficulty().toLowerCase();
-            switch (diff) {
-                case "nov" -> { baseColor = "#7979D4"; textFill = "white"; }
-                case "adv" -> { baseColor = "#E8B81C"; textFill = "white"; }
-                case "exh" -> { baseColor = "#BD5E5E"; textFill = "white"; }
-                case "mxm", "inf", "grv", "hvn", "vvd", "xcd" -> { baseColor = "#D6D6D6"; textFill = "white"; }
-                default -> { }
-            }
-        } else if ("By Lamp".equals(mode)) {
+            return switch (diff) {
+                case "nov" -> new String[]{"#7979D4", "white"};
+                case "adv" -> new String[]{"#E8B81C", "black"};
+                case "exh" -> new String[]{"#BD5E5E", "white"};
+                case "mxm", "inf", "grv", "hvn", "vvd", "xcd" -> new String[]{"#D6D6D6", "black"};
+                default -> null;
+            };
+        }
+        if ("By Lamp".equals(mode)) {
             String lamp = item.getBestLamp() == null ? "" : item.getBestLamp().toLowerCase();
-            switch (lamp) {
-                case "puc"    -> { baseColor = "#ffff66"; textFill = "black"; }
-                case "uc"     -> { baseColor = "#ffaaaa"; textFill = "black"; }
-                case "exh"    -> { baseColor = "#ddaaff"; textFill = "black"; }
-                case "hard"   -> { baseColor = "#ffccff"; textFill = "black"; }
-                case "clear"  -> { baseColor = "#77ff77"; textFill = "black"; }
-                case "failed" -> { baseColor = "#aaaaaa"; textFill = "black"; }
-                default -> { }
-            }
+            return switch (lamp) {
+                case "puc"    -> new String[]{"#ffff66", "black"};
+                case "uc"     -> new String[]{"#ffaaaa", "black"};
+                case "hard"   -> new String[]{"#ffccff", "black"};
+                case "clear"  -> new String[]{"#77ff77", "black"};
+                case "failed" -> new String[]{"#aaaaaa", "black"};
+                default -> null;
+            };
         }
+        return null;
+    }
 
-        if (baseColor == null) {
-            return "";
-        }
-
-        if (isSelected()) {
-            return "-fx-background-color: " + SELECTION_COLOR + ", " + baseColor + "; "
-                    + "-fx-background-insets: 0, 0 0 0 4; "
-                    + "-fx-text-fill: " + textFill + ";";
-        }
-        return "-fx-background-color: " + baseColor + "; -fx-text-fill: " + textFill + ";";
+    /**
+     * Darkens a hex color string by 25% to signal row selection.
+     *
+     * @param hex
+     *            six-digit hex color prefixed with {@code #}, e.g. {@code "#E8B81C"}
+     * @return darkened hex color string
+     */
+    private static String darken(String hex) {
+        int color = Integer.parseInt(hex.substring(1), 16);
+        int r = (int) ((color >> 16 & 0xFF) * 0.75);
+        int g = (int) ((color >> 8 & 0xFF) * 0.75);
+        int b = (int) ((color & 0xFF) * 0.75);
+        return String.format("#%02x%02x%02x", r, g, b);
     }
 
 }

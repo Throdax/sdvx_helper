@@ -10,6 +10,8 @@ import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -40,8 +42,10 @@ import com.sdvxhelper.repository.RivalLogRepository;
 import com.sdvxhelper.repository.SettingsRepository;
 import com.sdvxhelper.service.CsvExportService;
 import com.sdvxhelper.service.SdvxLoggerService;
+import com.sdvxhelper.util.ScoreFormatter;
 
 import javafx.application.Platform;
+import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
@@ -55,6 +59,7 @@ import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
+import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
@@ -82,6 +87,9 @@ public class ScoreViewerController implements Initializable {
 
     @FXML
     private ComboBox<String> levelCombo;
+
+    @FXML
+    private ComboBox<String> diffCombo;
 
     @FXML
     private ComboBox<String> lampCombo;
@@ -175,8 +183,44 @@ public class ScoreViewerController implements Initializable {
         scoreColumn.setCellValueFactory(new PropertyValueFactory<>("bestScore"));
         lampColumn.setCellValueFactory(new PropertyValueFactory<>("bestLamp"));
         vfColumn.setCellValueFactory(new PropertyValueFactory<>("vf"));
-        dateColumn.setCellValueFactory(new PropertyValueFactory<>("date"));
         sTierColumn.setCellValueFactory(new PropertyValueFactory<>("sTier"));
+
+        dateColumn.setCellValueFactory(data -> {
+            LocalDateTime d = data.getValue().getDate();
+            return new SimpleStringProperty(d != null ? d.format(DateTimeFormatter.ofPattern("yyyy/MM/dd")) : "");
+        });
+
+        scoreColumn.setCellFactory(col -> new TableCell<>() {
+            @Override
+            protected void updateItem(Integer score, boolean empty) {
+                super.updateItem(score, empty);
+                setText(empty || score == null ? null : ScoreFormatter.formatScore(score));
+            }
+        });
+
+        vfColumn.setCellFactory(col -> new TableCell<>() {
+            @Override
+            protected void updateItem(Integer vf, boolean empty) {
+                super.updateItem(vf, empty);
+                setText(empty || vf == null ? null : ScoreFormatter.formatVf(vf));
+            }
+        });
+
+        difficultyColumn.setCellFactory(col -> new TableCell<>() {
+            @Override
+            protected void updateItem(String diff, boolean empty) {
+                super.updateItem(diff, empty);
+                setText(empty || diff == null ? null : diff.toUpperCase());
+            }
+        });
+
+        lampColumn.setCellFactory(col -> new TableCell<>() {
+            @Override
+            protected void updateItem(String lamp, boolean empty) {
+                super.updateItem(lamp, empty);
+                setText(empty || lamp == null ? null : formatLampDisplay(lamp));
+            }
+        });
 
         filteredScores = new FilteredList<>(allScores, _ -> true);
         scoresTable.setItems(filteredScores);
@@ -188,6 +232,7 @@ public class ScoreViewerController implements Initializable {
 
         filterField.textProperty().addListener((_, _, _) -> applyFilter());
         levelCombo.valueProperty().addListener((_, _, _) -> applyFilter());
+        diffCombo.valueProperty().addListener((_, _, _) -> applyFilter());
         lampCombo.valueProperty().addListener((_, _, _) -> applyFilter());
 
         levelCombo.getItems().add("All");
@@ -195,6 +240,9 @@ public class ScoreViewerController implements Initializable {
             levelCombo.getItems().add(String.valueOf(i));
         }
         levelCombo.getSelectionModel().selectFirst();
+
+        diffCombo.getItems().addAll("All", "nov", "adv", "exh", "append");
+        diffCombo.getSelectionModel().selectFirst();
 
         lampCombo.getItems().addAll("All", "puc", "uc", "exh", "hard", "clear", "failed");
         lampCombo.getSelectionModel().selectFirst();
@@ -204,7 +252,7 @@ public class ScoreViewerController implements Initializable {
         colorModeCombo.getSelectionModel().select("By Lamp");
 
         playsList.setItems(selectedPlays);
-        playsList.setCellFactory(new LastPlaysCellFactory());
+        playsList.setCellFactory(new LastPlaysCellFactory(List.of()));
         scoresTable.getSelectionModel().selectedItemProperty().addListener((_, _, nv) -> refreshPlaysFor(nv));
 
         deleteButton.setDisable(true);
@@ -368,6 +416,8 @@ public class ScoreViewerController implements Initializable {
         countLabel.setText(best.size() + " charts");
         log.info("Loaded {} charts into score viewer", best.size());
 
+        playsList.setCellFactory(new LastPlaysCellFactory(playLog.getPlays()));
+
         RivalLogRepository rivalLogRepo = new RivalLogRepository();
         rivalLog = rivalLogRepo.load();
         log.info("Loaded rival log with {} rivals", rivalLog.getRivals().size());
@@ -442,13 +492,15 @@ public class ScoreViewerController implements Initializable {
     private void applyFilter() {
         String titleFilter = filterField.getText().toLowerCase();
         String levelFilter = levelCombo.getValue();
+        String diffFilter = diffCombo.getValue();
         String lampFilter = lampCombo.getValue();
 
         filteredScores.setPredicate(m -> {
             boolean titleOk = titleFilter.isBlank() || m.getTitle().toLowerCase().contains(titleFilter);
             boolean levelOk = "All".equals(levelFilter) || levelFilter.equals(m.getLv());
+            boolean diffOk = "All".equals(diffFilter) || diffFilter.equalsIgnoreCase(m.getDifficulty());
             boolean lampOk = "All".equals(lampFilter) || lampFilter.equals(m.getBestLamp());
-            return titleOk && levelOk && lampOk;
+            return titleOk && levelOk && diffOk && lampOk;
         });
 
         countLabel.setText(filteredScores.size() + " / " + allScores.size() + " charts");
@@ -467,6 +519,28 @@ public class ScoreViewerController implements Initializable {
      */
     public ComboBox<String> getColorModeCombo() {
         return colorModeCombo;
+    }
+
+    /**
+     * Converts an internal lamp key to its display label.
+     *
+     * <p>
+     * "exh" maps to "MAXXIVE" (the game's name for EXH clear in EXCEED GEAR);
+     * all other values are simply uppercased.
+     * </p>
+     *
+     * @param lamp
+     *            raw lamp value (e.g. {@code "exh"}, {@code "puc"})
+     * @return display string (e.g. {@code "MAXXIVE"}, {@code "PUC"})
+     */
+    private static String formatLampDisplay(String lamp) {
+        if (lamp == null) {
+            return "";
+        }
+        if ("exh".equalsIgnoreCase(lamp)) {
+            return "MAXXIVE";
+        }
+        return lamp.toUpperCase();
     }
 
 }
