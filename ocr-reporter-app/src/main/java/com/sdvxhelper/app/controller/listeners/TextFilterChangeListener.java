@@ -23,8 +23,7 @@ public class TextFilterChangeListener implements ChangeListener<String> {
                 query = newValue.toLowerCase();
             }
             ocrReporterController.getFilteredWikiSongs()
-                    .setPredicate(music -> query.isBlank()
-                            || music.getTitle().toLowerCase().contains(query)
+                    .setPredicate(music -> query.isBlank() || music.getTitle().toLowerCase().contains(query)
                             || (music.getArtist() != null && music.getArtist().toLowerCase().contains(query)));
         }
     }

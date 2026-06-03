@@ -265,8 +265,7 @@ public class PerceptualHasher {
     }
 
     /**
-     * Applies a separable 2-D DCT-II: first along each row, then along each
-     * column.
+     * Applies a separable 2-D DCT-II: first along each row, then along each column.
      */
     private static double[][] dct2d(double[][] input, int rows, int cols) {
         double[][] temp = new double[rows][cols];

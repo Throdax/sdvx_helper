@@ -3,11 +3,10 @@ package com.sdvxhelper.model;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import jakarta.xml.bind.annotation.adapters.XmlAdapter;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import jakarta.xml.bind.annotation.adapters.XmlAdapter;
 
 public class LocalDateTimeXMLAdapter extends XmlAdapter<String, LocalDateTime> {
 

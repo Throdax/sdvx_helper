@@ -2,7 +2,6 @@ package com.sdvxhelper.app.controller.factories;
 
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-
 import javafx.scene.control.ListCell;
 
 import com.sdvxhelper.model.OnePlayData;
@@ -12,9 +11,9 @@ import com.sdvxhelper.util.ScoreFormatter;
  * List cell for displaying one play data in the last plays list view.
  *
  * <p>
- * Each row shows the global play index in the full play log, the score
- * (SDVX four-digit-group format), the lamp (uppercased, with "exh" rendered
- * as "MAXXIVE"), and the play date.
+ * Each row shows the global play index in the full play log, the score (SDVX
+ * four-digit-group format), the lamp (uppercased, with "exh" rendered as
+ * "MAXXIVE"), and the play date.
  * </p>
  *
  * @author Throdax
@@ -30,8 +29,8 @@ public class OnePlayDataListCell extends ListCell<OnePlayData> {
      * Constructs a cell that derives play numbers from the given list.
      *
      * @param allPlays
-     *            the complete sorted play log; used to look up a global index
-     *            for each entry displayed in this cell
+     *            the complete sorted play log; used to look up a global index for
+     *            each entry displayed in this cell
      */
     public OnePlayDataListCell(List<OnePlayData> allPlays) {
         this.allPlays = allPlays;
@@ -47,8 +46,8 @@ public class OnePlayDataListCell extends ListCell<OnePlayData> {
             String idxStr = idx >= 0 ? String.valueOf(idx) : "?";
             String lampDisplay = formatLamp(item.getLamp());
             String dateStr = item.getDate() != null ? item.getDate().format(DATE_FORMAT) : "";
-            setText(idxStr + " - " + ScoreFormatter.formatScore(item.getCurScore())
-                    + " | " + lampDisplay + " | " + dateStr);
+            setText(idxStr + " - " + ScoreFormatter.formatScore(item.getCurScore()) + " | " + lampDisplay + " | "
+                    + dateStr);
         }
     }
 

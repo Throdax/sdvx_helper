@@ -306,10 +306,10 @@ public final class OcrReporterHelper {
      * <p>
      * Tesseract's LSTM engine treats each kanji/kana glyph as a separate token and
      * inserts a space after every character, producing output like
-     * {@code "幻 想 プ ロ ミ ネ ン ス"} instead of {@code "幻想プロミネンス"}.
-     * This method strips those spurious spaces by removing any whitespace that is
-     * immediately preceded <em>and</em> followed by a CJK character, while leaving
-     * legitimate spaces inside Latin-alphabet words or mixed-script titles intact.
+     * {@code "幻 想 プ ロ ミ ネ ン ス"} instead of {@code "幻想プロミネンス"}. This method strips
+     * those spurious spaces by removing any whitespace that is immediately preceded
+     * <em>and</em> followed by a CJK character, while leaving legitimate spaces
+     * inside Latin-alphabet words or mixed-script titles intact.
      * </p>
      *
      * @param text
@@ -321,10 +321,8 @@ public final class OcrReporterHelper {
         if (text == null) {
             return null;
         }
-        return text.replaceAll(
-                "(?<=[\\u3040-\\u309F\\u30A0-\\u30FF\\u3000-\\u9FFF\\uF900-\\uFAFF])\\s+"
-                        + "(?=[\\u3040-\\u309F\\u30A0-\\u30FF\\u3000-\\u9FFF\\uF900-\\uFAFF])",
-                "");
+        return text.replaceAll("(?<=[\\u3040-\\u309F\\u30A0-\\u30FF\\u3000-\\u9FFF\\uF900-\\uFAFF])\\s+"
+                + "(?=[\\u3040-\\u309F\\u30A0-\\u30FF\\u3000-\\u9FFF\\uF900-\\uFAFF])", "");
     }
 
     /**

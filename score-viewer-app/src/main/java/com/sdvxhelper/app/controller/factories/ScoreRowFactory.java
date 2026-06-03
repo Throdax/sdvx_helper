@@ -91,10 +91,10 @@ public class ScoreRowFactory extends TableRow<MusicInfo> {
         if ("By Lamp".equals(mode)) {
             String lamp = item.getBestLamp() == null ? "" : item.getBestLamp().toLowerCase();
             return switch (lamp) {
-                case "puc"    -> new String[]{"#ffff66", "black"};
-                case "uc"     -> new String[]{"#ffaaaa", "black"};
-                case "hard"   -> new String[]{"#ffccff", "black"};
-                case "clear"  -> new String[]{"#77ff77", "black"};
+                case "puc" -> new String[]{"#ffff66", "black"};
+                case "uc" -> new String[]{"#ffaaaa", "black"};
+                case "hard" -> new String[]{"#ffccff", "black"};
+                case "clear" -> new String[]{"#77ff77", "black"};
                 case "failed" -> new String[]{"#aaaaaa", "black"};
                 default -> null;
             };
@@ -106,7 +106,8 @@ public class ScoreRowFactory extends TableRow<MusicInfo> {
      * Darkens a hex color string by 25% to signal row selection.
      *
      * @param hex
-     *            six-digit hex color prefixed with {@code #}, e.g. {@code "#E8B81C"}
+     *            six-digit hex color prefixed with {@code #}, e.g.
+     *            {@code "#E8B81C"}
      * @return darkened hex color string
      */
     private static String darken(String hex) {

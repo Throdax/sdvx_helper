@@ -40,14 +40,14 @@ public class BemaniWikiService {
     private static final Logger log = LoggerFactory.getLogger(BemaniWikiService.class);
 
     /**
-     * コナステ/SOUND VOLTEX EXCEED GEAR — 全曲リスト (all-songs list).
-     * Single page that supersedes the two separate AC old/new-song pages.
+     * コナステ/SOUND VOLTEX EXCEED GEAR — 全曲リスト (all-songs list). Single page that
+     * supersedes the two separate AC old/new-song pages.
      */
     private static final String WIKI_URL_FULL = "https://bemaniwiki.com/index.php?%E3%82%B3%E3%83%8A%E3%82%B9%E3%83%86/SOUND+VOLTEX+EXCEED+GEAR/%E5%85%A8%E6%9B%B2%E3%83%AA%E3%82%B9%E3%83%88";
 
     /**
-     * Legacy AC song-list URLs (旧曲リスト / 新曲リスト).
-     * Kept for reference; no longer used by {@link #loadAsync}.
+     * Legacy AC song-list URLs (旧曲リスト / 新曲リスト). Kept for reference; no longer used
+     * by {@link #loadAsync}.
      */
     private static final String WIKI_URL_AC_OLD = "https://bemaniwiki.com/index.php?SOUND+VOLTEX+EXCEED+GEAR/%E6%97%A7%E6%9B%B2%E3%83%AA%E3%82%B9%E3%83%88";
     private static final String WIKI_URL_AC_NEW = "https://bemaniwiki.com/index.php?SOUND+VOLTEX+EXCEED+GEAR/%E6%96%B0%E6%9B%B2%E3%83%AA%E3%82%B9%E3%83%88";
@@ -119,8 +119,8 @@ public class BemaniWikiService {
     // -------------------------------------------------------------------------
 
     /**
-     * Merges AC songs into the konasute song map using whitespace-insensitive
-     * title comparison.
+     * Merges AC songs into the konasute song map using whitespace-insensitive title
+     * comparison.
      *
      * <p>
      * Algorithm:
@@ -152,7 +152,8 @@ public class BemaniWikiService {
             if (normalizedToBase.containsKey(normalized)) {
                 String baseTitle = normalizedToBase.get(normalized);
                 if (!acTitle.equals(baseTitle)) {
-                    log.info("mergeAcSongs: AC title '{}' matches konasute title '{}' (whitespace difference) - konasute takes precedence",
+                    log.info(
+                            "mergeAcSongs: AC title '{}' matches konasute title '{}' (whitespace difference) - konasute takes precedence",
                             acTitle, baseTitle);
                 }
             } else {
@@ -168,8 +169,8 @@ public class BemaniWikiService {
      *
      * @param title
      *            raw title, may be {@code null}
-     * @return title with every whitespace character stripped, or an empty string
-     *         if {@code title} is {@code null}
+     * @return title with every whitespace character stripped, or an empty string if
+     *         {@code title} is {@code null}
      */
     private static String stripWhitespace(String title) {
         return title == null ? "" : title.replaceAll("\\s+", "");
@@ -181,6 +182,7 @@ public class BemaniWikiService {
      * <p>
      * Table column layout (8 cells per full row):
      * </p>
+     * 
      * <pre>
      *   0: 曲名 (title)
      *   1: アーティスト (artist)  — may be absent when rowspanned from a prior row
@@ -192,13 +194,13 @@ public class BemaniWikiService {
      *   7: 配信日 (release date, ignored)
      * </pre>
      * <p>
-     * When the artist cell carries a {@code rowspan} attribute the following
-     * rows have only 7 cells; an {@code offset = -1} is applied so that the
-     * difficulty indices still resolve correctly.
+     * When the artist cell carries a {@code rowspan} attribute the following rows
+     * have only 7 cells; an {@code offset = -1} is applied so that the difficulty
+     * indices still resolve correctly.
      * </p>
      */
-    private void fetchFullList(HttpClient http, String url, Map<String, WikiSongRow> out,
-            double progressStart, double progressEnd, Consumer<Double> onProgress, Consumer<String> onStatusText) {
+    private void fetchFullList(HttpClient http, String url, Map<String, WikiSongRow> out, double progressStart,
+            double progressEnd, Consumer<Double> onProgress, Consumer<String> onStatusText) {
         try {
             String html = fetchUrl(http, url);
             if (html == null) {
@@ -227,7 +229,7 @@ public class BemaniWikiService {
 
                 // Full row = 8 cells; artist-rowspan row = 7 cells.
                 // Sub-header colspan rows (GRV / HVN / VVD / XCD / MXM) have n=1.
-                // Header rows using <th> have n=0.  All others are skipped.
+                // Header rows using <th> have n=0. All others are skipped.
                 if (n != 8 && n != 7) {
                     cntRowspanArtist = Math.max(0, cntRowspanArtist - 1);
                     continue;

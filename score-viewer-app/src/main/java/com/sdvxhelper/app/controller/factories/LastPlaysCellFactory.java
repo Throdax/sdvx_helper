@@ -1,7 +1,6 @@
 package com.sdvxhelper.app.controller.factories;
 
 import java.util.List;
-
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.util.Callback;
@@ -23,9 +22,8 @@ public class LastPlaysCellFactory implements Callback<ListView<OnePlayData>, Lis
      * sorted play log list.
      *
      * @param allPlays
-     *            the complete sorted play log (from
-     *            {@code PlayLog.getPlays()}); used to derive a global play
-     *            index for each cell
+     *            the complete sorted play log (from {@code PlayLog.getPlays()});
+     *            used to derive a global play index for each cell
      */
     public LastPlaysCellFactory(List<OnePlayData> allPlays) {
         this.allPlays = allPlays;

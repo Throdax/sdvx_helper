@@ -19,31 +19,6 @@ import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.sdvxhelper.app.controller.factories.LastPlaysCellFactory;
-import com.sdvxhelper.app.controller.factories.RivalsRowFactory;
-import com.sdvxhelper.app.controller.factories.ScoreRowFactory;
-import com.sdvxhelper.app.controller.factories.ScoreViewerThreadFactory;
-import com.sdvxhelper.app.controller.model.RivalScoreRow;
-import com.sdvxhelper.i18n.LocaleManager;
-import com.sdvxhelper.model.MusicInfo;
-import com.sdvxhelper.model.OnePlayData;
-import com.sdvxhelper.model.PlayLog;
-import com.sdvxhelper.model.RivalEntry;
-import com.sdvxhelper.model.RivalLog;
-import com.sdvxhelper.model.SongInfo;
-import com.sdvxhelper.repository.MusicListRepository;
-import com.sdvxhelper.repository.ParamsRepository;
-import com.sdvxhelper.repository.PlayLogRepository;
-import com.sdvxhelper.repository.RivalLogRepository;
-import com.sdvxhelper.repository.SettingsRepository;
-import com.sdvxhelper.service.CsvExportService;
-import com.sdvxhelper.service.SdvxLoggerService;
-import com.sdvxhelper.util.ScoreFormatter;
-
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -65,6 +40,29 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.stage.FileChooser;
+
+import com.sdvxhelper.app.controller.factories.LastPlaysCellFactory;
+import com.sdvxhelper.app.controller.factories.RivalsRowFactory;
+import com.sdvxhelper.app.controller.factories.ScoreRowFactory;
+import com.sdvxhelper.app.controller.factories.ScoreViewerThreadFactory;
+import com.sdvxhelper.app.controller.model.RivalScoreRow;
+import com.sdvxhelper.i18n.LocaleManager;
+import com.sdvxhelper.model.MusicInfo;
+import com.sdvxhelper.model.OnePlayData;
+import com.sdvxhelper.model.PlayLog;
+import com.sdvxhelper.model.RivalEntry;
+import com.sdvxhelper.model.RivalLog;
+import com.sdvxhelper.model.SongInfo;
+import com.sdvxhelper.repository.MusicListRepository;
+import com.sdvxhelper.repository.ParamsRepository;
+import com.sdvxhelper.repository.PlayLogRepository;
+import com.sdvxhelper.repository.RivalLogRepository;
+import com.sdvxhelper.repository.SettingsRepository;
+import com.sdvxhelper.service.CsvExportService;
+import com.sdvxhelper.service.SdvxLoggerService;
+import com.sdvxhelper.util.ScoreFormatter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Controller for the score-viewer window ({@code score_viewer.fxml}).
@@ -525,8 +523,8 @@ public class ScoreViewerController implements Initializable {
      * Converts an internal lamp key to its display label.
      *
      * <p>
-     * "exh" maps to "MAXXIVE" (the game's name for EXH clear in EXCEED GEAR);
-     * all other values are simply uppercased.
+     * "exh" maps to "MAXXIVE" (the game's name for EXH clear in EXCEED GEAR); all
+     * other values are simply uppercased.
      * </p>
      *
      * @param lamp
