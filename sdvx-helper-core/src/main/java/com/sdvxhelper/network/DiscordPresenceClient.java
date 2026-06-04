@@ -94,6 +94,9 @@ public class DiscordPresenceClient implements Closeable {
     private volatile boolean connected = false;
     private long lastUpdateMs = 0;
 
+    /** Epoch-second timestamp captured once when {@link #connect()} succeeds. */
+    private long sessionStartTime = 0;
+
     // -------------------------------------------------------------------------
     // Constructor
     // -------------------------------------------------------------------------
@@ -135,6 +138,7 @@ public class DiscordPresenceClient implements Closeable {
         // Read and discard the READY response (opcode 1, cmd DISPATCH / event READY)
         readFrame();
         connected = true;
+        sessionStartTime = Instant.now().getEpochSecond();
         log.info("Connected to Discord IPC");
     }
 
@@ -184,7 +188,6 @@ public class DiscordPresenceClient implements Closeable {
 
         String details = buildDetails(state, songTitle, difficulty);
         String status = "VF: " + vfDisplay;
-        long startTime = Instant.now().getEpochSecond();
 
         log.debug("updatePresence: state={}, details='{}', status='{}'", state, details, status);
 
@@ -192,7 +195,7 @@ public class DiscordPresenceClient implements Closeable {
                 ? new IpcAssets(jacketUrl, songTitle != null ? songTitle : "")
                 : new IpcAssets("sdvx_logo", "SOUND VOLTEX");
 
-        IpcActivity activity = new IpcActivity(details, status, new IpcTimestamps(startTime), assets);
+        IpcActivity activity = new IpcActivity(details, status, new IpcTimestamps(sessionStartTime), assets);
 
         String payload = jsonb.toJson(new IpcFrame("SET_ACTIVITY",
                 new IpcSetActivityArgs(ProcessHandle.current().pid(), activity), UUID.randomUUID().toString()));
@@ -202,6 +205,73 @@ public class DiscordPresenceClient implements Closeable {
             readFrame(); // consume Discord's ACK
         } catch (IOException e) {
             log.warn("Failed to send Rich Presence update - marking as disconnected", e);
+            connected = false;
+        }
+    }
+
+    /**
+     * Updates Discord Rich Presence specifically for the result screen, matching
+     * the Python {@code update_discord_presence_result_screen()} output.
+     *
+     * <p>
+     * The presence details line shows the song title; the state line shows
+     * {@code "NOV-15 MAXXIVE: 9958 (+1234)"} (difficulty–level, lamp, abbreviated
+     * score, signed score difference).
+     * </p>
+     *
+     * @param title
+     *            the song title displayed on the result screen
+     * @param difficulty
+     *            the chart difficulty (e.g. {@code "nov"})
+     * @param level
+     *            the chart level; {@code -1} when unknown (displays as {@code ??})
+     * @param score
+     *            the score achieved on this play
+     * @param scoreDiff
+     *            {@code curScore - preScore} (may be negative on regression)
+     * @param lamp
+     *            the result lamp (e.g. {@code "failed"}, {@code "exh"})
+     * @param jacketUrl
+     *            optional jacket image URL; {@code null} falls back to default
+     *            asset
+     */
+    public void updatePresenceResult(String title, String difficulty, int level, int score, int scoreDiff, String lamp,
+            String jacketUrl) {
+        if (!connected) {
+            log.debug("updatePresenceResult: not connected, skipping");
+            return;
+        }
+
+        long now = System.currentTimeMillis();
+        if (now - lastUpdateMs < MIN_UPDATE_INTERVAL_MS) {
+            log.debug("updatePresenceResult: throttled ({}ms since last update)", now - lastUpdateMs);
+            return;
+        }
+        lastUpdateMs = now;
+
+        String levelStr = level >= 0 ? String.valueOf(level) : "??";
+        String lampDisplay = toDisplayLamp(lamp);
+        String diffDisplay = difficulty != null ? difficulty.toUpperCase() : "??";
+        String status = diffDisplay + "-" + levelStr + " " + lampDisplay + ": " + formatResultScore(score) + " ("
+                + formatSignedDiff(scoreDiff) + ")";
+        String details = title != null ? truncate(title, 50) : "Unknown";
+
+        log.debug("updatePresenceResult: details='{}', status='{}'", details, status);
+
+        IpcAssets assets = (jacketUrl != null && !jacketUrl.isBlank())
+                ? new IpcAssets(jacketUrl, title != null ? title : "")
+                : new IpcAssets("sdvx_logo", "SOUND VOLTEX");
+
+        IpcActivity activity = new IpcActivity(details, status, new IpcTimestamps(sessionStartTime), assets);
+
+        String payload = jsonb.toJson(new IpcFrame("SET_ACTIVITY",
+                new IpcSetActivityArgs(ProcessHandle.current().pid(), activity), UUID.randomUUID().toString()));
+
+        try {
+            sendFrame(OP_FRAME, payload);
+            readFrame();
+        } catch (IOException e) {
+            log.warn("Failed to send Rich Presence result update - marking as disconnected", e);
             connected = false;
         }
     }
@@ -375,6 +445,70 @@ public class DiscordPresenceClient implements Closeable {
             case RESULT -> "Viewing results";
             case IDLE -> "Idle";
         };
+    }
+
+    /**
+     * Converts an internal lamp value to its display form, mirroring the Python
+     * {@code discord_presence.py} behaviour where {@code "EXH"} maps to
+     * {@code "MAXXIVE"}.
+     *
+     * @param lamp
+     *            raw lamp string (case-insensitive)
+     * @return display lamp string in upper-case
+     */
+    private static String toDisplayLamp(String lamp) {
+        if (lamp == null) {
+            return "FAILED";
+        }
+        String upper = lamp.toUpperCase();
+        return "EXH".equals(upper) ? "MAXXIVE" : upper;
+    }
+
+    /**
+     * Abbreviates a raw SDVX score to its leading significant digits, matching
+     * Python's {@code formated_score} logic in {@code discord_presence.py:171}.
+     *
+     * <ul>
+     * <li>8-digit score → first 4 digits (e.g. {@code 99580000} →
+     * {@code "9958"})</li>
+     * <li>7-digit score → first 3 digits</li>
+     * <li>6-digit score → first 2 digits</li>
+     * <li>5-digit score → first 1 digit</li>
+     * <li>otherwise → full string</li>
+     * </ul>
+     *
+     * @param score
+     *            raw integer score
+     * @return abbreviated display string
+     */
+    private static String formatResultScore(int score) {
+        String str = String.valueOf(score);
+        int len = str.length();
+        if (len == 8) {
+            return str.substring(0, 4);
+        }
+        if (len == 7) {
+            return str.substring(0, 3);
+        }
+        if (len == 6) {
+            return str.substring(0, 2);
+        }
+        if (len == 5) {
+            return str.substring(0, 1);
+        }
+        return str;
+    }
+
+    /**
+     * Formats a score difference with an explicit {@code "+"} prefix for positive
+     * values.
+     *
+     * @param diff
+     *            score difference
+     * @return signed string
+     */
+    private static String formatSignedDiff(int diff) {
+        return diff > 0 ? "+" + diff : String.valueOf(diff);
     }
 
     /**

@@ -156,8 +156,8 @@
                 <Label text="%text.settings.screenshotDelay" GridPane.columnIndex="0" GridPane.rowIndex="3" styleClass="muted" />
                 <TextField fx:id="autosavePrewaitField" GridPane.columnIndex="1" GridPane.rowIndex="3" prefColumnCount="10" maxWidth="120" />
 
-                <Label GridPane.columnIndex="0" GridPane.rowIndex="4" styleClass="muted">
-                    <text>%text.settings.detectSampleCount</text>
+                <Label text="%text.settings.detectSampleCount"
+                       GridPane.columnIndex="0" GridPane.rowIndex="4" styleClass="muted">
                     <tooltip>
                         <Tooltip text="%text.settings.detectSampleCount.tooltip" wrapText="true" maxWidth="340" />
                     </tooltip>
@@ -167,19 +167,24 @@
 
                 <CheckBox fx:id="autosaveAlwaysCheck" text="%checkbox.settings.autoSaveAlways" GridPane.columnIndex="0" GridPane.rowIndex="5" GridPane.columnSpan="2" />
                 <CheckBox fx:id="saveJacketImgCheck" text="%checkbox.settings.autoSaveCover" GridPane.columnIndex="0" GridPane.rowIndex="6" GridPane.columnSpan="2" />
+                <CheckBox fx:id="vfOcrEnabledCheck" text="%checkbox.settings.vfOcrEnabled" GridPane.columnIndex="0" GridPane.rowIndex="7" GridPane.columnSpan="2">
+                    <tooltip>
+                        <Tooltip text="%checkbox.settings.vfOcrEnabled.tooltip" wrapText="true" maxWidth="340" />
+                    </tooltip>
+                </CheckBox>
 
-                <HBox spacing="8" GridPane.columnIndex="0" GridPane.rowIndex="7" GridPane.columnSpan="2">
+                <HBox spacing="8" GridPane.columnIndex="0" GridPane.rowIndex="8" GridPane.columnSpan="2">
                     <Button text="%button.settings.processPastResults" onAction="#onProcessPastResults" />
                     <Button text="%button.settings.generateJackets" onAction="#onGenerateJackets" />
                 </HBox>
 
                 <Label text="%text.settings.textNumberOfNumbersPlayed"
-                       GridPane.columnIndex="0" GridPane.rowIndex="8" styleClass="muted">
+                       GridPane.columnIndex="0" GridPane.rowIndex="9" styleClass="muted">
                     <tooltip>
                         <Tooltip text="%text.settinss.textNumberOfNumbersPlayed.tooltip" />
                     </tooltip>
                 </Label>
-                <HBox spacing="6" GridPane.columnIndex="1" GridPane.rowIndex="8">
+                <HBox spacing="6" GridPane.columnIndex="1" GridPane.rowIndex="9">
                     <Label text="%text.settings.textNumberOfNumbersPlayed.prefix" />
                     <TextField fx:id="playsPrefixField" prefColumnCount="12">
                         <tooltip>
@@ -195,8 +200,8 @@
                 </HBox>
 
                 <Label text="%text.settings.textPlayTime"
-                       GridPane.columnIndex="0" GridPane.rowIndex="9" styleClass="muted" />
-                <HBox spacing="6" GridPane.columnIndex="1" GridPane.rowIndex="9">
+                       GridPane.columnIndex="0" GridPane.rowIndex="10" styleClass="muted" />
+                <HBox spacing="6" GridPane.columnIndex="1" GridPane.rowIndex="10">
                     <Label text="%text.settings.textPlayTime.prefix" />
                     <TextField fx:id="playtimePrefixField" prefColumnCount="12">
                         <tooltip>

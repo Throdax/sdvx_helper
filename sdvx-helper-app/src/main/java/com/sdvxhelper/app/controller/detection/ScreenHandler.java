@@ -11,13 +11,17 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import javax.imageio.ImageIO;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.UnsupportedAudioFileException;
 
 import com.sdvxhelper.model.MusicInfo;
 import com.sdvxhelper.model.OnePlayData;
+import com.sdvxhelper.ocr.OcrUtils;
 import com.sdvxhelper.ocr.PerceptualHasher;
+import com.sdvxhelper.ocr.TesseractOcr;
 import com.sdvxhelper.service.CsvExportService;
 import com.sdvxhelper.service.ImageAnalysisService;
 import com.sdvxhelper.service.ImageCropNotParsed;
@@ -60,8 +64,12 @@ public class ScreenHandler {
     private Map<String, String> params;
     private Map<String, String> settings;
 
+    private static final Pattern VF_NUMBER_PATTERN = Pattern.compile("(\\d+\\.\\d{3})");
+
     // Volforce capture state
     private String lastVfHash = null;
+    private String lastVfNumber = null;
+    private TesseractOcr vfOcr = null;
     private boolean genFirstVf = false;
 
     // Result tracking state
@@ -442,6 +450,21 @@ public class ScreenHandler {
     }
 
     /**
+     * Returns the chart level for the given title and difficulty, or {@code -1} if
+     * the song is not in the play-log.
+     *
+     * @param title
+     *            song title
+     * @param difficulty
+     *            difficulty string (e.g. {@code "nov"})
+     * @return chart level, or {@code -1} when unknown
+     */
+    public int getLevelFor(String title, String difficulty) {
+        MusicInfo info = playLogService.getBestFor(title, difficulty);
+        return info != null ? info.getLvAsInt() : -1;
+    }
+
+    /**
      * Writes the rival-view XML for the given song and difficulty.
      *
      * @param title
@@ -655,9 +678,15 @@ public class ScreenHandler {
             }
             BufferedImage vfCrop = cropVf(frame);
             BufferedImage classCrop = cropClass(frame);
-            String vfHash = perceptualHasher.phash(vfCrop);
-            boolean changed = (lastVfHash == null) || (perceptualHasher.hammingDistance(vfHash, lastVfHash) > 2);
-            lastVfHash = vfHash;
+
+            boolean changed;
+            if ("true".equalsIgnoreCase(settings.get("vf_ocr_enabled"))) {
+                changed = hasVfChangedByOcr(vfCrop);
+            } else {
+                String vfHash = perceptualHasher.phash(vfCrop);
+                changed = (lastVfHash == null) || (perceptualHasher.hammingDistance(vfHash, lastVfHash) > 2);
+                lastVfHash = vfHash;
+            }
 
             File outDir = new File("out");
             if (!outDir.exists()) {
@@ -677,6 +706,43 @@ public class ScreenHandler {
             log.warn("captureVolforce failed: {}", e.getMessage());
             return false;
         }
+    }
+
+    /**
+     * Determines whether the Volforce number in {@code vfCrop} has changed since
+     * the last capture by running Tesseract OCR on the pre-processed crop and
+     * comparing the extracted number to the stored {@link #lastVfNumber}.
+     *
+     * <p>
+     * If OCR fails to produce a valid VF number ({@code \d+\.\d{3}}), the method
+     * falls back to pHash comparison so a capture is never silently dropped.
+     * </p>
+     *
+     * @param vfCrop
+     *            already-cropped Volforce badge image
+     * @return {@code true} if the VF number changed or could not be determined
+     */
+    private boolean hasVfChangedByOcr(BufferedImage vfCrop) {
+        if (vfOcr == null) {
+            vfOcr = new TesseractOcr("eng");
+            vfOcr.setVariable("tessedit_char_whitelist", "0123456789.");
+            log.info("captureVolforce: VF OCR engine initialised");
+        }
+        BufferedImage preprocessed = OcrUtils.preprocessForOcr(vfCrop);
+        String raw = vfOcr.recognizeText(preprocessed);
+        Matcher matcher = VF_NUMBER_PATTERN.matcher(raw != null ? raw : "");
+        if (!matcher.find()) {
+            log.warn("captureVolforce: OCR produced '{}' - no valid VF number found, falling back to pHash", raw);
+            String vfHash = perceptualHasher.phash(vfCrop);
+            boolean changed = (lastVfHash == null) || (perceptualHasher.hammingDistance(vfHash, lastVfHash) > 2);
+            lastVfHash = vfHash;
+            return changed;
+        }
+        String detectedNumber = matcher.group(1);
+        boolean changed = !detectedNumber.equals(lastVfNumber);
+        log.debug("captureVolforce OCR: detected='{}' last='{}' changed={}", detectedNumber, lastVfNumber, changed);
+        lastVfNumber = detectedNumber;
+        return changed;
     }
 
     private long computeTopLeftPixelSum(BufferedImage frame) {

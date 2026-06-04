@@ -541,8 +541,10 @@ public class DetectionEngine {
         obsOverlayService.updateVfText(screenHandler.getCurrentTotalVf(), screenHandler.getPreviousTotalVf());
         handleRtaUpdate(screenHandler.getCurrentTotalVf());
         if (discordPresenceClient != null) {
-            discordPresenceClient.updatePresence(PlayState.RESULT, lastKnownTitle, lastKnownDiff,
-                    ScoreFormatter.formatTotalVf((int) (screenHandler.getCurrentTotalVf() * 1000)), null);
+            int level = screenHandler.getLevelFor(play.getTitle(), play.getDifficulty());
+            int scoreDiff = play.getCurScore() - play.getPreScore();
+            discordPresenceClient.updatePresenceResult(play.getTitle(), play.getDifficulty(), level, play.getCurScore(),
+                    scoreDiff, play.getLamp(), null);
         }
         boolean screenshotSaved = screenHandler.wasLastScreenshotSaved();
         boolean summaryGenerated = screenHandler.wasLastSummaryGenerated();
@@ -660,14 +662,16 @@ public class DetectionEngine {
      * {@code sdvx_helper.pyw:617}.
      *
      * <p>
-     * Reads the {@code orientation_top} setting (same key Python uses). The value
-     * describes which direction the physical screen top is pointing inside the raw
-     * OBS capture:
+     * The value describes which direction the physical screen top is pointing
+     * inside the raw OBS capture:
      * <ul>
      * <li>{@code "right"} — top points right → rotate 90° CCW (PIL rotate 90)</li>
      * <li>{@code "left"} — top points left → rotate 90° CW (PIL rotate 270)</li>
      * <li>anything else — already portrait → resize to 1080×1920</li>
      * </ul>
+     * The Java key {@code "orientation"} takes precedence; the Python legacy key
+     * {@code "orientation_top"} is used as a fallback so that Python-only settings
+     * files are still handled correctly on first launch.
      * </p>
      */
     private BufferedImage applyOrientation(BufferedImage frame) {
@@ -675,9 +679,8 @@ public class DetectionEngine {
             log.debug("applyOrientation: frame is null, returning null");
             return null;
         }
-        // Read orientation_top first — that is the key Python reads.
-        // Fall back to orientation for backwards-compatibility, then default "top".
-        String orientationTop = settings.getOrDefault("orientation_top", settings.getOrDefault("orientation", "top"));
+        // Java "orientation" key takes priority; fall back to Python "orientation_top".
+        String orientationTop = settings.getOrDefault("orientation", settings.getOrDefault("orientation_top", "top"));
         BufferedImage oriented = switch (orientationTop) {
             case "bottom" -> rotateImage(frame, Math.PI);
             // Python rotate(90 CCW) — top points right in raw capture

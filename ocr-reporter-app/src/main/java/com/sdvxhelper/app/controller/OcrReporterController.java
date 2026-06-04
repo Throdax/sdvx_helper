@@ -275,7 +275,7 @@ public class OcrReporterController implements Initializable {
         SettingsRepository settingsRepo = new SettingsRepository();
         settings = settingsRepo.load();
         paramsMap = new ParamsRepository().load(settings.getOrDefault("params_json", "resources/params.json"));
-        suggestOcr = new TesseractOcr("jpn+eng+fra");
+        suggestOcr = new TesseractOcr("jpn+eng+fra+ell");
         discordWebhookClient = new DiscordWebhookClient();
         secretConfig = new SecretConfig();
 
@@ -667,7 +667,10 @@ public class OcrReporterController implements Initializable {
         Platform.runLater(() -> filesTable.getSelectionModel().clearSelection());
         enableColorizeIfReady();
         appendLog("Loaded " + imageFiles.size() + " image(s) from " + dir.getAbsolutePath());
-        Platform.runLater(() -> filesLoadingLabel.setText(imageFiles.size() + " file(s) in folder"));
+        Platform.runLater(() -> {
+            filesLoadingLabel.setText(imageFiles.size() + " file(s) in folder");
+            filesProgress.setProgress(1.0);
+        });
     }
 
     private void enableColorizeIfReady() {

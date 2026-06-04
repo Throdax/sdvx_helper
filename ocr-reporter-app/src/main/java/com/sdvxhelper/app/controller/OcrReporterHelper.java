@@ -1,8 +1,5 @@
 package com.sdvxhelper.app.controller;
 
-import java.awt.Color;
-import java.awt.Graphics2D;
-import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -12,6 +9,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.imageio.ImageIO;
 
+import com.sdvxhelper.ocr.OcrUtils;
 import com.sdvxhelper.service.ImageAnalysisService;
 import com.sdvxhelper.service.ImageCropNotParsed;
 import org.slf4j.Logger;
@@ -237,17 +235,10 @@ public final class OcrReporterHelper {
      * Pre-processes a title crop for Tesseract OCR.
      *
      * <p>
-     * Three steps are applied in order:
+     * Delegates to {@link OcrUtils#preprocessForOcr(BufferedImage)}, which lives in
+     * {@code sdvx-helper-core} so the same pipeline can be reused by the main
+     * detection app without a dependency on this reporter module.
      * </p>
-     * <ol>
-     * <li><b>Scale up 3x</b> with bicubic interpolation — Tesseract accuracy
-     * improves significantly when characters are at least 60–90 px tall.</li>
-     * <li><b>White padding</b> (20 px on every side) — Tesseract needs a small
-     * margin around text to avoid clipping ascenders/descenders.</li>
-     * <li><b>Invert + threshold</b> — SDVX result screens use light text on a dark
-     * background; Tesseract prefers dark text on a white background, so the image
-     * is inverted and binarised with a 50% threshold.</li>
-     * </ol>
      *
      * @param src
      *            source image (typically the {@code title_small} crop)
@@ -255,49 +246,7 @@ public final class OcrReporterHelper {
      *         {@code src} is {@code null}
      */
     public static BufferedImage preprocessForOcr(BufferedImage src) {
-        if (src == null) {
-            return null;
-        }
-
-        // Step 1: scale up 3x with bicubic interpolation
-        int scaledW = src.getWidth() * 3;
-        int scaledH = src.getHeight() * 3;
-        BufferedImage scaled = new BufferedImage(scaledW, scaledH, BufferedImage.TYPE_INT_RGB);
-        Graphics2D gScale = scaled.createGraphics();
-        gScale.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
-        gScale.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
-        gScale.drawImage(src, 0, 0, scaledW, scaledH, null);
-        gScale.dispose();
-
-        // Step 2: convert to grayscale then invert+threshold.
-        // SDVX result screen has light text on a dark background.
-        // Tesseract requires dark text on a white background, so bright pixels
-        // (text) become black and dark pixels (background) become white.
-        BufferedImage binary = new BufferedImage(scaledW, scaledH, BufferedImage.TYPE_BYTE_GRAY);
-        Graphics2D gGray = binary.createGraphics();
-        gGray.drawImage(scaled, 0, 0, null);
-        gGray.dispose();
-
-        for (int y = 0; y < scaledH; y++) {
-            for (int x = 0; x < scaledW; x++) {
-                int grayVal = binary.getRaster().getSample(x, y, 0);
-                int bw = grayVal > 128 ? 0 : 255;
-                binary.getRaster().setSample(x, y, 0, bw);
-            }
-        }
-
-        // Step 3: add white padding AFTER binarization so the border is white
-        int pad = 20;
-        int paddedW = scaledW + pad * 2;
-        int paddedH = scaledH + pad * 2;
-        BufferedImage padded = new BufferedImage(paddedW, paddedH, BufferedImage.TYPE_BYTE_GRAY);
-        Graphics2D gPad = padded.createGraphics();
-        gPad.setColor(Color.WHITE);
-        gPad.fillRect(0, 0, paddedW, paddedH);
-        gPad.drawImage(binary, pad, pad, null);
-        gPad.dispose();
-
-        return padded;
+        return OcrUtils.preprocessForOcr(src);
     }
 
     /**

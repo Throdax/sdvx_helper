@@ -102,7 +102,7 @@
                        styleClass="capture-indicator" visible="false" managed="false"/>
             </HBox>
             <Separator/>
-            <Label text="%label.main.session.log" styleClass="section-heading"/>
+            <Label fx:id="sessionLogLabel" text="%label.main.session.log" styleClass="section-heading"/>
             <SplitPane VBox.vgrow="ALWAYS" orientation="VERTICAL" dividerPositions="0.75">
                 <TableView fx:id="sessionLogTable">
                     <columns>

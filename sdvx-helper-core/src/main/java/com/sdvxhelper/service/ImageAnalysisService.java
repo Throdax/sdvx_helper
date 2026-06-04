@@ -963,19 +963,46 @@ public class ImageAnalysisService {
         long rSum = 0;
         long gSum = 0;
         long bSum = 0;
+        long pixelsUsed = 0;
         for (int y = 0; y < analysisH; y++) {
             for (int x = 0; x < analysisW; x++) {
                 int rgb = diffBand.getRGB(x, y);
-                rSum += (rgb >> 16) & 0xFF;
-                gSum += (rgb >> 8) & 0xFF;
-                bSum += rgb & 0xFF;
+                int r = (rgb >> 16) & 0xFF;
+                int g = (rgb >> 8) & 0xFF;
+                int b = rgb & 0xFF;
+                // Skip near-white pixels: the difficulty badge has white text rendered on a
+                // coloured background. Including those text pixels pulls every channel up and
+                // makes the NOV/ADV/EXH thresholds fail, causing a spurious APPEND result.
+                if (r > 200 && g > 200 && b > 200) {
+                    continue;
+                }
+                rSum += r;
+                gSum += g;
+                bSum += b;
+                pixelsUsed++;
             }
         }
-        // Normalise to the 70×30 = 2100-pixel reference used by Python.
-        long pixels = (long) analysisW * analysisH;
-        long rT = rSum * 2100L / pixels;
-        long gT = gSum * 2100L / pixels;
-        long bT = bSum * 2100L / pixels;
+        // Fall back to all pixels if too few non-white pixels were found (e.g. a
+        // white/very bright badge where filtering would leave nothing useful).
+        if (pixelsUsed < (long) analysisW * analysisH / 4) {
+            pixelsUsed = 0;
+            rSum = 0;
+            gSum = 0;
+            bSum = 0;
+            for (int y = 0; y < analysisH; y++) {
+                for (int x = 0; x < analysisW; x++) {
+                    int rgb = diffBand.getRGB(x, y);
+                    rSum += (rgb >> 16) & 0xFF;
+                    gSum += (rgb >> 8) & 0xFF;
+                    bSum += rgb & 0xFF;
+                    pixelsUsed++;
+                }
+            }
+        }
+        // Normalise to the 70x30 = 2100-pixel reference used by Python.
+        long rT = rSum * 2100L / pixelsUsed;
+        long gT = gSum * 2100L / pixelsUsed;
+        long bT = bSum * 2100L / pixelsUsed;
         if (rT < 190000L && gT < 180000L && bT > 300000L) {
             return "nov";
         }
@@ -987,8 +1014,9 @@ public class ImageAnalysisService {
         }
         // No NOV / ADV / EXH threshold matched — treat as APPEND (mirrors Python
         // gen_summary.py:591).
-        log.debug("detectDifficultyFromBand: no NOV/ADV/EXH match (rT={}, gT={}, bT={}) - returning APPEND", rT, gT,
-                bT);
+        log.warn(
+                "detectDifficultyFromBand: no NOV/ADV/EXH match (rT={}, gT={}, bT={}, pixelsUsed={}) - returning APPEND",
+                rT, gT, bT, pixelsUsed);
         return "APPEND";
     }
 

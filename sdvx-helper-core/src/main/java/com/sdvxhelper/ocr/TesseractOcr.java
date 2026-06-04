@@ -73,6 +73,23 @@ public class TesseractOcr {
     }
 
     /**
+     * Sets a Tesseract engine variable (e.g. {@code "tessedit_char_whitelist"}).
+     *
+     * <p>
+     * Must be called <em>before</em> {@link #recognizeText(BufferedImage)} for the
+     * variable to take effect on the next recognition pass.
+     * </p>
+     *
+     * @param name
+     *            Tesseract variable name
+     * @param value
+     *            value to set
+     */
+    public void setVariable(String name, String value) {
+        tess.setVariable(name, value);
+    }
+
+    /**
      * Recognises text from the given image region.
      *
      * @param image

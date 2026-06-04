@@ -6,6 +6,7 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.text.MessageFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -120,6 +121,8 @@ public class SDVXHelperController implements Initializable, DetectionListener {
     @FXML
     private Button f9Button;
     @FXML
+    private Label sessionLogLabel;
+    @FXML
     private TableView<OnePlayData> sessionLogTable;
     @FXML
     private TableColumn<OnePlayData, String> logTitleColumn;
@@ -181,7 +184,11 @@ public class SDVXHelperController implements Initializable, DetectionListener {
                 cell -> new SimpleStringProperty(ScoreFormatter.formatScore(cell.getValue().getCurScore())));
         logLampColumn.setCellValueFactory(cell -> {
             String lamp = cell.getValue().getLamp();
-            return new SimpleStringProperty(lamp != null ? lamp.toUpperCase() : "");
+            if (lamp == null) {
+                return new SimpleStringProperty("");
+            }
+            String upper = lamp.toUpperCase();
+            return new SimpleStringProperty("EXH".equals(upper) ? "MAXXIVE" : upper);
         });
         logDateColumn.setCellValueFactory(cell -> {
             LocalDateTime date = cell.getValue().getDate();
@@ -189,6 +196,9 @@ public class SDVXHelperController implements Initializable, DetectionListener {
         });
         sessionLogTable.setItems(sessionLogData);
         sessionLogTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
+        sessionLogData
+                .addListener((javafx.collections.ListChangeListener<OnePlayData>) change -> updateSessionLogLabel());
+        updateSessionLogLabel();
 
         languageCombo.setItems(LocaleManager.getInstance().getAvailableLocaleCodes());
         languageCombo.setValue(LocaleManager.getInstance().getCurrentCode());
@@ -314,6 +324,16 @@ public class SDVXHelperController implements Initializable, DetectionListener {
             log.warn("Discord Rich Presence unavailable: {}", e.getMessage());
             return null;
         }
+    }
+
+    /**
+     * Updates the session log section heading to show the current play count in the
+     * format "Session Log: N plays".
+     */
+    private void updateSessionLogLabel() {
+        ResourceBundle bundle = LocaleManager.getInstance().getBundle();
+        String pattern = bundle.getString("label.main.session.log.count");
+        sessionLogLabel.setText(MessageFormat.format(pattern, sessionLogData.size()));
     }
 
     /**

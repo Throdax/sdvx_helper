@@ -146,6 +146,7 @@ public final class DefaultSettings {
         defaults.put("save_jacketimg", "true");
         defaults.put("update_rival_on_result", "false");
         defaults.put("always_update_vf", "false");
+        defaults.put("vf_ocr_enabled", "false");
 
         // Play-log sync sub-settings
         Map<String, String> playLogSyncDefaults = new LinkedHashMap<>();

@@ -79,13 +79,47 @@ public class SpecialTitles {
      *            filesystem-safe title string
      * @return canonical title, or the input unchanged if no mapping exists
      */
+    /**
+     * Normalizes typographic single/double quote variants to their plain ASCII
+     * equivalents so that map keys created in one encoding context (e.g. a text
+     * editor producing U+2019) match keys produced in another (e.g. a game client
+     * emitting U+0027).
+     *
+     * @param s
+     *            raw string
+     * @return string with curly/typographic quotes replaced by ASCII equivalents
+     */
+    static String normalizeQuotes(String s) {
+        return s.replace('\u2018', '\'').replace('\u2019', '\'').replace('\u201C', '"').replace('\u201D', '"')
+                .replace('\u0060', '\'');
+    }
+
     public String restoreTitle(String fsafeTitle) {
         String canonical = specialTitles.get(fsafeTitle);
+        if (canonical == null) {
+            String normalized = normalizeQuotes(fsafeTitle);
+            if (!normalized.equals(fsafeTitle)) {
+                canonical = specialTitles.get(normalized);
+                if (canonical == null) {
+                    canonical = findByNormalizedKey(normalized);
+                }
+            }
+        }
         if (canonical != null) {
             log.info("Special title resolved: '{}' -> '{}'", fsafeTitle, canonical);
             return canonical;
         }
+        log.debug("Special title not found for: '{}'", fsafeTitle);
         return fsafeTitle;
+    }
+
+    private String findByNormalizedKey(String normalizedInput) {
+        for (Map.Entry<String, String> entry : specialTitles.entrySet()) {
+            if (normalizeQuotes(entry.getKey()).equals(normalizedInput)) {
+                return entry.getValue();
+            }
+        }
+        return null;
     }
 
     /**

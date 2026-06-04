@@ -64,6 +64,8 @@ public class SettingsController implements Initializable {
     @FXML
     private CheckBox saveJacketImgCheck;
     @FXML
+    private CheckBox vfOcrEnabledCheck;
+    @FXML
     private CheckBox autosaveAlwaysCheck;
     @FXML
     private TextField autosavePrewaitField;
@@ -121,14 +123,15 @@ public class SettingsController implements Initializable {
         detectSampleCountSpinner.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 10, 3));
         detectSampleCountSpinner.setEditable(true);
 
-        settings = settingsRepo.load();
-        populateFields();
-
         tgOrientation = new ToggleGroup();
         orientationTopRadio.setToggleGroup(tgOrientation);
         orientationBottomRadio.setToggleGroup(tgOrientation);
         orientationLeftRadio.setToggleGroup(tgOrientation);
         orientationRightRadio.setToggleGroup(tgOrientation);
+
+        settings = settingsRepo.load();
+        migrateOrientationKey(settings);
+        populateFields();
     }
 
     /**
@@ -190,6 +193,25 @@ public class SettingsController implements Initializable {
         }
     }
 
+    /**
+     * Migrates the Python {@code orientation_top} key to the Java
+     * {@code orientation} key when the latter is missing or still at its factory
+     * default while {@code orientation_top} was explicitly set by the user.
+     *
+     * @param settingsMap
+     *            the settings map loaded from {@code settings.json}
+     */
+    private void migrateOrientationKey(Map<String, String> settingsMap) {
+        String javaKey = settingsMap.get("orientation");
+        String pythonKey = settingsMap.get("orientation_top");
+        boolean javaKeyAbsent = javaKey == null || javaKey.isBlank() || "top".equals(javaKey);
+        boolean pythonKeySet = pythonKey != null && !pythonKey.isBlank() && !"top".equals(pythonKey);
+        if (javaKeyAbsent && pythonKeySet) {
+            log.info("Migrating Python setting orientation_top='{}' to orientation='{}'", pythonKey, pythonKey);
+            settingsMap.put("orientation", pythonKey);
+        }
+    }
+
     private void populateFields() {
         playerNameField.setText(settings.get("player_name"));
         autoUpdateCheck.setSelected(Boolean.parseBoolean(settings.get("auto_update")));
@@ -205,6 +227,7 @@ public class SettingsController implements Initializable {
         clipLxlyCheck.setSelected(Boolean.parseBoolean(settings.get("clip_lxly")));
         alwaysUpdateVfCheck.setSelected(Boolean.parseBoolean(settings.get("always_update_vf")));
         saveJacketImgCheck.setSelected(Boolean.parseBoolean(settings.get("save_jacketimg")));
+        vfOcrEnabledCheck.setSelected(Boolean.parseBoolean(settings.get("vf_ocr_enabled")));
         autosaveAlwaysCheck.setSelected(Boolean.parseBoolean(settings.get("autosave_always")));
         autosavePrewaitField.setText(settings.getOrDefault("autosave_prewait", ""));
         int sampleCount = 3;
@@ -248,13 +271,16 @@ public class SettingsController implements Initializable {
         settings.put("clip_lxly", Boolean.toString(clipLxlyCheck.isSelected()));
         settings.put("always_update_vf", Boolean.toString(alwaysUpdateVfCheck.isSelected()));
         settings.put("save_jacketimg", Boolean.toString(saveJacketImgCheck.isSelected()));
+        settings.put("vf_ocr_enabled", Boolean.toString(vfOcrEnabledCheck.isSelected()));
         settings.put("autosave_always", Boolean.toString(autosaveAlwaysCheck.isSelected()));
         settings.put("autosave_prewait", autosavePrewaitField.getText().trim());
         settings.put("detect_sample_count", String.valueOf(detectSampleCountSpinner.getValue()));
         settings.put("discord_enable", Boolean.toString(discordEnableCheck.isSelected()));
         settings.put("rta_target_vf", rtaTargetVfField.getText().trim());
 
-        settings.put("orientation", getSelectedOrientation());
+        String selectedOrientation = getSelectedOrientation();
+        settings.put("orientation", selectedOrientation);
+        settings.put("orientation_top", selectedOrientation);
 
         settings.put("alert_blastermax", Boolean.toString(blasterGaugeMaxCheck.isSelected()));
         settings.put("logpic_bg_alpha", logWindowTransparencyField.getText().trim());

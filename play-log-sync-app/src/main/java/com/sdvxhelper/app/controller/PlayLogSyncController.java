@@ -8,6 +8,7 @@ import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.ResourceBundle;
@@ -24,6 +25,7 @@ import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.ProgressBar;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
@@ -87,6 +89,10 @@ public class PlayLogSyncController implements Initializable {
     private TableColumn<OnePlayData, Integer> scoreColumn;
     @FXML
     private TableColumn<OnePlayData, String> lampColumn;
+    @FXML
+    private ProgressBar syncProgressBar;
+    @FXML
+    private Label syncProgressLabel;
     @FXML
     private TextArea logArea;
     @FXML
@@ -258,6 +264,8 @@ public class PlayLogSyncController implements Initializable {
         syncButton.setDisable(true);
         exportButton.setDisable(true);
         statusLabel.setText("Syncing…");
+        syncProgressBar.setProgress(0.0);
+        syncProgressLabel.setText("0 / 0");
         appendLog("Starting sync...");
 
         bgExecutor.submit(() -> runSync(logPath, resultsPath, rebuild, finalTimeOffset));
@@ -274,6 +282,7 @@ public class PlayLogSyncController implements Initializable {
     }
 
     private void runSync(String logPath, String resultsPath, boolean rebuild, int timeOffsetSeconds) {
+        long startNanos = System.nanoTime();
         try {
             ensureImageAnalysisService();
             PlayLogRepository repo = new PlayLogRepository(new File(logPath));
@@ -317,15 +326,17 @@ public class PlayLogSyncController implements Initializable {
 
             int processed = 0;
             int added = 0;
+            int total = files.length;
             for (File f : files) {
                 OnePlayData parsed = parseScreenshotFilename(f.getName());
+                processed++;
                 if (parsed == null) {
-                    processed++;
+                    updateProgress(processed, total);
                     continue;
                 }
                 parsed.setTitle(st.restoreTitle(parsed.getTitle()));
                 if (st.getIgnoredNames().contains(parsed.getTitle())) {
-                    processed++;
+                    updateProgress(processed, total);
                     continue;
                 }
 
@@ -339,20 +350,16 @@ public class PlayLogSyncController implements Initializable {
                             + "] Adding...");
                     Platform.runLater(() -> plays.add(addedPlay));
                 }
-                processed++;
-                if (processed % 100 == 0) {
-                    final int progressCount = processed;
-                    final int total = files.length;
-                    appendLog(progressCount + " / " + total + " files processed");
-                    Platform.runLater(() -> statusLabel.setText(progressCount + " / " + total + " processed"));
-                }
+                updateProgress(processed, total);
             }
 
+            currentPlayLog.getPlays()
+                    .sort(Comparator.comparing(OnePlayData::getDate, Comparator.nullsLast(Comparator.naturalOrder())));
             repo.save(currentPlayLog);
             final int finalAdded = added;
             final int finalProcessed = processed;
-            appendLog("Sync complete: " + finalAdded + " songs added out of " + finalProcessed + " files.");
-            Platform.runLater(() -> statusLabel.setText("Sync complete: " + finalAdded + " added"));
+            appendLog("Sync complete: " + finalAdded + " songs added out of " + finalProcessed + " files. ("
+                    + formatElapsed(System.nanoTime() - startNanos) + ")");
             showPlays();
         } catch (IOException e) {
             log.error("Sync failed", e);
@@ -419,6 +426,43 @@ public class PlayLogSyncController implements Initializable {
 
     private static boolean isSongInLog(List<OnePlayData> logEntries, OnePlayData candidate, int timeOffsetSeconds) {
         return ScreenshotFilenameParser.isSongInLog(logEntries, candidate, timeOffsetSeconds);
+    }
+
+    /**
+     * Formats a nanosecond duration as a human-readable elapsed-time string. Values
+     * under 60 seconds are shown as {@code "12.3s"}; values of 60 seconds or more
+     * are shown as {@code "1m 05s"}.
+     *
+     * @param elapsedNanos
+     *            elapsed time in nanoseconds
+     * @return formatted elapsed-time string
+     */
+    private static String formatElapsed(long elapsedNanos) {
+        long totalSeconds = elapsedNanos / 1_000_000_000L;
+        long millis = (elapsedNanos % 1_000_000_000L) / 100_000_000L;
+        if (totalSeconds < 60) {
+            return totalSeconds + "." + millis + "s";
+        }
+        long minutes = totalSeconds / 60;
+        long seconds = totalSeconds % 60;
+        return minutes + "m " + String.format("%02d", seconds) + "s";
+    }
+
+    /**
+     * Updates the sync progress bar and count label from the background thread.
+     *
+     * @param processed
+     *            number of files processed so far
+     * @param total
+     *            total number of files to process
+     */
+    private void updateProgress(int processed, int total) {
+        double ratio = total > 0 ? (double) processed / total : 0.0;
+        String countText = processed + " / " + total;
+        Platform.runLater(() -> {
+            syncProgressBar.setProgress(ratio);
+            syncProgressLabel.setText(countText);
+        });
     }
 
     private void showPlays() {

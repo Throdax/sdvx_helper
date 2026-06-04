@@ -52,8 +52,15 @@
                     <TableColumn fx:id="lampColumn"       text="%table.header.lamp"       prefWidth="70"/>
                 </columns>
             </TableView>
-            <TextArea fx:id="logArea" editable="false"
-                      style="-fx-font-family: monospace;"/>
+            <VBox spacing="2">
+                <HBox spacing="6" alignment="CENTER_LEFT">
+                    <ProgressBar fx:id="syncProgressBar" maxWidth="Infinity" progress="0.0"
+                                 HBox.hgrow="ALWAYS"/>
+                    <Label fx:id="syncProgressLabel" text="0 / 0" styleClass="muted"/>
+                </HBox>
+                <TextArea fx:id="logArea" editable="false" VBox.vgrow="ALWAYS"
+                          style="-fx-font-family: monospace;"/>
+            </VBox>
         </SplitPane>
     </center>
 
