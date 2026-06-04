@@ -17,48 +17,48 @@ class StringUtilsTest {
     // -------------------------------------------------------------------------
 
     @Test
-    void sanitizeReplacesBackslash() {
-        Assertions.assertEquals("a_b", StringUtils.sanitize("a\\b"));
+    void sanitizeRemovesBackslash() {
+        Assertions.assertEquals("ab", StringUtils.sanitize("a\\b"));
     }
 
     @Test
-    void sanitizeReplacesForwardSlash() {
-        Assertions.assertEquals("a_b", StringUtils.sanitize("a/b"));
+    void sanitizeRemovesForwardSlash() {
+        Assertions.assertEquals("ab", StringUtils.sanitize("a/b"));
     }
 
     @Test
-    void sanitizeReplacesColon() {
-        Assertions.assertEquals("a_b", StringUtils.sanitize("a:b"));
+    void sanitizeRemovesColon() {
+        Assertions.assertEquals("ab", StringUtils.sanitize("a:b"));
     }
 
     @Test
-    void sanitizeReplacesAsterisk() {
-        Assertions.assertEquals("a_b", StringUtils.sanitize("a*b"));
+    void sanitizeRemovesAsterisk() {
+        Assertions.assertEquals("ab", StringUtils.sanitize("a*b"));
     }
 
     @Test
-    void sanitizeReplacesQuestionMark() {
-        Assertions.assertEquals("a_b", StringUtils.sanitize("a?b"));
+    void sanitizeRemovesQuestionMark() {
+        Assertions.assertEquals("ab", StringUtils.sanitize("a?b"));
     }
 
     @Test
-    void sanitizeReplacesDoubleQuote() {
-        Assertions.assertEquals("a_b", StringUtils.sanitize("a\"b"));
+    void sanitizeRemovesDoubleQuote() {
+        Assertions.assertEquals("ab", StringUtils.sanitize("a\"b"));
     }
 
     @Test
-    void sanitizeReplacesLessThan() {
-        Assertions.assertEquals("a_b", StringUtils.sanitize("a<b"));
+    void sanitizeRemovesLessThan() {
+        Assertions.assertEquals("ab", StringUtils.sanitize("a<b"));
     }
 
     @Test
-    void sanitizeReplacesGreaterThan() {
-        Assertions.assertEquals("a_b", StringUtils.sanitize("a>b"));
+    void sanitizeRemovesGreaterThan() {
+        Assertions.assertEquals("ab", StringUtils.sanitize("a>b"));
     }
 
     @Test
-    void sanitizeReplacesPipe() {
-        Assertions.assertEquals("a_b", StringUtils.sanitize("a|b"));
+    void sanitizeRemovesPipe() {
+        Assertions.assertEquals("ab", StringUtils.sanitize("a|b"));
     }
 
     @Test
@@ -67,8 +67,13 @@ class StringUtilsTest {
     }
 
     @Test
-    void sanitizeReplacesAllUnsafeCharsInOneString() {
-        Assertions.assertEquals("a_b_c_d", StringUtils.sanitize("a\\b:c*d"));
+    void sanitizeRemovesAllUnsafeCharsInOneString() {
+        Assertions.assertEquals("abcd", StringUtils.sanitize("a\\b:c*d"));
+    }
+
+    @Test
+    void sanitizeColonRemovedMatchesSpecialTitlesKey() {
+        Assertions.assertEquals("ΛNXIENTLEGΛXIEZ", StringUtils.sanitize("ΛNXIENT:LEGΛXIEZ"));
     }
 
     @Test

@@ -46,6 +46,7 @@ import com.sdvxhelper.app.controller.detection.ScreenHandler;
 import com.sdvxhelper.app.controller.detection.WebhookDispatcher;
 import com.sdvxhelper.app.controller.factories.DetectionThreadFactory;
 import com.sdvxhelper.app.controller.listeners.GlobalHotkeyService;
+import com.sdvxhelper.config.SecretConfig;
 import com.sdvxhelper.i18n.LocaleManager;
 import com.sdvxhelper.model.OnePlayData;
 import com.sdvxhelper.model.WebhookConfig;
@@ -64,9 +65,8 @@ import com.sdvxhelper.repository.SettingsRepository;
 import com.sdvxhelper.repository.WebhookConfigRepository;
 import com.sdvxhelper.service.CsvExportService;
 import com.sdvxhelper.service.ImageAnalysisService;
-import com.sdvxhelper.service.SdvxLoggerService;
+import com.sdvxhelper.service.SdvxPlayLogService;
 import com.sdvxhelper.service.SummaryGeneratorService;
-import com.sdvxhelper.service.SummaryImageService;
 import com.sdvxhelper.service.XmlExportService;
 import com.sdvxhelper.util.ScoreFormatter;
 import com.sdvxhelper.util.StringUtils;
@@ -89,9 +89,9 @@ import org.slf4j.LoggerFactory;
  * @author Throdax
  * @since 2.0.0
  */
-public class MainController implements Initializable, DetectionListener {
+public class SDVXHelperController implements Initializable, DetectionListener {
 
-    private static final Logger log = LoggerFactory.getLogger(MainController.class);
+    private static final Logger log = LoggerFactory.getLogger(SDVXHelperController.class);
 
     // -------------------------------------------------------------------------
     // FXML-injected controls
@@ -140,12 +140,12 @@ public class MainController implements Initializable, DetectionListener {
     // Core services (owned by this controller)
     // -------------------------------------------------------------------------
 
-    private SdvxLoggerService loggerService;
-    private SummaryImageService summaryImageService;
+    private SdvxPlayLogService loggerService;
     private SummaryGeneratorService summaryGeneratorService;
     private CsvExportService csvExportService;
     private XmlExportService xmlExportService;
     private DiscordPresenceClient discordPresenceClient;
+    private SecretConfig secretConfig;
 
     // -------------------------------------------------------------------------
     // Detection sub-system
@@ -236,14 +236,14 @@ public class MainController implements Initializable, DetectionListener {
         }
 
         PlayLogRepository playLogRepo = new PlayLogRepository();
-        loggerService = new SdvxLoggerService(playLogRepo, musicListRepo);
+        loggerService = new SdvxPlayLogService(playLogRepo, musicListRepo);
         ImageAnalysisService imageAnalysisService = new ImageAnalysisService(musicListRepo);
         PerceptualHasher perceptualHasher = new PerceptualHasher();
-        summaryImageService = new SummaryImageService();
         DiscordWebhookClient discordWebhookClient = new DiscordWebhookClient();
         csvExportService = new CsvExportService();
         xmlExportService = new XmlExportService();
 
+        secretConfig = new SecretConfig();
         discordPresenceClient = buildDiscordPresenceClient();
 
         if ("true".equalsIgnoreCase(settings.get("get_rival_score"))) {
@@ -300,9 +300,9 @@ public class MainController implements Initializable, DetectionListener {
             log.debug("Discord Rich Presence disabled by setting");
             return null;
         }
-        String appId = settings.getOrDefault("discord_client_id", "");
+        String appId = secretConfig.getDiscordClientId();
         if (appId.isBlank()) {
-            log.warn("Discord Rich Presence enabled but discord_client_id is blank");
+            log.warn("Discord Rich Presence enabled but discord.client.id is blank in secrets.properties");
             return null;
         }
         try {
@@ -490,37 +490,54 @@ public class MainController implements Initializable, DetectionListener {
     }
 
     /**
-     * Saves a composite summary PNG of today's session plays (F5).
+     * Regenerates the OBS overlay summary images ({@code summary_full.png} and
+     * {@code summary_small.png}) from all current plays (F5).
+     *
+     * <p>
+     * Mirrors Python {@code capture_summary_btn} which calls
+     * {@code gen_summary.generate()}.
+     * </p>
      *
      * @param event
      *            action event
      */
     @FXML
     public void onSaveSummary(ActionEvent event) {
-        if (loggerService == null) {
+        if (detectionEngine == null) {
             setStatus("F5: not ready");
             return;
         }
-        List<OnePlayData> plays = loggerService.getTodayLog();
-        String autosaveDir = settings.getOrDefault("autosave_dir", "out");
         executor.submit(() -> {
-            summaryImageService.generateAndSave(plays, Path.of(autosaveDir));
-            Platform.runLater(() -> setStatus("F5: Summary saved"));
+            boolean generated = detectionEngine.triggerSaveSummary();
+            Platform.runLater(() -> setStatus(generated ? "F5: Summary updated" : "F5: Summary update failed"));
         });
     }
 
     /**
      * Manually triggers result-screen processing on the current frame (F6).
      *
+     * <p>
+     * Requires the detection engine to be in RESULT mode (i.e. the game is on the
+     * result screen). If not, the user is informed via the status bar.
+     * </p>
+     *
      * @param event
      *            action event
      */
     @FXML
     public void onSaveResult(ActionEvent event) {
-        if (detectionEngine != null) {
-            executor.submit(detectionEngine::triggerResultScreen);
+        if (detectionEngine == null) {
+            setStatus("F6: not ready");
+            return;
         }
-        setStatus("F6: Save Result triggered");
+        if (detectionEngine.getCurrentMode() != DetectMode.RESULT) {
+            setStatus("F6: not on result screen (mode=" + detectionEngine.getCurrentMode() + ")");
+            return;
+        }
+        executor.submit(() -> {
+            detectionEngine.triggerResultScreen();
+            Platform.runLater(() -> setStatus("F6: Result screen processing done"));
+        });
     }
 
     /**
@@ -844,7 +861,9 @@ public class MainController implements Initializable, DetectionListener {
         String summaryFilename = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + "_summary.png";
         File summaryFile = Path.of(autosaveDir).resolve(summaryFilename).toFile();
         File summarySource = new File("out", "summary_full.png");
-        if (summarySource.exists()) {
+        if (sessionLogData.isEmpty()) {
+            log.info("Session summary copy skipped: no plays were recorded this session.");
+        } else if (summarySource.exists()) {
             try {
                 summaryFile.getParentFile().mkdirs();
                 Files.copy(summarySource.toPath(), summaryFile.toPath(), StandardCopyOption.REPLACE_EXISTING);

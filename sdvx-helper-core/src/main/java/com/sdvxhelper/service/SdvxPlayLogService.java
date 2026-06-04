@@ -34,9 +34,9 @@ import org.slf4j.LoggerFactory;
  * @author Throdax
  * @since 2.0.0
  */
-public class SdvxLoggerService {
+public class SdvxPlayLogService {
 
-    private static final Logger log = LoggerFactory.getLogger(SdvxLoggerService.class);
+    private static final Logger log = LoggerFactory.getLogger(SdvxPlayLogService.class);
 
     private final PlayLogRepository playLogRepo;
     private final MusicListRepository musicListRepo;
@@ -55,7 +55,7 @@ public class SdvxLoggerService {
      * @param musicListRepo
      *            repository for the music-list XML file
      */
-    public SdvxLoggerService(PlayLogRepository playLogRepo, MusicListRepository musicListRepo) {
+    public SdvxPlayLogService(PlayLogRepository playLogRepo, MusicListRepository musicListRepo) {
         this.playLogRepo = playLogRepo;
         this.musicListRepo = musicListRepo;
         this.playLog = playLogRepo.load();

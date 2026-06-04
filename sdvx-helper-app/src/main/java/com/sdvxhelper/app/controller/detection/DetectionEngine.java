@@ -188,12 +188,29 @@ public class DetectionEngine {
     // Trigger methods (called by FXML action handlers via MainController)
     // -------------------------------------------------------------------------
 
-    /** Triggers a Volforce capture on the current frame (F4). */
+    /**
+     * Force-saves the Volforce and class images from the current frame (F4).
+     *
+     * <p>
+     * Unlike the automatic detection path, this bypasses pHash change-detection and
+     * brightness thresholds — the user explicitly requested a save.
+     * </p>
+     */
     public void triggerCaptureVolforce() {
         BufferedImage frame = currentFrame;
         if (frame != null) {
-            screenHandler.captureVolforce(frame);
+            screenHandler.forceCaptureVolforce(frame);
         }
+    }
+
+    /**
+     * Regenerates {@code summary_full.png} and {@code summary_small.png} from all
+     * current plays (preloaded + session) (F5).
+     *
+     * @return {@code true} if summary images were written successfully
+     */
+    public boolean triggerSaveSummary() {
+        return screenHandler.regenerateSummary();
     }
 
     /** Triggers result-screen processing on the current frame (F6). */

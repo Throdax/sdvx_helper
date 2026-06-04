@@ -12,7 +12,7 @@ import com.sdvxhelper.model.OnePlayData;
 import com.sdvxhelper.model.WebhookConfig;
 import com.sdvxhelper.model.WebhookConfigBuilder;
 import com.sdvxhelper.network.DiscordWebhookClient;
-import com.sdvxhelper.service.SdvxLoggerService;
+import com.sdvxhelper.service.SdvxPlayLogService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -27,7 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
  * Unit tests for {@link WebhookDispatcher}.
  *
  * <p>
- * {@link DiscordWebhookClient} and {@link SdvxLoggerService} are mocked so no
+ * {@link DiscordWebhookClient} and {@link SdvxPlayLogService} are mocked so no
  * real network calls are made. Webhook configurations are built via
  * {@link WebhookConfigBuilder} and supplied directly to the dispatcher.
  * </p>
@@ -41,7 +41,7 @@ class WebhookDispatcherTest {
     private DiscordWebhookClient discordClient;
 
     @Mock
-    private SdvxLoggerService loggerService;
+    private SdvxPlayLogService loggerService;
 
     private Map<String, String> settings;
     private WebhookDispatcher dispatcher;

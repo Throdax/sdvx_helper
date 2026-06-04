@@ -59,7 +59,7 @@ import com.sdvxhelper.repository.PlayLogRepository;
 import com.sdvxhelper.repository.RivalLogRepository;
 import com.sdvxhelper.repository.SettingsRepository;
 import com.sdvxhelper.service.CsvExportService;
-import com.sdvxhelper.service.SdvxLoggerService;
+import com.sdvxhelper.service.SdvxPlayLogService;
 import com.sdvxhelper.util.ScoreFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -397,7 +397,7 @@ public class ScoreViewerController implements Initializable {
         }
         playLogRepo = new PlayLogRepository(logFile);
         MusicListRepository musicListRepo = new MusicListRepository(new File("resources/musiclist.xml"));
-        SdvxLoggerService loggerService = new SdvxLoggerService(playLogRepo, musicListRepo);
+        SdvxPlayLogService loggerService = new SdvxPlayLogService(playLogRepo, musicListRepo);
         playLog = loggerService.getPlayLog();
 
         List<MusicInfo> best = loggerService.getBestAllFumen();

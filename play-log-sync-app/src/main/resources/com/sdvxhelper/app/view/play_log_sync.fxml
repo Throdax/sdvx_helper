@@ -50,7 +50,6 @@
                     <TableColumn fx:id="difficultyColumn" text="%table.header.difficulty" prefWidth="60"/>
                     <TableColumn fx:id="scoreColumn"      text="%table.header.score"      prefWidth="100"/>
                     <TableColumn fx:id="lampColumn"       text="%table.header.lamp"       prefWidth="70"/>
-                    <TableColumn fx:id="statusColumn"     text="Status"                   prefWidth="80"/>
                 </columns>
             </TableView>
             <TextArea fx:id="logArea" editable="false"

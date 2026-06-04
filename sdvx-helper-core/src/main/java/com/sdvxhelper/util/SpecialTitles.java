@@ -5,6 +5,9 @@ import java.util.List;
 import java.util.Map;
 import jakarta.json.bind.annotation.JsonbProperty;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * POJO holding the four title-normalisation data structures externalised from
  * the original Python {@code special_titles.py} file.
@@ -24,6 +27,8 @@ import jakarta.json.bind.annotation.JsonbProperty;
  * @since 2.0.0
  */
 public class SpecialTitles {
+
+    private static final Logger log = LoggerFactory.getLogger(SpecialTitles.class);
 
     /**
      * Maps filesystem-safe title strings (with special characters removed or
@@ -75,7 +80,12 @@ public class SpecialTitles {
      * @return canonical title, or the input unchanged if no mapping exists
      */
     public String restoreTitle(String fsafeTitle) {
-        return specialTitles.getOrDefault(fsafeTitle, fsafeTitle);
+        String canonical = specialTitles.get(fsafeTitle);
+        if (canonical != null) {
+            log.info("Special title resolved: '{}' -> '{}'", fsafeTitle, canonical);
+            return canonical;
+        }
+        return fsafeTitle;
     }
 
     /**

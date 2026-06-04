@@ -21,7 +21,7 @@ import com.sdvxhelper.ocr.PerceptualHasher;
 import com.sdvxhelper.service.CsvExportService;
 import com.sdvxhelper.service.ImageAnalysisService;
 import com.sdvxhelper.service.ImageCropNotParsed;
-import com.sdvxhelper.service.SdvxLoggerService;
+import com.sdvxhelper.service.SdvxPlayLogService;
 import com.sdvxhelper.service.SummaryGeneratorService;
 import com.sdvxhelper.service.XmlExportService;
 import com.sdvxhelper.util.ParamUtils;
@@ -52,7 +52,7 @@ public class ScreenHandler {
     private static final Logger log = LoggerFactory.getLogger(ScreenHandler.class);
 
     private ImageAnalysisService imageAnalysisService;
-    private SdvxLoggerService loggerService;
+    private SdvxPlayLogService playLogService;
     private XmlExportService xmlExportService;
     private CsvExportService csvExportService;
     private SummaryGeneratorService summaryGeneratorService;
@@ -93,12 +93,12 @@ public class ScreenHandler {
      * @param settings
      *            application settings map
      */
-    public ScreenHandler(ImageAnalysisService imageAnalysisService, SdvxLoggerService loggerService,
+    public ScreenHandler(ImageAnalysisService imageAnalysisService, SdvxPlayLogService loggerService,
             XmlExportService xmlExportService, CsvExportService csvExportService,
             SummaryGeneratorService summaryGeneratorService, PerceptualHasher perceptualHasher,
             Map<String, String> params, Map<String, String> settings) {
         this.imageAnalysisService = imageAnalysisService;
-        this.loggerService = loggerService;
+        this.playLogService = loggerService;
         this.xmlExportService = xmlExportService;
         this.csvExportService = csvExportService;
         this.summaryGeneratorService = summaryGeneratorService;
@@ -166,6 +166,24 @@ public class ScreenHandler {
         log.debug("addPreloadedPlays: stored {} pre-loaded play(s) in history", plays.size());
     }
 
+    /**
+     * Regenerates {@code summary_full.png} and {@code summary_small.png} from the
+     * current combined play list (preloaded + session plays).
+     *
+     * <p>
+     * Mirrors Python {@code capture_summary_btn} which calls
+     * {@code gen_summary.generate()} to rebuild the OBS overlay images on demand.
+     * </p>
+     *
+     * @return {@code true} if the images were written successfully
+     */
+    public boolean regenerateSummary() {
+        String resourcesDir = settings.getOrDefault("resources_dir", "resources");
+        List<OnePlayData> allPlays = new ArrayList<>(preloadedPlays);
+        allPlays.addAll(sessionPlays);
+        return summaryGeneratorService.generate(allPlays, params, settings, resourcesDir);
+    }
+
     public boolean wasLastScreenshotSaved() {
         return lastScreenshotSaved;
     }
@@ -220,18 +238,23 @@ public class ScreenHandler {
                     ? lastKnownDiff
                     : (identified != null ? identified[1] : "exh");
 
-            MusicInfo best = "Unknown".equals(title) ? null : loggerService.getBestFor(title, difficulty);
+            MusicInfo best = "Unknown".equals(title) ? null : playLogService.getBestFor(title, difficulty);
             int preScore = best != null ? best.getBestScore() : 0;
             int score = readScore(frame);
 
             String dateStr = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
             OnePlayData play = new OnePlayData(title, score, preScore, lamp, difficulty, dateStr);
-            loggerService.pushPlay(play);
+            if ("Unknown".equals(title)) {
+                log.info(
+                        "Play not recorded to alllog.xml: song is unknown (not in musiclist). Register jacket in OCR Reporter and sync with play-log-sync-app.");
+            } else {
+                playLogService.pushPlay(play);
+            }
             sessionPlays.add(play);
             sessionPlayTimestamps.add(songTimestamp);
 
             previousTotalVf = currentTotalVf;
-            currentTotalVf = loggerService.getTotalVfInt() / 1000.0;
+            currentTotalVf = playLogService.getTotalVfInt() / 1000.0;
 
             String screenshotPath = saveResultFiles(frame, jacketCrop, title, difficulty, lamp, score);
             play.setScreenshotFile(screenshotPath);
@@ -329,11 +352,11 @@ public class ScreenHandler {
             return;
         }
         try {
-            List<OnePlayData> history = loggerService.getPlaysFor(title, difficulty);
-            MusicInfo info = loggerService.getBestFor(title, difficulty);
+            List<OnePlayData> history = playLogService.getPlaysFor(title, difficulty);
+            MusicInfo info = playLogService.getBestFor(title, difficulty);
             int lv = info != null ? info.getLvAsInt() : -1;
             xmlExportService.writeHistoryCurSong(history, lv, new File("out/history_cursong.xml"));
-            xmlExportService.writeTotalVf(loggerService.getBestAllFumen(), loggerService.getTotalVfInt(),
+            xmlExportService.writeTotalVf(playLogService.getBestAllFumen(), playLogService.getTotalVfInt(),
                     new File("out/total_vf.xml"));
         } catch (IOException e) {
             log.debug("XML export failed: {}", e.getMessage());
@@ -351,7 +374,7 @@ public class ScreenHandler {
             return;
         }
         try {
-            csvExportService.writeBestCsv(loggerService.getBestAllFumen(), new File(myGdrive, "sdvx_helper_best.csv"));
+            csvExportService.writeBestCsv(playLogService.getBestAllFumen(), new File(myGdrive, "sdvx_helper_best.csv"));
         } catch (IOException e) {
             log.debug("Could not save best CSV to Google Drive path: {}", e.getMessage());
         }
@@ -405,7 +428,7 @@ public class ScreenHandler {
             log.debug("importScoreFromSelect: score {} out of valid range, skipping", score);
             return null;
         }
-        MusicInfo best = loggerService.getBestFor(title, difficulty);
+        MusicInfo best = playLogService.getBestFor(title, difficulty);
         int preScore = best != null ? best.getBestScore() : 0;
         String bestLamp = best != null ? best.getBestLamp() : "failed";
         if (score <= preScore) {
@@ -414,7 +437,7 @@ public class ScreenHandler {
         }
         OnePlayData play = new OnePlayData(title, score, preScore, bestLamp, difficulty,
                 LocalDateTime.now().toString());
-        loggerService.pushPlay(play);
+        playLogService.pushPlay(play);
         return play;
     }
 
@@ -432,7 +455,7 @@ public class ScreenHandler {
             return;
         }
         try {
-            List<OnePlayData> history = loggerService.getPlaysFor(title, diff);
+            List<OnePlayData> history = playLogService.getPlaysFor(title, diff);
             xmlExportService.writeHistoryCurSong(history, -1, new File("out/history_cursong.xml"));
         } catch (IOException e) {
             log.debug("writeRivalViewXml failed: {}", e.getMessage());
@@ -578,6 +601,45 @@ public class ScreenHandler {
      * @return {@code true} if {@code vf_cur.png} and {@code class_cur.png} were
      *         written (i.e. the frame was bright enough and the content changed)
      */
+    /**
+     * Force-saves the Volforce and class regions from {@code frame}, bypassing the
+     * pHash change-detection and brightness checks.
+     *
+     * <p>
+     * Mirrors Python {@code capture_volforce()} called directly by the F4 button
+     * handler — no hash comparison, always writes {@code vf_cur.png} and
+     * {@code class_cur.png}.
+     * </p>
+     *
+     * @param frame
+     *            full-frame capture from which to crop
+     */
+    public void forceCaptureVolforce(BufferedImage frame) {
+        if (frame == null) {
+            log.debug("forceCaptureVolforce: frame is null, skipping");
+            return;
+        }
+        try {
+            BufferedImage vfCrop = cropVf(frame);
+            BufferedImage classCrop = cropClass(frame);
+            File outDir = new File("out");
+            if (!outDir.exists()) {
+                outDir.mkdirs();
+            }
+            ImageIO.write(vfCrop, "png", new File("out/vf_cur.png"));
+            ImageIO.write(classCrop, "png", new File("out/class_cur.png"));
+            lastVfHash = perceptualHasher.phash(vfCrop);
+            if (!genFirstVf) {
+                ImageIO.write(vfCrop, "png", new File("out/vf_pre.png"));
+                ImageIO.write(classCrop, "png", new File("out/class_pre.png"));
+                genFirstVf = true;
+            }
+            log.info("Force VF capture: vf_cur.png and class_cur.png saved");
+        } catch (IOException e) {
+            log.warn("forceCaptureVolforce failed: {}", e.getMessage());
+        }
+    }
+
     public boolean captureVolforce(BufferedImage frame) {
         if (frame == null) {
             log.debug("captureVolforce: frame is null, skipping");

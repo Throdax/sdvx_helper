@@ -16,16 +16,27 @@ public final class StringUtils {
     }
 
     /**
-     * Replaces file-system-unsafe characters in a song title so it can be used
-     * safely as part of a file name.
+     * Makes a song title safe for use as part of a file name.
+     *
+     * <p>
+     * Mirrors Python {@code sdvx_helper.pyw} lines 335-339:
+     * <ol>
+     * <li>Windows-illegal characters ({@code \/:*?"<>|}) are <em>removed</em> (not
+     * replaced), so they leave no trace in the sanitized string.</li>
+     * <li>ASCII spaces and full-width spaces (U+3000) are replaced with
+     * {@code _}.</li>
+     * </ol>
+     * This means that {@code "ΛNXIENT:LEGΛXIEZ"} becomes {@code "ΛNXIENTLEGΛXIEZ"},
+     * which matches the key stored in {@code special_titles.json} and allows
+     * {@link SpecialTitles#restoreTitle} to recover the canonical title.
+     * </p>
      *
      * @param name
      *            raw title string
-     * @return sanitized string with {@code \/:*?"<>|} and spaces replaced by
-     *         underscores
+     * @return sanitized string safe for use in file names
      */
     public static String sanitize(String name) {
-        return name.replaceAll("[\\\\/:*?\"<>| ]", "_");
+        return name.replaceAll("[\\\\/:*?\"<>|]", "").replace(' ', '_').replace('\u3000', '_');
     }
 
     /**

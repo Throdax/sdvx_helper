@@ -18,7 +18,7 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 /**
- * Unit tests for {@link SdvxLoggerService}.
+ * Unit tests for {@link SdvxPlayLogService}.
  */
 @ExtendWith(MockitoExtension.class)
 class SdvxLoggerServiceTest {
@@ -29,7 +29,7 @@ class SdvxLoggerServiceTest {
     @Mock
     private MusicListRepository musicListRepo;
 
-    private SdvxLoggerService service;
+    private SdvxPlayLogService service;
 
     @BeforeEach
     void setUp() {
@@ -39,7 +39,7 @@ class SdvxLoggerServiceTest {
         // calls pushPlay), so it is declared lenient to avoid
         // UnnecessaryStubbingException.
         Mockito.lenient().when(musicListRepo.findSongInfo(ArgumentMatchers.any())).thenReturn(null);
-        service = new SdvxLoggerService(playLogRepo, musicListRepo);
+        service = new SdvxPlayLogService(playLogRepo, musicListRepo);
     }
 
     @Test

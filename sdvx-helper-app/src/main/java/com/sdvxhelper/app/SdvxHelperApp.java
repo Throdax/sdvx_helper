@@ -14,7 +14,7 @@ import javafx.scene.Scene;
 import javafx.scene.image.Image;
 import javafx.stage.Stage;
 
-import com.sdvxhelper.app.controller.MainController;
+import com.sdvxhelper.app.controller.SDVXHelperController;
 import com.sdvxhelper.app.controller.detection.DetectionEngine;
 import com.sdvxhelper.i18n.LocaleManager;
 import com.sdvxhelper.model.OnePlayData;
@@ -51,7 +51,7 @@ public class SdvxHelperApp extends Application {
     }
 
     private Stage primaryStage;
-    private MainController currentController;
+    private SDVXHelperController currentController;
 
     @Override
     public void start(Stage stage) throws IOException {

@@ -1,9 +1,12 @@
 package com.sdvxhelper.app.controller;
 
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Path;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -11,6 +14,7 @@ import java.util.ResourceBundle;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import javafx.application.Platform;
+import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
@@ -20,6 +24,7 @@ import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
@@ -27,15 +32,19 @@ import javafx.scene.control.TextField;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
+import javax.imageio.ImageIO;
 
 import com.sdvxhelper.app.controller.factories.PlayLogSyncThreadFactory;
 import com.sdvxhelper.i18n.LocaleManager;
 import com.sdvxhelper.model.OnePlayData;
 import com.sdvxhelper.model.PlayLog;
+import com.sdvxhelper.repository.ParamsRepository;
 import com.sdvxhelper.repository.PlayLogRepository;
 import com.sdvxhelper.repository.SettingsRepository;
 import com.sdvxhelper.repository.SpecialTitlesRepository;
+import com.sdvxhelper.service.ImageAnalysisService;
 import com.sdvxhelper.service.XmlExportService;
+import com.sdvxhelper.util.ScoreFormatter;
 import com.sdvxhelper.util.SpecialTitles;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -79,8 +88,6 @@ public class PlayLogSyncController implements Initializable {
     @FXML
     private TableColumn<OnePlayData, String> lampColumn;
     @FXML
-    private TableColumn<OnePlayData, String> statusColumn;
-    @FXML
     private TextArea logArea;
     @FXML
     private Label statusLabel;
@@ -98,13 +105,42 @@ public class PlayLogSyncController implements Initializable {
     private Map<String, String> settings;
     private ExecutorService bgExecutor = Executors.newSingleThreadExecutor(new PlayLogSyncThreadFactory());
 
+    /** Initialized lazily in the background thread on first sync. */
+    private ImageAnalysisService imageAnalysisService;
+    private Map<String, String> paramsMap;
+
     @Override
     public void initialize(URL location, ResourceBundle resources) {
-        dateColumn.setCellValueFactory(new PropertyValueFactory<>("date"));
+        dateColumn.setCellValueFactory(data -> {
+            LocalDateTime d = data.getValue().getDate();
+            return new SimpleStringProperty(
+                    d != null ? d.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) : "");
+        });
         titleColumn.setCellValueFactory(new PropertyValueFactory<>("title"));
         difficultyColumn.setCellValueFactory(new PropertyValueFactory<>("difficulty"));
+        difficultyColumn.setCellFactory(col -> new TableCell<>() {
+            @Override
+            protected void updateItem(String diff, boolean empty) {
+                super.updateItem(diff, empty);
+                setText(empty || diff == null ? null : diff.toUpperCase());
+            }
+        });
         scoreColumn.setCellValueFactory(new PropertyValueFactory<>("curScore"));
+        scoreColumn.setCellFactory(col -> new TableCell<>() {
+            @Override
+            protected void updateItem(Integer score, boolean empty) {
+                super.updateItem(score, empty);
+                setText(empty || score == null ? null : ScoreFormatter.formatScore(score));
+            }
+        });
         lampColumn.setCellValueFactory(new PropertyValueFactory<>("lamp"));
+        lampColumn.setCellFactory(col -> new TableCell<>() {
+            @Override
+            protected void updateItem(String lamp, boolean empty) {
+                super.updateItem(lamp, empty);
+                setText(empty || lamp == null ? null : lamp.toUpperCase());
+            }
+        });
         playsTable.setItems(plays);
         playsTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
 
@@ -220,28 +256,44 @@ public class PlayLogSyncController implements Initializable {
         final int finalTimeOffset = timeOffset;
 
         syncButton.setDisable(true);
-        appendLog("Starting sync…");
+        exportButton.setDisable(true);
+        statusLabel.setText("Syncing…");
+        appendLog("Starting sync...");
 
         bgExecutor.submit(() -> runSync(logPath, resultsPath, rebuild, finalTimeOffset));
     }
 
+    private void ensureImageAnalysisService() {
+        if (imageAnalysisService != null) {
+            return;
+        }
+        String paramsPath = settings.getOrDefault("params_json", "resources/params.json");
+        paramsMap = new ParamsRepository().load(paramsPath);
+        imageAnalysisService = new ImageAnalysisService(null);
+        log.info("ImageAnalysisService initialised for score OCR");
+    }
+
     private void runSync(String logPath, String resultsPath, boolean rebuild, int timeOffsetSeconds) {
         try {
+            ensureImageAnalysisService();
             PlayLogRepository repo = new PlayLogRepository(new File(logPath));
             currentPlayLog = repo.load();
+
+            SpecialTitles st = new SpecialTitlesRepository().load();
 
             if (rebuild) {
                 appendLog("Rebuild: clearing existing play log.");
                 currentPlayLog.getPlays().clear();
             } else {
-                SpecialTitles st = new SpecialTitlesRepository().load();
                 List<String> directRemoves = st.getDirectRemoves();
                 currentPlayLog.getPlays().removeIf(p -> directRemoves.contains(p.getTitle()));
                 appendLog("Removed " + directRemoves.size() + " direct-remove entries.");
             }
 
+            Platform.runLater(() -> plays.clear());
+
             if (resultsPath.isBlank()) {
-                appendLog("No results folder specified — loading log only.");
+                appendLog("No results folder specified - loading log only.");
                 showPlays();
                 return;
             }
@@ -253,7 +305,6 @@ public class PlayLogSyncController implements Initializable {
                 return;
             }
 
-            SpecialTitles st = new SpecialTitlesRepository().load();
             File[] files = resultsDir.listFiles(f -> f.getName().toLowerCase().endsWith(".png")
                     && f.getName().startsWith("sdvx") && !f.getName().contains("summary"));
             if (files == null || files.length == 0) {
@@ -262,7 +313,7 @@ public class PlayLogSyncController implements Initializable {
                 return;
             }
             Arrays.sort(files, (a, b) -> Long.compare(a.lastModified(), b.lastModified()));
-            appendLog("Processing " + files.length + " screenshot files…");
+            appendLog("Processing " + files.length + " screenshot files...");
 
             int processed = 0;
             int added = 0;
@@ -272,29 +323,28 @@ public class PlayLogSyncController implements Initializable {
                     processed++;
                     continue;
                 }
-                if (st.getSpecialTitles().containsKey(parsed.getTitle())) {
-                    currentPlayLog.getPlays()
-                            .removeIf(p -> p.getTitle() != null && p.getTitle().equals(parsed.getTitle()));
-                    processed++;
-                    continue;
-                }
+                parsed.setTitle(st.restoreTitle(parsed.getTitle()));
                 if (st.getIgnoredNames().contains(parsed.getTitle())) {
                     processed++;
                     continue;
                 }
 
+                ocrScoreFromImage(f, parsed);
+
                 if (!isSongInLog(currentPlayLog.getPlays(), parsed, timeOffsetSeconds)) {
-                    final String info = "[" + processed + "] " + parsed.getTitle() + " ["
-                            + parsed.getDifficulty().toUpperCase() + "] Adding…";
-                    appendLog(info);
                     currentPlayLog.getPlays().add(parsed);
                     added++;
+                    final OnePlayData addedPlay = parsed;
+                    appendLog("[" + processed + "] " + parsed.getTitle() + " [" + parsed.getDifficulty().toUpperCase()
+                            + "] Adding...");
+                    Platform.runLater(() -> plays.add(addedPlay));
                 }
                 processed++;
                 if (processed % 100 == 0) {
                     final int progressCount = processed;
                     final int total = files.length;
                     appendLog(progressCount + " / " + total + " files processed");
+                    Platform.runLater(() -> statusLabel.setText(progressCount + " / " + total + " processed"));
                 }
             }
 
@@ -302,12 +352,64 @@ public class PlayLogSyncController implements Initializable {
             final int finalAdded = added;
             final int finalProcessed = processed;
             appendLog("Sync complete: " + finalAdded + " songs added out of " + finalProcessed + " files.");
+            Platform.runLater(() -> statusLabel.setText("Sync complete: " + finalAdded + " added"));
             showPlays();
         } catch (IOException e) {
             log.error("Sync failed", e);
             appendLog("ERROR: " + e.getMessage());
+            Platform.runLater(() -> statusLabel.setText("Sync failed - see log"));
         } finally {
-            Platform.runLater(() -> syncButton.setDisable(false));
+            Platform.runLater(() -> {
+                syncButton.setDisable(false);
+                exportButton.setDisable(false);
+            });
+        }
+    }
+
+    /**
+     * Reads the actual score (and best/previous score) from the result screenshot
+     * image using OCR and updates the parsed play record in-place.
+     *
+     * <p>
+     * The filename format stores only {@code score / 10000} to keep names short, so
+     * loading the image is the only way to recover the full precision score.
+     * Mirrors Python {@code play_log_sync.py} which calls
+     * {@code gen_summary.get_score(img)} for every screenshot.
+     * </p>
+     *
+     * <p>
+     * If OCR fails (returns 0) the filename-derived score is kept as a fallback.
+     * </p>
+     *
+     * @param imageFile
+     *            the result screenshot PNG file
+     * @param play
+     *            the play record to update with the OCR'd scores
+     */
+    private void ocrScoreFromImage(File imageFile, OnePlayData play) {
+        try {
+            BufferedImage img = ImageIO.read(imageFile);
+            if (img == null) {
+                log.warn("ocrScoreFromImage: could not read image {}", imageFile.getName());
+                return;
+            }
+            int ocrCurScore = imageAnalysisService.getScoreOnResult(img, paramsMap);
+            if (ocrCurScore > 0) {
+                if (ocrCurScore != play.getCurScore()) {
+                    log.debug("Score corrected by OCR for {}: filename={}, ocr={}", imageFile.getName(),
+                            play.getCurScore(), ocrCurScore);
+                }
+                play.setCurScore(ocrCurScore);
+            } else {
+                log.warn("ocrScoreFromImage: OCR returned 0 for {}, keeping filename score {}", imageFile.getName(),
+                        play.getCurScore());
+            }
+            int ocrPreScore = imageAnalysisService.getBestScore(img, paramsMap);
+            if (ocrPreScore > 0 && ocrPreScore <= 10_000_000) {
+                play.setPreScore(ocrPreScore);
+            }
+        } catch (IOException e) {
+            log.warn("ocrScoreFromImage: could not load {}: {}", imageFile.getName(), e.getMessage());
         }
     }
 
@@ -320,10 +422,8 @@ public class PlayLogSyncController implements Initializable {
     }
 
     private void showPlays() {
-        Platform.runLater(() -> {
-            plays.setAll(currentPlayLog.getPlays());
-            statusLabel.setText(plays.size() + " plays in log");
-        });
+        int total = currentPlayLog != null ? currentPlayLog.getPlays().size() : 0;
+        Platform.runLater(() -> statusLabel.setText(plays.size() + " added | " + total + " total in log"));
     }
 
     /**
@@ -352,6 +452,6 @@ public class PlayLogSyncController implements Initializable {
     }
 
     private void appendLog(String line) {
-        logArea.appendText(line + "\n");
+        Platform.runLater(() -> logArea.appendText(line + "\n"));
     }
 }

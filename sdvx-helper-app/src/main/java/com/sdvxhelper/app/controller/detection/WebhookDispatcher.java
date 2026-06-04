@@ -13,7 +13,7 @@ import com.sdvxhelper.model.MusicInfo;
 import com.sdvxhelper.model.OnePlayData;
 import com.sdvxhelper.model.WebhookConfig;
 import com.sdvxhelper.network.DiscordWebhookClient;
-import com.sdvxhelper.service.SdvxLoggerService;
+import com.sdvxhelper.service.SdvxPlayLogService;
 import com.sdvxhelper.util.ScoreFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,7 +50,7 @@ public class WebhookDispatcher {
     private static final String[] LAMP_KEYS_MAP = {"PUC", "UC", "MAXXIVE", "HARD", "CLEAR", "FAILED"};
 
     private DiscordWebhookClient discordWebhookClient;
-    private SdvxLoggerService loggerService;
+    private SdvxPlayLogService loggerService;
     private Map<String, String> settings;
     private List<WebhookConfig> webhookConfigs;
 
@@ -64,7 +64,7 @@ public class WebhookDispatcher {
      * @param webhookConfigs
      *            loaded webhook configurations; may be {@code null} or empty
      */
-    public WebhookDispatcher(DiscordWebhookClient discordWebhookClient, SdvxLoggerService loggerService,
+    public WebhookDispatcher(DiscordWebhookClient discordWebhookClient, SdvxPlayLogService loggerService,
             Map<String, String> settings, List<WebhookConfig> webhookConfigs) {
         this.discordWebhookClient = discordWebhookClient;
         this.loggerService = loggerService;
