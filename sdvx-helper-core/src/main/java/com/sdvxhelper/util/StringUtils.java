@@ -11,6 +11,8 @@ import java.util.List;
  */
 public final class StringUtils {
 
+    private static final String ILLEGAL_FILENAME_CHARACTERS = "\\\\/:*?\"<>|";
+
     private StringUtils() {
         // utility class — not instantiable
     }
@@ -36,7 +38,7 @@ public final class StringUtils {
      * @return sanitized string safe for use in file names
      */
     public static String sanitize(String name) {
-        return name.replaceAll("[\\\\/:*?\"<>|]", "").replace(' ', '_').replace('\u3000', '_');
+        return name.replaceAll("[" + ILLEGAL_FILENAME_CHARACTERS + "]", "").replace(' ', '_').replace('\u3000', '_');
     }
 
     /**
