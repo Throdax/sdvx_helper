@@ -93,13 +93,23 @@
             <padding><Insets top="12" right="12" bottom="12" left="12"/></padding>
             <Label text="%label.main.detection.state" styleClass="sub-heading"/>
             <HBox spacing="8" alignment="CENTER_LEFT">
-                <Label fx:id="detectModeLabel" text="INIT" styleClass="status-label"/>
-                <Label fx:id="captureScreenshotIcon" text="%indicator.main.capture.screenshot"
-                       styleClass="capture-indicator" visible="false" managed="false"/>
-                <Label fx:id="captureSummaryIcon" text="%indicator.main.capture.summary"
-                       styleClass="capture-indicator" visible="false" managed="false"/>
-                <Label fx:id="captureVfIcon" text="%indicator.main.capture.vf"
-                       styleClass="capture-indicator" visible="false" managed="false"/>
+
+                <!-- Fixed-width panel: mode label. Wide enough for "RESULT" (longest value). -->
+                <HBox minWidth="70" maxWidth="70" alignment="CENTER_LEFT">
+                    <Label fx:id="detectModeLabel" text="INIT" styleClass="status-label"/>
+                </HBox>
+
+                <!-- Fixed-width panel: capture indicators. minWidth reserves space even when
+                     all indicators are hidden (managed=false). -->
+                <HBox minWidth="340" alignment="CENTER_LEFT" spacing="6">
+                    <Label fx:id="captureScreenshotIcon" text="%indicator.main.capture.screenshot"
+                           styleClass="capture-indicator" visible="false" managed="false"/>
+                    <Label fx:id="captureSummaryIcon" text="%indicator.main.capture.summary"
+                           styleClass="capture-indicator" visible="false" managed="false"/>
+                    <Label fx:id="captureVfIcon" text="%indicator.main.capture.vf"
+                           styleClass="capture-indicator" visible="false" managed="false"/>
+                </HBox>
+
             </HBox>
             <Separator/>
             <Label fx:id="sessionLogLabel" text="%label.main.session.log" styleClass="section-heading"/>

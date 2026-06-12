@@ -46,6 +46,7 @@ import com.sdvxhelper.repository.SettingsRepository;
 import com.sdvxhelper.repository.SpecialTitlesRepository;
 import com.sdvxhelper.service.ImageAnalysisService;
 import com.sdvxhelper.service.XmlExportService;
+import com.sdvxhelper.util.LampFormatter;
 import com.sdvxhelper.util.ScoreFormatter;
 import com.sdvxhelper.util.SpecialTitles;
 import org.slf4j.Logger;
@@ -144,7 +145,7 @@ public class PlayLogSyncController implements Initializable {
             @Override
             protected void updateItem(String lamp, boolean empty) {
                 super.updateItem(lamp, empty);
-                setText(empty || lamp == null ? null : lamp.toUpperCase());
+                setText(empty || lamp == null ? null : LampFormatter.formatDisplay(lamp));
             }
         });
         playsTable.setItems(plays);

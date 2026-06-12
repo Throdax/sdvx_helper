@@ -18,6 +18,7 @@ import java.util.Map;
 import javax.imageio.ImageIO;
 
 import com.sdvxhelper.model.OnePlayData;
+import com.sdvxhelper.util.LampFormatter;
 import com.sdvxhelper.util.ParamUtils;
 import com.sdvxhelper.util.ScoreFormatter;
 import org.slf4j.Logger;
@@ -280,9 +281,9 @@ public class SummaryImageService {
         String diffStr = p.getDiff() >= 0 ? "+" + p.getDiff() : String.valueOf(p.getDiff());
         LocalDateTime date = p.getDate();
         String dateStr = date != null ? date.format(DISPLAY_FMT) : "----";
+        String lampDisplay = LampFormatter.formatDisplay(p.getLamp());
         String text = String.format("%-40s  %s  [%s]  %s  %s  (%s)", p.getTitle(), score,
-                p.getDifficulty().toUpperCase(), p.getLamp() != null ? p.getLamp().toUpperCase() : "—", diffStr,
-                dateStr);
+                p.getDifficulty().toUpperCase(), lampDisplay.isEmpty() ? "—" : lampDisplay, diffStr, dateStr);
         g.drawString(text, PADDING, rowY + PADDING + fm.getAscent());
     }
 

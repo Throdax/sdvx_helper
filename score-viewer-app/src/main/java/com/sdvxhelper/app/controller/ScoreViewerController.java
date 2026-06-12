@@ -60,6 +60,7 @@ import com.sdvxhelper.repository.RivalLogRepository;
 import com.sdvxhelper.repository.SettingsRepository;
 import com.sdvxhelper.service.CsvExportService;
 import com.sdvxhelper.service.SdvxPlayLogService;
+import com.sdvxhelper.util.LampFormatter;
 import com.sdvxhelper.util.ScoreFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -532,13 +533,7 @@ public class ScoreViewerController implements Initializable {
      * @return display string (e.g. {@code "MAXXIVE"}, {@code "PUC"})
      */
     private static String formatLampDisplay(String lamp) {
-        if (lamp == null) {
-            return "";
-        }
-        if ("exh".equalsIgnoreCase(lamp)) {
-            return "MAXXIVE";
-        }
-        return lamp.toUpperCase();
+        return LampFormatter.formatDisplay(lamp);
     }
 
 }

@@ -14,6 +14,7 @@ import com.sdvxhelper.model.OnePlayData;
 import com.sdvxhelper.model.WebhookConfig;
 import com.sdvxhelper.network.DiscordWebhookClient;
 import com.sdvxhelper.service.SdvxPlayLogService;
+import com.sdvxhelper.util.LampFormatter;
 import com.sdvxhelper.util.ScoreFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -203,7 +204,7 @@ public class WebhookDispatcher {
         String lvStr = lv >= 0 ? String.valueOf(lv) : "??";
         return String.format("**%s** (%s, Lv%s),   %s (%s),   %s", play.getTitle(), play.getDifficulty(), lvStr,
                 ScoreFormatter.formatScoreBold(play.getCurScore()), ScoreFormatter.formatDiff(play.getDiff()),
-                play.getLamp());
+                LampFormatter.formatDisplay(play.getLamp()));
     }
 
     private String buildPlaylistMessage(String playerName, List<OnePlayData> plays, List<Duration> timestamps) {

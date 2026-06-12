@@ -275,7 +275,7 @@ public class OcrReporterController implements Initializable {
         SettingsRepository settingsRepo = new SettingsRepository();
         settings = settingsRepo.load();
         paramsMap = new ParamsRepository().load(settings.getOrDefault("params_json", "resources/params.json"));
-        suggestOcr = new TesseractOcr("jpn+eng+fra+ell");
+        suggestOcr = new TesseractOcr("jpn+eng+fra+ell+deu");
         discordWebhookClient = new DiscordWebhookClient();
         secretConfig = new SecretConfig();
 
@@ -361,7 +361,7 @@ public class OcrReporterController implements Initializable {
      */
     private void startSuggestLanguageInstall() {
         String tessdataDir = System.getProperty("TESSDATA_PREFIX", "resources/tessdata");
-        List<String> languages = List.of("jpn", "eng", "fra", "ell");
+        List<String> languages = List.of("jpn", "eng", "fra", "ell", "deu");
         String installingText = bundle != null
                 ? bundle.getString("button.suggest.installing")
                 : "Installing language files…";

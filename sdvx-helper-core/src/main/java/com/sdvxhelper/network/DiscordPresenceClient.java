@@ -19,6 +19,7 @@ import com.sdvxhelper.network.ipc.IpcFrame;
 import com.sdvxhelper.network.ipc.IpcHandshake;
 import com.sdvxhelper.network.ipc.IpcSetActivityArgs;
 import com.sdvxhelper.network.ipc.IpcTimestamps;
+import com.sdvxhelper.util.LampFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -460,8 +461,7 @@ public class DiscordPresenceClient implements Closeable {
         if (lamp == null) {
             return "FAILED";
         }
-        String upper = lamp.toUpperCase();
-        return "EXH".equals(upper) ? "MAXXIVE" : upper;
+        return LampFormatter.formatDisplay(lamp);
     }
 
     /**

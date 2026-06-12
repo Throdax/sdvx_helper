@@ -5,6 +5,7 @@ import java.util.List;
 import javafx.scene.control.ListCell;
 
 import com.sdvxhelper.model.OnePlayData;
+import com.sdvxhelper.util.LampFormatter;
 import com.sdvxhelper.util.ScoreFormatter;
 
 /**
@@ -52,13 +53,7 @@ public class OnePlayDataListCell extends ListCell<OnePlayData> {
     }
 
     private static String formatLamp(String lamp) {
-        if (lamp == null) {
-            return "";
-        }
-        if ("exh".equalsIgnoreCase(lamp)) {
-            return "MAXXIVE";
-        }
-        return lamp.toUpperCase();
+        return LampFormatter.formatDisplay(lamp);
     }
 
 }

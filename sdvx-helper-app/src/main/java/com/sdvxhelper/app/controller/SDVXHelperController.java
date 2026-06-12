@@ -69,6 +69,7 @@ import com.sdvxhelper.service.ImageAnalysisService;
 import com.sdvxhelper.service.SdvxPlayLogService;
 import com.sdvxhelper.service.SummaryGeneratorService;
 import com.sdvxhelper.service.XmlExportService;
+import com.sdvxhelper.util.LampFormatter;
 import com.sdvxhelper.util.ScoreFormatter;
 import com.sdvxhelper.util.StringUtils;
 import org.slf4j.Logger;
@@ -184,11 +185,7 @@ public class SDVXHelperController implements Initializable, DetectionListener {
                 cell -> new SimpleStringProperty(ScoreFormatter.formatScore(cell.getValue().getCurScore())));
         logLampColumn.setCellValueFactory(cell -> {
             String lamp = cell.getValue().getLamp();
-            if (lamp == null) {
-                return new SimpleStringProperty("");
-            }
-            String upper = lamp.toUpperCase();
-            return new SimpleStringProperty("EXH".equals(upper) ? "MAXXIVE" : upper);
+            return new SimpleStringProperty(LampFormatter.formatDisplay(lamp));
         });
         logDateColumn.setCellValueFactory(cell -> {
             LocalDateTime date = cell.getValue().getDate();
@@ -225,7 +222,7 @@ public class SDVXHelperController implements Initializable, DetectionListener {
 
     private void installTesseractLanguages() {
         String tessdataDir = System.getProperty("TESSDATA_PREFIX", "resources/tessdata");
-        TesseractLanguageInstaller.ensureLanguages(List.of("jpn", "eng"), tessdataDir);
+        TesseractLanguageInstaller.ensureLanguages(List.of("jpn", "eng", "deu"), tessdataDir);
     }
 
     // -------------------------------------------------------------------------
