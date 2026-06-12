@@ -47,6 +47,7 @@ __pycache__
 # Secrets
 secrets.properties
 *.md
+*.mdc
 !README*.md
 
 # MemPalace per-project files (issue #185)
