@@ -23,17 +23,21 @@ import io.obswebsocket.community.client.message.event.outputs.RecordStateChanged
 import io.obswebsocket.community.client.message.event.outputs.StreamStateChangedEvent;
 import io.obswebsocket.community.client.message.request.inputs.PressInputPropertiesButtonRequest;
 import io.obswebsocket.community.client.message.request.inputs.SetInputSettingsRequest;
+import io.obswebsocket.community.client.message.request.record.GetRecordStatusRequest;
 import io.obswebsocket.community.client.message.request.sceneitems.GetSceneItemIdRequest;
 import io.obswebsocket.community.client.message.request.sceneitems.GetSceneItemListRequest;
 import io.obswebsocket.community.client.message.request.sceneitems.SetSceneItemEnabledRequest;
 import io.obswebsocket.community.client.message.request.scenes.GetSceneListRequest;
 import io.obswebsocket.community.client.message.request.scenes.SetCurrentProgramSceneRequest;
 import io.obswebsocket.community.client.message.request.sources.GetSourceScreenshotRequest;
+import io.obswebsocket.community.client.message.request.stream.GetStreamStatusRequest;
 import io.obswebsocket.community.client.message.response.inputs.PressInputPropertiesButtonResponse;
+import io.obswebsocket.community.client.message.response.record.GetRecordStatusResponse;
 import io.obswebsocket.community.client.message.response.sceneitems.GetSceneItemIdResponse;
 import io.obswebsocket.community.client.message.response.sceneitems.GetSceneItemListResponse;
 import io.obswebsocket.community.client.message.response.scenes.GetSceneListResponse;
 import io.obswebsocket.community.client.message.response.sources.GetSourceScreenshotResponse;
+import io.obswebsocket.community.client.message.response.stream.GetStreamStatusResponse;
 import io.obswebsocket.community.client.model.Scene;
 import io.obswebsocket.community.client.model.SceneItem;
 import org.slf4j.Logger;
@@ -69,6 +73,12 @@ public class ObsWebSocketClient implements Closeable {
 
     /** Timeout in seconds for each synchronous OBS request. */
     private static final int REQUEST_TIMEOUT_SECONDS = 10;
+
+    /**
+     * Shorter timeout for screenshot requests so a frozen OBS source does not stall
+     * the detection loop.
+     */
+    private static final int SCREENSHOT_TIMEOUT_SECONDS = 3;
 
     /**
      * Maximum WebSocket message size in bytes (8 MB).
@@ -335,7 +345,17 @@ public class ObsWebSocketClient implements Closeable {
                 GetSourceScreenshotRequest.builder().sourceName(sourceName).imageFormat(IMAGE_FORMAT).build(),
                 (GetSourceScreenshotResponse resp) -> future.complete(resp));
 
-        GetSourceScreenshotResponse resp = await(future, "GetSourceScreenshot");
+        GetSourceScreenshotResponse resp;
+        try {
+            resp = future.get(SCREENSHOT_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+        } catch (TimeoutException e) {
+            throw new IOException("OBS GetSourceScreenshot timed out after " + SCREENSHOT_TIMEOUT_SECONDS + "s", e);
+        } catch (ExecutionException e) {
+            throw new IOException("OBS GetSourceScreenshot failed", e.getCause());
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IOException("OBS GetSourceScreenshot interrupted", e);
+        }
         if (!resp.isSuccessful()) {
             throw new IOException("OBS GetSourceScreenshot failed for source '" + sourceName + "': "
                     + resp.getMessageData().getRequestStatus().getComment());
@@ -507,6 +527,48 @@ public class ObsWebSocketClient implements Closeable {
         } catch (IOException e) {
             log.debug("refreshBrowserSource failed for '{}': {}", sourceName, e.getMessage());
         }
+    }
+
+    // -------------------------------------------------------------------------
+    // Output status queries
+    // -------------------------------------------------------------------------
+
+    /**
+     * Queries OBS for the current recording status by sending a
+     * {@link GetRecordStatusRequest} and reading the {@code outputActive} field of
+     * the response. This is a synchronous call that blocks until OBS replies or the
+     * request times out.
+     *
+     * @return {@code true} if OBS is currently recording, {@code false} otherwise
+     * @throws IOException
+     *             if the request fails, times out, or the client is not connected
+     */
+    public boolean isRecording() throws IOException {
+        requireConnected();
+        CompletableFuture<GetRecordStatusResponse> future = new CompletableFuture<>();
+        controller.sendRequest(GetRecordStatusRequest.builder().build(),
+                (GetRecordStatusResponse resp) -> future.complete(resp));
+        GetRecordStatusResponse resp = await(future, "GetRecordStatus");
+        return Boolean.TRUE.equals(resp.getOutputActive());
+    }
+
+    /**
+     * Queries OBS for the current streaming status by sending a
+     * {@link GetStreamStatusRequest} and reading the {@code outputActive} field of
+     * the response. This is a synchronous call that blocks until OBS replies or the
+     * request times out.
+     *
+     * @return {@code true} if OBS is currently streaming, {@code false} otherwise
+     * @throws IOException
+     *             if the request fails, times out, or the client is not connected
+     */
+    public boolean isStreaming() throws IOException {
+        requireConnected();
+        CompletableFuture<GetStreamStatusResponse> future = new CompletableFuture<>();
+        controller.sendRequest(GetStreamStatusRequest.builder().build(),
+                (GetStreamStatusResponse resp) -> future.complete(resp));
+        GetStreamStatusResponse resp = await(future, "GetStreamStatus");
+        return Boolean.TRUE.equals(resp.getOutputActive());
     }
 
     // -------------------------------------------------------------------------

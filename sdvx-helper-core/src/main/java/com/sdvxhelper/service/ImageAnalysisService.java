@@ -1021,6 +1021,46 @@ public class ImageAnalysisService {
     }
 
     /**
+     * Detects the difficulty from a result-screen frame by cropping the difficulty
+     * colour band at the {@code log_crop_difficulty_*} coordinates defined in
+     * {@code params} and delegating to
+     * {@link #detectDifficultyFromBand(BufferedImage)}. Using the dedicated
+     * result-screen crop region (default 138 × 30 px) produces approximately 2 100
+     * analysed pixels, which aligns with the reference scale used by the RGB-sum
+     * thresholds inside {@link #detectDifficultyFromBand(BufferedImage)} and avoids
+     * the under-sampling problem of the 73 × 12 info_diff band from the detect
+     * screen.
+     *
+     * @param frame
+     *            the full result-screen frame captured from OBS; returns
+     *            {@code null} immediately when {@code null} is passed
+     * @param params
+     *            the params map containing the {@code log_crop_difficulty_*} keys
+     * @return the detected difficulty string (e.g. {@code "nov"}, {@code "adv"},
+     *         {@code "exh"}, {@code "APPEND"}), or {@code null} if {@code frame} is
+     *         {@code null} or the crop falls outside the frame bounds
+     */
+    public String detectResultDifficulty(BufferedImage frame, Map<String, String> params) {
+        if (frame == null) {
+            return null;
+        }
+        int sx = ParamUtils.getInt(params, "log_crop_difficulty_sx", 55);
+        int sy = ParamUtils.getInt(params, "log_crop_difficulty_sy", 870);
+        int w = ParamUtils.getInt(params, "log_crop_difficulty_w", 138);
+        int h = ParamUtils.getInt(params, "log_crop_difficulty_h", 30);
+        try {
+            BufferedImage diffBand = frame.getSubimage(sx, sy, w, h);
+            return detectDifficultyFromBand(diffBand);
+        } catch (java.awt.image.RasterFormatException e) {
+            log.warn("detectResultDifficulty: band crop out of bounds: {}", e.getMessage());
+            return null;
+        } catch (ImageCropNotParsed e) {
+            log.warn("detectResultDifficulty: band detection failed: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    /**
      * Detects the clear lamp from the result screen by cropping the lamp region
      * ({@code lamp_sx/sy/w/h} from {@code params.json}) and comparing the crop
      * against reference images using perceptual hash — mirroring Python's

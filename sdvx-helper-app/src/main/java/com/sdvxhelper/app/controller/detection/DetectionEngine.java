@@ -69,6 +69,9 @@ public class DetectionEngine {
     private volatile BufferedImage currentFrame;
     private DetectMode currentMode = DetectMode.INIT;
     private volatile boolean detectionRunning = false;
+    private int consecutiveCaptureFailures = 0;
+    private static final int CAPTURE_FAILURE_WARN_INTERVAL = 30;
+    private static final int CAPTURE_FAILURE_RESET_THRESHOLD = 10;
 
     // PLAY-mode timing
     private Instant lastPlay0Time = Instant.EPOCH;
@@ -178,6 +181,18 @@ public class DetectionEngine {
 
     public Map<String, String> getParams() {
         return params;
+    }
+
+    /**
+     * Returns the {@link ScreenHandler} used by this engine to process captured
+     * frames, allowing callers to query accumulated play data (e.g. for
+     * end-of-session archive generation).
+     *
+     * @return the current {@link ScreenHandler}, or {@code null} before the engine
+     *         is fully initialised
+     */
+    public ScreenHandler getScreenHandler() {
+        return screenHandler;
     }
 
     public boolean isRtaMode() {
@@ -300,6 +315,22 @@ public class DetectionEngine {
             Platform.runLater(() -> listener.onObsStatusChanged("connected"));
             log.info("OBS connected successfully");
             log.info("OBS connection properties are: messageSize={}", obsClient.getMaxMessageSize());
+
+            // Events only fire on state *transitions*. If OBS is already recording or
+            // streaming when we connect, no event is emitted, so we query the current
+            // state explicitly and activate the playlist timer / UI indicators manually.
+            try {
+                if (client.isRecording()) {
+                    log.info("OBS was already recording on connect - activating playlist timer");
+                    handleRecordingStarted();
+                }
+                if (client.isStreaming()) {
+                    log.info("OBS was already streaming on connect - activating playlist timer");
+                    handleStreamingStarted();
+                }
+            } catch (IOException e) {
+                log.debug("Could not query OBS output state on connect: {}", e.getMessage());
+            }
         } catch (IOException e) {
             log.debug("OBS connect retry failed: {}", e.getMessage());
             Platform.runLater(() -> listener.onObsStatusChanged("disconnected"));
@@ -353,6 +384,15 @@ public class DetectionEngine {
         }
         try {
             BufferedImage raw = obsClient.captureSource(source);
+            if (consecutiveCaptureFailures >= CAPTURE_FAILURE_RESET_THRESHOLD) {
+                log.info("OBS screenshot capture resumed after {} consecutive failures — resetting detection state",
+                        consecutiveCaptureFailures);
+                currentMode = DetectMode.INIT;
+                doneThisSong = false;
+            } else if (consecutiveCaptureFailures > 0) {
+                log.info("OBS screenshot capture resumed after {} consecutive failures", consecutiveCaptureFailures);
+            }
+            consecutiveCaptureFailures = 0;
             currentFrame = applyOrientation(raw);
             log.debug("Captured frame from source '{}' (raw={}x{}, oriented={}x{})", source, raw.getWidth(),
                     raw.getHeight(), currentFrame.getWidth(), currentFrame.getHeight());
@@ -360,7 +400,14 @@ public class DetectionEngine {
                 saveDebugCapture(currentFrame);
             }
         } catch (IOException e) {
-            log.warn("captureSource('{}') failed: {}", source, e.getMessage());
+            consecutiveCaptureFailures++;
+            if (consecutiveCaptureFailures == 1 || consecutiveCaptureFailures % CAPTURE_FAILURE_WARN_INTERVAL == 0) {
+                log.warn("captureSource('{}') failed ({} consecutive): {}", source, consecutiveCaptureFailures,
+                        e.getMessage());
+            } else {
+                log.debug("captureSource('{}') failed ({} consecutive): {}", source, consecutiveCaptureFailures,
+                        e.getMessage());
+            }
             currentFrame = null;
         }
     }
@@ -405,6 +452,13 @@ public class DetectionEngine {
             // "if not self.is_onselect(): self.detect_mode = detect_mode.init"
             // This is required to open the INIT block below, which is the only place
             // that checks isPlayScreen() and transitions to PLAY.
+            newMode = DetectMode.INIT;
+        } else if (newMode == DetectMode.RESULT) {
+            // Result screen was active but is now gone — return to INIT.
+            // Required for Skill Analyzer (RESULT -> DETECT -> PLAY without an
+            // intervening SELECT) and retry-from-result (RESULT -> PLAY without a
+            // logo screen). Without this, the engine stays stuck in RESULT and the
+            // INIT block that detects isPlayScreen() is never reached.
             newMode = DetectMode.INIT;
         }
 
@@ -573,15 +627,19 @@ public class DetectionEngine {
 
     private void processSelectScreen(BufferedImage frame) {
         SelectScreenResult result = screenHandler.handleSelectScreen(frame);
-        if (result == null) {
+        if (result != null) {
+            lastKnownTitle = result.getTitle();
+            lastKnownDiff = result.getDiff();
+        } else {
             log.debug("Select screen processing returned no result (jacket not identified)");
-            return;
         }
-        lastKnownTitle = result.getTitle();
-        lastKnownDiff = result.getDiff();
         if (discordPresenceClient != null) {
-            discordPresenceClient.updatePresence(PlayState.SELECTING, lastKnownTitle, lastKnownDiff,
+            discordPresenceClient.updatePresence(PlayState.SELECTING, result != null ? lastKnownTitle : null,
+                    result != null ? lastKnownDiff : null,
                     ScoreFormatter.formatTotalVf((int) (screenHandler.getCurrentTotalVf() * 1000)), null);
+        }
+        if (result == null) {
+            return;
         }
         if (result.getImportedPlay() != null) {
             final OnePlayData importedPlay = result.getImportedPlay();

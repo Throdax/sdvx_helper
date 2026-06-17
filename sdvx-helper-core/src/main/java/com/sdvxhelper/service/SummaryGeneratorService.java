@@ -220,6 +220,89 @@ public class SummaryGeneratorService {
     }
 
     /**
+     * Generates an uncapped, dynamically-sized archive image covering every play in
+     * {@code plays} and saves it to {@code targetFile}.
+     *
+     * <p>
+     * Mirrors Python {@code GenSummary.generate_today_all()} in
+     * {@code gen_summary.py}. The key differences from {@link #generate} are:
+     * </p>
+     * <ul>
+     * <li>Canvas height grows with the play count — no {@code log_maxnum} cap.</li>
+     * <li>Only a full-width image is produced; the small-width variant is skipped
+     * (Python does the same).</li>
+     * <li>The result is saved to {@code targetFile} instead of the fixed
+     * {@code out/summary_full.png} path, making it suitable for end-of-session
+     * archives.</li>
+     * </ul>
+     *
+     * @param plays
+     *            all plays to archive (preloaded + session, ordered oldest-first);
+     *            plays without a screenshot file are skipped
+     * @param targetFile
+     *            destination file for the archive PNG
+     * @param params
+     *            detection parameters (supplies all {@code log_*} coordinates)
+     * @param settings
+     *            application settings (supplies {@code logpic_bg_alpha})
+     * @param resourcesDir
+     *            path to the resources directory containing lamp icons
+     * @throws IOException
+     *             if the archive image cannot be written
+     */
+    public void generateAll(List<OnePlayData> plays, File targetFile, Map<String, String> params,
+            Map<String, String> settings, String resourcesDir) throws IOException {
+        int logMaxNum = ParamUtils.getInt(params, "log_maxnum", 30);
+        int logRowSize = ParamUtils.getInt(params, "log_rowsize", 40);
+        int logMargin = ParamUtils.getInt(params, "log_margin", 20);
+        int logWidth = ParamUtils.getInt(params, "log_width", 960);
+        int alpha = ParamUtils.getInt(settings, "logpic_bg_alpha", 200);
+
+        List<OnePlayData> safeList = plays != null ? plays : new ArrayList<>();
+        int canvasRows = Math.max(safeList.size(), logMaxNum);
+        int height = logMargin * 2 + canvasRows * logRowSize;
+
+        BufferedImage bg = createTransparentBackground(logWidth, height, alpha);
+
+        List<OnePlayData> reversed = new ArrayList<>(safeList);
+        java.util.Collections.reverse(reversed);
+
+        log.info("generateAll: compositing {} play(s) to {}", safeList.size(), targetFile.getName());
+
+        int idx = 0;
+        for (OnePlayData play : reversed) {
+            if (play.getScreenshotFile() == null) {
+                log.info("generateAll: play '{}' has no screenshot file, skipping", play.getTitle());
+                continue;
+            }
+            try {
+                boolean placed = putResult(play, bg, null, idx, logRowSize, logMargin, params, resourcesDir);
+                if (placed) {
+                    idx++;
+                } else {
+                    log.info("generateAll: row skipped for '{}' (screenshot unreadable or missing: {})",
+                            play.getTitle(), play.getScreenshotFile());
+                }
+            } catch (IOException e) {
+                log.warn("generateAll: failed to composite row {} for '{}': {}", idx, play.getTitle(), e.getMessage());
+            }
+        }
+
+        targetFile.getParentFile().mkdirs();
+        File tmp = new File(targetFile.getParent(), targetFile.getName() + "_tmp");
+        ImageIO.write(bg, "png", tmp);
+        try {
+            Files.move(tmp.toPath(), targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING,
+                    StandardCopyOption.ATOMIC_MOVE);
+        } catch (AtomicMoveNotSupportedException e) {
+            log.debug("generateAll: atomic move not supported for '{}', falling back to replace ({})",
+                    targetFile.getName(), e.getMessage());
+            Files.move(tmp.toPath(), targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        }
+        log.info("generateAll: archive saved to {} ({} rows)", targetFile.getAbsolutePath(), idx);
+    }
+
+    /**
      * Writes {@code image} as a PNG to {@code dir/filename} using a
      * write-then-rename strategy so that OBS (or any other reader polling the file)
      * never sees a partially-written PNG. The image is first written to a
@@ -281,12 +364,14 @@ public class SummaryGeneratorService {
             pasteOn(bg, lampIcon, params, "log_pos_lamp", yOffset);
         }
 
-        pasteOn(bgSmall, jacket, params, "log_pos_jacket_small", yOffset);
-        pasteOn(bgSmall, difficulty, params, "log_pos_difficulty_small", yOffset);
-        pasteOn(bgSmall, titleSmall, params, "log_pos_title_small", yOffset);
-        pasteOn(bgSmall, score, params, "log_pos_score_small", yOffset);
-        if (lampIcon != null) {
-            pasteOn(bgSmall, lampIcon, params, "log_pos_lamp_small", yOffset);
+        if (bgSmall != null) {
+            pasteOn(bgSmall, jacket, params, "log_pos_jacket_small", yOffset);
+            pasteOn(bgSmall, difficulty, params, "log_pos_difficulty_small", yOffset);
+            pasteOn(bgSmall, titleSmall, params, "log_pos_title_small", yOffset);
+            pasteOn(bgSmall, score, params, "log_pos_score_small", yOffset);
+            if (lampIcon != null) {
+                pasteOn(bgSmall, lampIcon, params, "log_pos_lamp_small", yOffset);
+            }
         }
         return true;
     }

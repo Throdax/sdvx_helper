@@ -3,9 +3,7 @@ package com.sdvxhelper.app.controller;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.text.MessageFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -52,6 +50,7 @@ import com.sdvxhelper.i18n.LocaleManager;
 import com.sdvxhelper.model.OnePlayData;
 import com.sdvxhelper.model.WebhookConfig;
 import com.sdvxhelper.model.enums.DetectMode;
+import com.sdvxhelper.model.enums.PlayState;
 import com.sdvxhelper.network.DiscordPresenceClient;
 import com.sdvxhelper.network.DiscordWebhookClient;
 import com.sdvxhelper.network.GoogleDriveClient;
@@ -315,6 +314,7 @@ public class SDVXHelperController implements Initializable, DetectionListener {
         try {
             DiscordPresenceClient client = new DiscordPresenceClient(appId);
             client.connect();
+            client.updatePresence(PlayState.IDLE, null, null, "-", null);
             log.info("Discord Rich Presence connected");
             return client;
         } catch (IOException e) {
@@ -877,20 +877,20 @@ public class SDVXHelperController implements Initializable, DetectionListener {
         String autosaveDir = settings.getOrDefault("autosave_dir", "out");
         String summaryFilename = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + "_summary.png";
         File summaryFile = Path.of(autosaveDir).resolve(summaryFilename).toFile();
-        File summarySource = new File("out", "summary_full.png");
         if (sessionLogData.isEmpty()) {
-            log.info("Session summary copy skipped: no plays were recorded this session.");
-        } else if (summarySource.exists()) {
+            log.info("Session summary generation skipped: no plays were recorded this session.");
+        } else if (summaryGeneratorService != null && detectionEngine != null
+                && detectionEngine.getScreenHandler() != null) {
             try {
-                summaryFile.getParentFile().mkdirs();
-                Files.copy(summarySource.toPath(), summaryFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-                log.info("Session summary copied from {} to {}", summarySource.getAbsolutePath(),
-                        summaryFile.getAbsolutePath());
+                String resourcesDir = settings.getOrDefault("resources_dir", "resources");
+                Map<String, String> closeParams = detectionEngine.getParams();
+                List<OnePlayData> allPlays = detectionEngine.getScreenHandler().getCombinedPlays();
+                summaryGeneratorService.generateAll(allPlays, summaryFile, closeParams, settings, resourcesDir);
             } catch (IOException e) {
-                log.warn("Failed to copy session summary: {}", e.getMessage());
+                log.warn("Failed to generate session archive summary: {}", e.getMessage());
             }
         } else {
-            log.warn("Session summary source not found: {}, skipping save", summarySource.getAbsolutePath());
+            log.warn("Session summary generation skipped: summaryGeneratorService or detectionEngine not initialised.");
         }
 
         if (detectionEngine != null) {

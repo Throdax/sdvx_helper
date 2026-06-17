@@ -90,6 +90,24 @@ public class TesseractOcr {
     }
 
     /**
+     * Overrides the Tesseract page segmentation mode (PSM).
+     *
+     * <p>
+     * The constructor defaults to PSM 7 (treat the image as a single text line).
+     * For crops that contain a single word or token with no spaces — such as the VF
+     * badge ({@code DD.DDD}) — PSM 8 (single word) produces more reliable results.
+     * Must be called before {@link #recognizeText(BufferedImage)}.
+     * </p>
+     *
+     * @param mode
+     *            Tesseract PSM constant (e.g. {@code 7} for single line, {@code 8}
+     *            for single word)
+     */
+    public void setPageSegMode(int mode) {
+        tess.setPageSegMode(mode);
+    }
+
+    /**
      * Recognises text from the given image region.
      *
      * @param image

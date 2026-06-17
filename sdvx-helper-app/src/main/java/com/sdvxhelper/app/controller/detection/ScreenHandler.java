@@ -144,6 +144,22 @@ public class ScreenHandler {
         return sessionPlays;
     }
 
+    /**
+     * Returns an unmodifiable merged view of the preloaded plays (loaded from the
+     * autosave directory at startup) and the plays recorded during the current
+     * session, in oldest-first order. This is the same list passed to
+     * {@link com.sdvxhelper.service.SummaryGeneratorService#generate} on every
+     * result screen and is suitable for end-of-session archive generation via
+     * {@link com.sdvxhelper.service.SummaryGeneratorService#generateAll}.
+     *
+     * @return unmodifiable combined play list (never {@code null})
+     */
+    public List<OnePlayData> getCombinedPlays() {
+        List<OnePlayData> combined = new ArrayList<>(preloadedPlays);
+        combined.addAll(sessionPlays);
+        return Collections.unmodifiableList(combined);
+    }
+
     public List<Duration> getSessionPlayTimestamps() {
         return sessionPlayTimestamps;
     }
@@ -220,10 +236,9 @@ public class ScreenHandler {
      *            the song was detected, or {@code null} when no output was active
      * @param lastKnownDiff
      *            difficulty detected on the preceding select/detect screen via
-     *            button brightness; used as the authoritative source since the
-     *            result screen does not show difficulty buttons. May be
-     *            {@code null} or blank, in which case the hash-index value is used
-     *            as a fallback.
+     *            button brightness; used as a first fallback when the result-frame
+     *            colour band cannot be read. May be {@code null} or blank, in which
+     *            case the jacket hash-index value is used as a second fallback.
      * @return the recorded play, or {@code null} if processing failed
      */
     public OnePlayData handleResultScreen(BufferedImage frame, Duration songTimestamp, String lastKnownDiff) {
@@ -242,9 +257,28 @@ public class ScreenHandler {
             BufferedImage jacketCrop = cropJacketLog(frame);
             String[] identified = identifyResultJacket(jacketCrop);
             String title = identified != null ? identified[0] : "Unknown";
-            String difficulty = (lastKnownDiff != null && !lastKnownDiff.isBlank())
-                    ? lastKnownDiff
-                    : (identified != null ? identified[1] : "exh");
+
+            // Primary: read difficulty directly from the colour band on this result frame.
+            // The log_crop_difficulty_* band (~138x30 px) gives ~2100 pixels, which aligns
+            // with the RGB-sum thresholds in detectDifficultyFromBand. The info_diff band
+            // used by detect mode is only 73x12 px (840 pixels) and produces unreliable
+            // sums.
+            boolean difficultyFallbackUsed = false;
+            String difficulty = imageAnalysisService.detectResultDifficulty(frame, params);
+            if (difficulty == null || difficulty.isBlank()) {
+                log.warn(
+                        "handleResultScreen: result-frame difficulty band unreadable - falling back to lastKnownDiff='{}'",
+                        lastKnownDiff);
+                difficulty = lastKnownDiff;
+                difficultyFallbackUsed = true;
+            }
+            if (difficulty == null || difficulty.isBlank()) {
+                String hashFallback = identified != null ? identified[1] : "exh";
+                log.warn("handleResultScreen: lastKnownDiff also unavailable - falling back to jacket hash value '{}'",
+                        hashFallback);
+                difficulty = hashFallback;
+                difficultyFallbackUsed = true;
+            }
 
             MusicInfo best = "Unknown".equals(title) ? null : playLogService.getBestFor(title, difficulty);
             int preScore = best != null ? best.getBestScore() : 0;
@@ -255,12 +289,22 @@ public class ScreenHandler {
             if ("Unknown".equals(title)) {
                 log.info(
                         "Play not recorded to alllog.xml: song is unknown (not in musiclist). Register jacket in OCR Reporter and sync with play-log-sync-app.");
+            } else if (difficultyFallbackUsed) {
+                log.warn(
+                        "Play not recorded to alllog.xml: difficulty '{}' was estimated via fallback and may be incorrect"
+                                + " - use play-log-sync-app to add this result manually after confirming the difficulty.",
+                        difficulty);
             } else {
                 playLogService.pushPlay(play);
             }
+            // Always add to session tracking so the UI table, per-play webhook,
+            // end-of-session playlist, and summary images all include this play.
             sessionPlays.add(play);
             sessionPlayTimestamps.add(songTimestamp);
 
+            // VF is recalculated from the persisted log; if pushPlay was skipped the
+            // value stays at its previous level, which is correct since the difficulty
+            // (and therefore VF contribution) is uncertain.
             previousTotalVf = currentTotalVf;
             currentTotalVf = playLogService.getTotalVfInt() / 1000.0;
 
@@ -268,7 +312,12 @@ public class ScreenHandler {
             play.setScreenshotFile(screenshotPath);
             lastScreenshotSaved = true;
 
-            writeResultXml(title, difficulty);
+            if (difficultyFallbackUsed) {
+                log.warn(
+                        "history_cursong.xml not written: difficulty is estimated via fallback and the history lookup would be unreliable.");
+            } else {
+                writeResultXml(title, difficulty);
+            }
             saveGoogleDriveCsv();
 
             String resourcesDir = settings.getOrDefault("resources_dir", "resources");
@@ -726,13 +775,22 @@ public class ScreenHandler {
         if (vfOcr == null) {
             vfOcr = new TesseractOcr("eng");
             vfOcr.setVariable("tessedit_char_whitelist", "0123456789.");
-            log.info("captureVolforce: VF OCR engine initialised");
+            vfOcr.setPageSegMode(8);
+            log.info("captureVolforce: VF OCR engine initialised (PSM 8, scale 5x)");
         }
-        BufferedImage preprocessed = OcrUtils.preprocessForOcr(vfCrop);
+        BufferedImage preprocessed = OcrUtils.preprocessForOcr(vfCrop, 5);
         String raw = vfOcr.recognizeText(preprocessed);
         Matcher matcher = VF_NUMBER_PATTERN.matcher(raw != null ? raw : "");
         if (!matcher.find()) {
-            log.warn("captureVolforce: OCR produced '{}' - no valid VF number found, falling back to pHash", raw);
+            try {
+                ImageIO.write(vfCrop, "png", new File("out/part_volforce.png"));
+                ImageIO.write(preprocessed, "png", new File("out/part_volforce_preprocessed.png"));
+            } catch (IOException saveEx) {
+                log.debug("captureVolforce: could not save VF debug crops: {}", saveEx.getMessage());
+            }
+            log.warn("captureVolforce: OCR produced '{}' - no valid VF number found, "
+                    + "saved out/part_volforce.png and out/part_volforce_preprocessed.png for diagnosis; "
+                    + "falling back to pHash", raw);
             String vfHash = perceptualHasher.phash(vfCrop);
             boolean changed = (lastVfHash == null) || (perceptualHasher.hammingDistance(vfHash, lastVfHash) > 2);
             lastVfHash = vfHash;
