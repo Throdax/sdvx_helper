@@ -5,6 +5,7 @@ import java.util.Objects;
 
 import com.sdvxhelper.model.enums.DetectMode;
 import com.sdvxhelper.network.DiscordPresenceClient;
+import com.sdvxhelper.network.LitterboxClient;
 import com.sdvxhelper.service.ImageAnalysisService;
 
 /**
@@ -30,6 +31,7 @@ public class DetectionEngineBuilder {
     private DetectionListener listener;
     private ImageAnalysisService imageAnalysisService;
     private DiscordPresenceClient discordPresenceClient;
+    private LitterboxClient litterboxClient;
     private ScreenHandler screenHandler;
     private ObsOverlayService obsOverlayService;
     private WebhookDispatcher webhookDispatcher;
@@ -70,6 +72,19 @@ public class DetectionEngineBuilder {
      */
     public DetectionEngineBuilder discordPresenceClient(DiscordPresenceClient discordPresenceClient) {
         this.discordPresenceClient = discordPresenceClient;
+        return this;
+    }
+
+    /**
+     * Sets the optional {@link LitterboxClient} used to upload jacket images for
+     * Discord Rich Presence. When {@code null} jacket uploading is disabled.
+     *
+     * @param litterboxClient
+     *            the client, or {@code null} if jacket upload is disabled
+     * @return this builder
+     */
+    public DetectionEngineBuilder litterboxClient(LitterboxClient litterboxClient) {
+        this.litterboxClient = litterboxClient;
         return this;
     }
 
@@ -169,6 +184,7 @@ public class DetectionEngineBuilder {
         engine.setListener(listener);
         engine.setImageAnalysisService(imageAnalysisService);
         engine.setDiscordPresenceClient(discordPresenceClient);
+        engine.setLitterboxClient(litterboxClient);
         engine.setScreenHandler(screenHandler);
         engine.setObsOverlayService(obsOverlayService);
         engine.setWebhookDispatcher(webhookDispatcher);

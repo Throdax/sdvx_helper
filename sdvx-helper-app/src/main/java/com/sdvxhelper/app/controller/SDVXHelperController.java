@@ -54,6 +54,7 @@ import com.sdvxhelper.model.enums.PlayState;
 import com.sdvxhelper.network.DiscordPresenceClient;
 import com.sdvxhelper.network.DiscordWebhookClient;
 import com.sdvxhelper.network.GoogleDriveClient;
+import com.sdvxhelper.network.LitterboxClient;
 import com.sdvxhelper.network.Maya2Client;
 import com.sdvxhelper.network.ObsWebSocketClient;
 import com.sdvxhelper.ocr.PerceptualHasher;
@@ -286,10 +287,11 @@ public class SDVXHelperController implements Initializable, DetectionListener {
         WebhookDispatcher webhookDispatcher = new WebhookDispatcher(discordWebhookClient, loggerService, settings,
                 webhookConfigs);
 
+        LitterboxClient litterboxClient = buildLitterboxClient();
         detectionEngine = DetectionEngine.builder().listener(this).imageAnalysisService(imageAnalysisService)
-                .discordPresenceClient(discordPresenceClient).screenHandler(screenHandler)
-                .obsOverlayService(obsOverlayService).webhookDispatcher(webhookDispatcher).params(params)
-                .settings(settings).initialMode(initialDetectMode).build();
+                .discordPresenceClient(discordPresenceClient).litterboxClient(litterboxClient)
+                .screenHandler(screenHandler).obsOverlayService(obsOverlayService).webhookDispatcher(webhookDispatcher)
+                .params(params).settings(settings).initialMode(initialDetectMode).build();
 
         Platform.runLater(() -> {
             refreshVfDisplay();
@@ -313,14 +315,31 @@ public class SDVXHelperController implements Initializable, DetectionListener {
         }
         try {
             DiscordPresenceClient client = new DiscordPresenceClient(appId);
+            client.setSongAsTitle("true".equalsIgnoreCase(settings.get("discord_presence_song_as_title")));
             client.connect();
             client.updatePresence(PlayState.IDLE, null, null, "-", null);
-            log.info("Discord Rich Presence connected");
+            log.info("Discord Rich Presence connected (song-as-title={})",
+                    settings.getOrDefault("discord_presence_song_as_title", "false"));
             return client;
         } catch (IOException e) {
             log.warn("Discord Rich Presence unavailable: {}", e.getMessage());
             return null;
         }
+    }
+
+    /**
+     * Creates a {@link LitterboxClient} when {@code discord_presence_upload_jacket}
+     * is enabled. Returns {@code null} when the setting is disabled.
+     *
+     * @return a new {@link LitterboxClient}, or {@code null}
+     */
+    private LitterboxClient buildLitterboxClient() {
+        if (!"true".equalsIgnoreCase(settings.get("discord_presence_upload_jacket"))) {
+            log.debug("Litterbox jacket upload disabled by setting");
+            return null;
+        }
+        log.info("Litterbox jacket upload enabled for Discord Rich Presence");
+        return new LitterboxClient();
     }
 
     /**

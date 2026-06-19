@@ -37,8 +37,9 @@ public class WebhookConfig {
     private LinkedHashMap<String, Boolean> enabledLevels;
 
     /**
-     * Ordered map of lamp keys ("PUC", "UC", "MAXXIVE", "HARD", "CLEAR", "FAILED")
-     * to their enabled state. Serialised as {@code [{"PUC": true}, …]}.
+     * Ordered map of lamp keys ("PUC", "UC", "MAXXIVE", "HARD", "CLEAR", "SKILL
+     * CLEAR", "FAILED") to their enabled state. Serialised as {@code [{"PUC":
+     * true}, …]}.
      */
     private LinkedHashMap<String, Boolean> enabledLamp;
 
@@ -188,7 +189,7 @@ public class WebhookConfig {
      *
      * @param lampKey
      *            lamp name, one of {@code PUC}, {@code UC}, {@code MAXXIVE},
-     *            {@code HARD}, {@code CLEAR}, {@code FAILED}
+     *            {@code HARD}, {@code CLEAR}, {@code SKILL CLEAR}, {@code FAILED}
      * @param enabled
      *            true if results with this lamp should trigger the webhook
      */

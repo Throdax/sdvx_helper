@@ -60,7 +60,7 @@ public final class DefaultSettings {
         defaults.put("autosave_always", "false");
         defaults.put("autosave_interval", "60");
         defaults.put("play0_interval", "10");
-        defaults.put("detect_sample_count", "3");
+        defaults.put("detect_sample_count", "2");
         defaults.put("autosave_prewait", "0.0");
         defaults.put("obs_source", "");
         defaults.put("orientation", "top");

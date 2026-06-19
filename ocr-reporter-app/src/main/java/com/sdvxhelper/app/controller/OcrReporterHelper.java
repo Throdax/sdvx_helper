@@ -12,6 +12,7 @@ import javax.imageio.ImageIO;
 import com.sdvxhelper.ocr.OcrUtils;
 import com.sdvxhelper.service.ImageAnalysisService;
 import com.sdvxhelper.service.ImageCropNotParsed;
+import com.sdvxhelper.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -267,11 +268,7 @@ public final class OcrReporterHelper {
      *         {@code text} is {@code null}
      */
     public static String removeInterCjkSpaces(String text) {
-        if (text == null) {
-            return null;
-        }
-        return text.replaceAll("(?<=[\\u3040-\\u309F\\u30A0-\\u30FF\\u3000-\\u9FFF\\uF900-\\uFAFF])\\s+"
-                + "(?=[\\u3040-\\u309F\\u30A0-\\u30FF\\u3000-\\u9FFF\\uF900-\\uFAFF])", "");
+        return StringUtils.removeInterCjkSpaces(text);
     }
 
     /**

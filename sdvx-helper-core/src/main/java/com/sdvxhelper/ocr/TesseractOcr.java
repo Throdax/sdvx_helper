@@ -1,6 +1,8 @@
 package com.sdvxhelper.ocr;
 
+import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
+import java.io.File;
 
 import net.sourceforge.tess4j.Tesseract;
 import net.sourceforge.tess4j.TesseractException;
@@ -64,9 +66,23 @@ public class TesseractOcr {
      *            Tesseract language string (e.g. {@code "jpn+eng+fra+ell"})
      */
     public TesseractOcr(String language) {
+        this(language, System.getProperty("TESSDATA_PREFIX", "resources/tessdata"));
+    }
+
+    /**
+     * Constructs a {@code TesseractOcr} instance with a custom language string and
+     * an explicit tessdata directory path. Use this overload in tests where
+     * tessdata is downloaded to a known location (e.g. {@code target/tessdata})
+     * rather than the application's {@code resources/tessdata} directory.
+     *
+     * @param language
+     *            Tesseract language string (e.g. {@code "eng"})
+     * @param tessdataDir
+     *            path to the directory containing {@code .traineddata} files
+     */
+    public TesseractOcr(String language, String tessdataDir) {
         tess = new Tesseract();
-        String dataPath = System.getProperty("TESSDATA_PREFIX", "resources/tessdata");
-        tess.setDatapath(dataPath);
+        tess.setDatapath(tessdataDir);
         tess.setLanguage(language);
         tess.setPageSegMode(7);
         tess.setOcrEngineMode(1);
@@ -124,6 +140,58 @@ public class TesseractOcr {
             return result != null ? result.strip() : "";
         } catch (TesseractException e) {
             log.warn("Tesseract OCR failed: {}", e.getMessage());
+            return "";
+        }
+    }
+
+    /**
+     * Recognises text from a PNG file on disk. Passing a {@link File} instead of a
+     * {@link BufferedImage} avoids raster-offset issues that occur when the image
+     * was produced by {@link BufferedImage#getSubimage} — Tesseract reads the file
+     * fresh and always gets a contiguous pixel buffer.
+     *
+     * @param imageFile
+     *            PNG file to analyse; must exist and be readable
+     * @return recognised text with leading/trailing whitespace trimmed, or an empty
+     *         string if recognition fails or the file is {@code null}
+     */
+    public String recognizeText(File imageFile) {
+        if (imageFile == null) {
+            return "";
+        }
+        try {
+            String result = tess.doOCR(imageFile);
+            return result != null ? result.strip() : "";
+        } catch (TesseractException e) {
+            log.warn("Tesseract OCR failed for '{}': {}", imageFile.getName(), e.getMessage());
+            return "";
+        }
+    }
+
+    /**
+     * Recognises text from a specific rectangular region of a PNG file on disk.
+     * Tesseract applies OCR only to the given region, so the caller does not need
+     * to produce a separate crop image. This is the preferred overload for
+     * extracting a known sub-region (e.g. the VF number) from a larger preprocessed
+     * image.
+     *
+     * @param imageFile
+     *            PNG file to analyse; must exist and be readable
+     * @param region
+     *            the {@link Rectangle} (x, y, width, height) within the image to
+     *            restrict OCR to
+     * @return recognised text with leading/trailing whitespace trimmed, or an empty
+     *         string if recognition fails or either argument is {@code null}
+     */
+    public String recognizeText(File imageFile, Rectangle region) {
+        if (imageFile == null || region == null) {
+            return "";
+        }
+        try {
+            String result = tess.doOCR(imageFile, region);
+            return result != null ? result.strip() : "";
+        } catch (TesseractException e) {
+            log.warn("Tesseract OCR failed for '{}' region {}: {}", imageFile.getName(), region, e.getMessage());
             return "";
         }
     }

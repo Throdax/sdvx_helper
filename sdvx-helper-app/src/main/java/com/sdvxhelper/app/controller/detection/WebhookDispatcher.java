@@ -47,8 +47,8 @@ public class WebhookDispatcher {
      * used in {@link WebhookConfig#isLampEnabled(String)}. Index order mirrors
      * Python's {@code LAMP_TABLE}.
      */
-    private static final String[] PYTHON_LAMP_VALUES = {"puc", "uc", "exh", "hard", "clear", "failed"};
-    private static final String[] LAMP_KEYS_MAP = {"PUC", "UC", "MAXXIVE", "HARD", "CLEAR", "FAILED"};
+    private static final String[] PYTHON_LAMP_VALUES = {"puc", "uc", "exh", "hard", "clear", "class_clear", "failed"};
+    private static final String[] LAMP_KEYS_MAP = {"PUC", "UC", "MAXXIVE", "HARD", "CLEAR", "SKILL CLEAR", "FAILED"};
 
     private DiscordWebhookClient discordWebhookClient;
     private SdvxPlayLogService loggerService;

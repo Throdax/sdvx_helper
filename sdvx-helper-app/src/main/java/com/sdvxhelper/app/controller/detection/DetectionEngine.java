@@ -7,6 +7,7 @@ import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
@@ -22,6 +23,7 @@ import com.sdvxhelper.model.OnePlayData;
 import com.sdvxhelper.model.enums.DetectMode;
 import com.sdvxhelper.model.enums.PlayState;
 import com.sdvxhelper.network.DiscordPresenceClient;
+import com.sdvxhelper.network.LitterboxClient;
 import com.sdvxhelper.network.ObsWebSocketClient;
 import com.sdvxhelper.repository.SettingsRepository;
 import com.sdvxhelper.service.ImageAnalysisService;
@@ -70,7 +72,6 @@ public class DetectionEngine {
     private DetectMode currentMode = DetectMode.INIT;
     private volatile boolean detectionRunning = false;
     private int consecutiveCaptureFailures = 0;
-    private static final int CAPTURE_FAILURE_WARN_INTERVAL = 30;
     private static final int CAPTURE_FAILURE_RESET_THRESHOLD = 10;
 
     // PLAY-mode timing
@@ -95,6 +96,11 @@ public class DetectionEngine {
     // Last known song for Discord presence updates
     private String lastKnownTitle = "";
     private String lastKnownDiff = "";
+
+    // Discord enhanced-presence state
+    private LitterboxClient litterboxClient;
+    private String lastJacketUrl = null;
+    private String lastDiscordTitle = null;
 
     /**
      * Returns a new builder for constructing a {@link DetectionEngine}.
@@ -385,12 +391,11 @@ public class DetectionEngine {
         try {
             BufferedImage raw = obsClient.captureSource(source);
             if (consecutiveCaptureFailures >= CAPTURE_FAILURE_RESET_THRESHOLD) {
-                log.info("OBS screenshot capture resumed after {} consecutive failures — resetting detection state",
-                        consecutiveCaptureFailures);
+                log.info("OBS screenshot capture resumed — resetting detection state");
                 currentMode = DetectMode.INIT;
                 doneThisSong = false;
             } else if (consecutiveCaptureFailures > 0) {
-                log.info("OBS screenshot capture resumed after {} consecutive failures", consecutiveCaptureFailures);
+                log.info("OBS screenshot capture resumed");
             }
             consecutiveCaptureFailures = 0;
             currentFrame = applyOrientation(raw);
@@ -401,8 +406,8 @@ public class DetectionEngine {
             }
         } catch (IOException e) {
             consecutiveCaptureFailures++;
-            if (consecutiveCaptureFailures == 1 || consecutiveCaptureFailures % CAPTURE_FAILURE_WARN_INTERVAL == 0) {
-                log.warn("captureSource('{}') failed ({} consecutive): {}", source, consecutiveCaptureFailures,
+            if (consecutiveCaptureFailures == 1) {
+                log.warn("captureSource('{}') failed: {} - suppressing further failures until capture recovers", source,
                         e.getMessage());
             } else {
                 log.debug("captureSource('{}') failed ({} consecutive): {}", source, consecutiveCaptureFailures,
@@ -535,8 +540,8 @@ public class DetectionEngine {
         obsOverlayService.controlSources("play0");
         obsOverlayService.updatePlaysText(playCount);
         if (discordPresenceClient != null) {
-            discordPresenceClient.updatePresence(PlayState.PLAYING, lastKnownTitle, lastKnownDiff,
-                    ScoreFormatter.formatTotalVf((int) (screenHandler.getCurrentTotalVf() * 1000)), null);
+            discordPresenceClient.updatePresence(PlayState.PLAYING, lastDiscordTitle, lastKnownDiff,
+                    ScoreFormatter.formatTotalVf((int) (screenHandler.getCurrentTotalVf() * 1000)), lastJacketUrl);
         }
     }
 
@@ -597,8 +602,9 @@ public class DetectionEngine {
         if (discordPresenceClient != null) {
             int level = screenHandler.getLevelFor(play.getTitle(), play.getDifficulty());
             int scoreDiff = play.getCurScore() - play.getPreScore();
-            discordPresenceClient.updatePresenceResult(play.getTitle(), play.getDifficulty(), level, play.getCurScore(),
-                    scoreDiff, play.getLamp(), null);
+            String discordTitle = lastDiscordTitle != null ? lastDiscordTitle : play.getTitle();
+            discordPresenceClient.updatePresenceResult(discordTitle, play.getDifficulty(), level, play.getCurScore(),
+                    scoreDiff, play.getLamp(), lastJacketUrl);
         }
         boolean screenshotSaved = screenHandler.wasLastScreenshotSaved();
         boolean summaryGenerated = screenHandler.wasLastSummaryGenerated();
@@ -636,7 +642,7 @@ public class DetectionEngine {
         if (discordPresenceClient != null) {
             discordPresenceClient.updatePresence(PlayState.SELECTING, result != null ? lastKnownTitle : null,
                     result != null ? lastKnownDiff : null,
-                    ScoreFormatter.formatTotalVf((int) (screenHandler.getCurrentTotalVf() * 1000)), null);
+                    ScoreFormatter.formatTotalVf((int) (screenHandler.getCurrentTotalVf() * 1000)), lastJacketUrl);
         }
         if (result == null) {
             return;
@@ -691,6 +697,10 @@ public class DetectionEngine {
         lastKnownTitle = titleDiff[0];
         lastKnownDiff = titleDiff[1];
         log.debug("Detect mode: title='{}', diff='{}'", lastKnownTitle, lastKnownDiff);
+
+        resolveDiscordTitle();
+        resolveDiscordJacket();
+
         if (obsClient != null && obsClient.isConnected()) {
             // Refresh the browser source so OBS reloads the updated select_*.png files.
             // Mirrors Python: obs.refresh_source('nowplaying.html') /
@@ -699,8 +709,8 @@ public class DetectionEngine {
             obsClient.refreshBrowserSource("nowplaying");
         }
         if (discordPresenceClient != null) {
-            discordPresenceClient.updatePresence(PlayState.PLAYING, lastKnownTitle, lastKnownDiff,
-                    ScoreFormatter.formatTotalVf((int) (screenHandler.getCurrentTotalVf() * 1000)), null);
+            discordPresenceClient.updatePresence(PlayState.PLAYING, lastDiscordTitle, lastKnownDiff,
+                    ScoreFormatter.formatTotalVf((int) (screenHandler.getCurrentTotalVf() * 1000)), lastJacketUrl);
         }
         log.info("Detect mode processed for: {}", lastKnownTitle);
     }
@@ -709,6 +719,76 @@ public class DetectionEngine {
         boolean isMax = screenHandler.checkBlasterMax(frame);
         String txtSource = settings.getOrDefault("obs_txt_blastermax", "sdvx_helper_blastermax");
         obsOverlayService.updateBlasterMax(isMax, txtSource);
+    }
+
+    /**
+     * Resolves the Discord display title for the current song following a
+     * three-step priority chain:
+     *
+     * <ol>
+     * <li>If the jacket hash lookup identified the song ({@link #lastKnownTitle} is
+     * not {@code "Unknown"}), that matched title is used directly.</li>
+     * <li>If the jacket was <em>not</em> matched ({@code lastKnownTitle} is
+     * {@code "Unknown"}) <em>and</em> the {@code discord_presence_ocr_titles}
+     * setting is enabled, {@link ScreenHandler#ocrSelectTitle()} is called to
+     * extract the title from the saved {@code out/select_title.png} crop via
+     * Tesseract OCR.</li>
+     * <li>If OCR also fails or produces no usable text, the title falls back to
+     * {@code "Unknown"}.</li>
+     * </ol>
+     */
+    private void resolveDiscordTitle() {
+        if (!"Unknown".equals(lastKnownTitle)) {
+            lastDiscordTitle = lastKnownTitle;
+            return;
+        }
+        if ("true".equalsIgnoreCase(settings.get("discord_presence_ocr_titles"))) {
+            String ocrTitle = screenHandler.ocrSelectTitle();
+            if (ocrTitle != null && !ocrTitle.isBlank()) {
+                log.debug("resolveDiscordTitle: jacket not matched, OCR title '{}'", ocrTitle);
+                lastDiscordTitle = ocrTitle;
+            } else {
+                log.warn(
+                        "resolveDiscordTitle: jacket not matched and OCR returned blank, Discord title will show as Unknown");
+                lastDiscordTitle = "Unknown";
+            }
+        } else {
+            lastDiscordTitle = "Unknown";
+        }
+    }
+
+    /**
+     * Resolves the Discord jacket URL for the current song. When
+     * {@code discord_presence_upload_jacket} is enabled and a
+     * {@link LitterboxClient} is available, reads the saved {@code out/jacket.png}
+     * bytes and uploads them to Litterbox. On success the returned URL is stored in
+     * {@link #lastJacketUrl}; on any failure {@code lastJacketUrl} is cleared so
+     * the default Discord asset is shown.
+     */
+    private void resolveDiscordJacket() {
+        if (!"true".equalsIgnoreCase(settings.get("discord_presence_upload_jacket")) || litterboxClient == null) {
+            return;
+        }
+        File jacketFile = new File("out", "jacket.png");
+        if (!jacketFile.exists()) {
+            log.debug("resolveDiscordJacket: out/jacket.png not found, skipping upload");
+            lastJacketUrl = null;
+            return;
+        }
+        try {
+            byte[] jacketBytes = Files.readAllBytes(jacketFile.toPath());
+            String url = litterboxClient.upload(jacketBytes, "jacket.png", LitterboxClient.EXPIRY_1H);
+            if (url != null && !url.isBlank()) {
+                log.debug("resolveDiscordJacket: jacket uploaded -> '{}'", url);
+                lastJacketUrl = url;
+            } else {
+                log.warn("resolveDiscordJacket: Litterbox upload returned empty URL, Discord will use default asset");
+                lastJacketUrl = null;
+            }
+        } catch (IOException e) {
+            log.warn("resolveDiscordJacket: jacket upload failed: {}", e.getMessage());
+            lastJacketUrl = null;
+        }
     }
 
     // -------------------------------------------------------------------------
@@ -802,6 +882,17 @@ public class DetectionEngine {
      */
     public void setDiscordPresenceClient(DiscordPresenceClient discordPresenceClient) {
         this.discordPresenceClient = discordPresenceClient;
+    }
+
+    /**
+     * Sets the optional {@link LitterboxClient} used to upload jacket images for
+     * Discord Rich Presence. When {@code null} (default) jacket upload is skipped.
+     *
+     * @param litterboxClient
+     *            the client, or {@code null} to disable jacket uploads
+     */
+    public void setLitterboxClient(LitterboxClient litterboxClient) {
+        this.litterboxClient = litterboxClient;
     }
 
     /**

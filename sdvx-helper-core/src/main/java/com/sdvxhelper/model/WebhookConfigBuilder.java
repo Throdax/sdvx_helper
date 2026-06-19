@@ -25,7 +25,8 @@ import java.util.Map;
 public class WebhookConfigBuilder {
 
     /** Ordered lamp key names used when building default lamp-filter entries. */
-    public static final List<String> LAMP_KEYS = Arrays.asList("PUC", "UC", "MAXXIVE", "HARD", "CLEAR", "FAILED");
+    public static final List<String> LAMP_KEYS = Arrays.asList("PUC", "UC", "MAXXIVE", "HARD", "CLEAR", "SKILL CLEAR",
+            "FAILED");
 
     private String name = "";
     private String url = "";
@@ -198,7 +199,8 @@ public class WebhookConfigBuilder {
      *
      * @param defaultValue
      *            initial state for every lamp
-     * @return ordered map with keys PUC, UC, MAXXIVE, HARD, CLEAR, FAILED
+     * @return ordered map with keys PUC, UC, MAXXIVE, HARD, CLEAR, SKILL CLEAR,
+     *         FAILED
      */
     public static LinkedHashMap<String, Boolean> buildDefaultLamp(boolean defaultValue) {
         LinkedHashMap<String, Boolean> map = new LinkedHashMap<>();

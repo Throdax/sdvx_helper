@@ -24,6 +24,14 @@ import jakarta.json.bind.annotation.JsonbProperty;
 public class IpcActivity {
 
     /**
+     * Activity name displayed as the "Playing X" title in Discord. When set, this
+     * overrides the application name registered in the Discord Developer Portal for
+     * this specific activity update.
+     */
+    @JsonbProperty("name")
+    private String name;
+
+    /**
      * First line of text shown below the application name in the presence widget.
      */
     @JsonbProperty("details")
@@ -48,6 +56,9 @@ public class IpcActivity {
     /**
      * Constructs a fully populated activity payload.
      *
+     * @param name
+     *            the activity name shown as "Playing X" in Discord; overrides the
+     *            Discord Developer Portal application name for this update
      * @param details
      *            the first line of text shown under the application name
      * @param state
@@ -57,11 +68,31 @@ public class IpcActivity {
      * @param assets
      *            the image {@link IpcAssets} block
      */
-    public IpcActivity(String details, String state, IpcTimestamps timestamps, IpcAssets assets) {
+    public IpcActivity(String name, String details, String state, IpcTimestamps timestamps, IpcAssets assets) {
+        this.name = name;
         this.details = details;
         this.state = state;
         this.timestamps = timestamps;
         this.assets = assets;
+    }
+
+    /**
+     * Returns the activity name shown as "Playing X" in Discord.
+     *
+     * @return the activity name
+     */
+    public String getName() {
+        return name;
+    }
+
+    /**
+     * Sets the activity name shown as "Playing X" in Discord.
+     *
+     * @param name
+     *            the activity name to set
+     */
+    public void setName(String name) {
+        this.name = name;
     }
 
     /**

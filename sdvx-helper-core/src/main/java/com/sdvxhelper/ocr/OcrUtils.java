@@ -71,6 +71,42 @@ public final class OcrUtils {
      * @return pre-processed image ready for Tesseract, or {@code null} if
      *         {@code src} is {@code null}
      */
+    /**
+     * Copies a rectangular region of {@code src} into a new standalone
+     * {@link BufferedImage} of type {@link BufferedImage#TYPE_INT_RGB}.
+     *
+     * <p>
+     * {@link BufferedImage#getSubimage} returns a <em>view</em> backed by the
+     * parent raster with a pixel offset. Native OCR engines (Tesseract via JNA)
+     * require a contiguous, zero-offset raster and will crash with an "Invalid
+     * memory access" error when given a child raster. This method avoids that
+     * problem by drawing the sub-region into a fresh image.
+     * </p>
+     *
+     * @param src
+     *            source image to copy from
+     * @param x
+     *            left edge of the region to copy (in {@code src} coordinates)
+     * @param y
+     *            top edge of the region to copy (in {@code src} coordinates)
+     * @param w
+     *            width of the region
+     * @param h
+     *            height of the region
+     * @return a new contiguous {@link BufferedImage} containing the requested
+     *         region, or {@code null} if {@code src} is {@code null}
+     */
+    public static BufferedImage copySubimage(BufferedImage src, int x, int y, int w, int h) {
+        if (src == null) {
+            return null;
+        }
+        BufferedImage copy = new BufferedImage(w, h, BufferedImage.TYPE_INT_RGB);
+        Graphics2D gCopy = copy.createGraphics();
+        gCopy.drawImage(src, -x, -y, null);
+        gCopy.dispose();
+        return copy;
+    }
+
     public static BufferedImage preprocessForOcr(BufferedImage src, int scaleFactor) {
         if (src == null) {
             return null;

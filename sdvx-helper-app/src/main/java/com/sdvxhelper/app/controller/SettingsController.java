@@ -275,7 +275,10 @@ public class SettingsController implements Initializable {
         settings.put("autosave_always", Boolean.toString(autosaveAlwaysCheck.isSelected()));
         settings.put("autosave_prewait", autosavePrewaitField.getText().trim());
         settings.put("detect_sample_count", String.valueOf(detectSampleCountSpinner.getValue()));
-        settings.put("discord_enable", Boolean.toString(discordEnableCheck.isSelected()));
+        settings.put("discord_presence_enable", Boolean.toString(discordEnableCheck.isSelected()));
+        settings.put("discord_presence_upload_jacket", Boolean.toString(discordUploadJacket.isSelected()));
+        settings.put("discord_presence_ocr_titles", Boolean.toString(discordUseOCR.isSelected()));
+        settings.put("discord_presence_song_as_title", Boolean.toString(discordUseSongName.isSelected()));
         settings.put("rta_target_vf", rtaTargetVfField.getText().trim());
 
         String selectedOrientation = getSelectedOrientation();

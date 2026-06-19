@@ -78,6 +78,12 @@ public class DiscordPresenceClient implements Closeable {
     /** Minimum interval between presence updates (milliseconds). */
     private static final long MIN_UPDATE_INTERVAL_MS = 5_000;
 
+    /**
+     * Activity name shown as "Playing X" in Discord, overriding the portal app
+     * name.
+     */
+    private static final String ACTIVITY_NAME = "Sound Voltex Exceed Gear";
+
     // -------------------------------------------------------------------------
     // State
     // -------------------------------------------------------------------------
@@ -98,6 +104,14 @@ public class DiscordPresenceClient implements Closeable {
     /** Epoch-second timestamp captured once when {@link #connect()} succeeds. */
     private long sessionStartTime = 0;
 
+    /**
+     * When {@code true}, the current song title is used as the Discord activity
+     * {@code name} field (shown as "Playing X"), mirroring the Python
+     * {@code StatusDisplayType.DETAILS} mode. Defaults to {@code false} (shows
+     * {@link #ACTIVITY_NAME} instead).
+     */
+    private boolean songAsTitle = false;
+
     // -------------------------------------------------------------------------
     // Constructor
     // -------------------------------------------------------------------------
@@ -115,6 +129,25 @@ public class DiscordPresenceClient implements Closeable {
     // -------------------------------------------------------------------------
     // Public API
     // -------------------------------------------------------------------------
+
+    /**
+     * Configures whether the current song title replaces the application name in
+     * the Discord "Playing X" headline.
+     *
+     * <p>
+     * When {@code true} the activity {@code name} field is set to the song title so
+     * Discord shows "Playing &lt;song title&gt;" instead of "Playing Sound Voltex
+     * Exceed Gear". Mirrors the Python {@code StatusDisplayType.DETAILS} mode in
+     * {@code discord_presence.py}.
+     * </p>
+     *
+     * @param songAsTitle
+     *            {@code true} to show the song name as the Discord headline,
+     *            {@code false} (default) to show the application name
+     */
+    public void setSongAsTitle(boolean songAsTitle) {
+        this.songAsTitle = songAsTitle;
+    }
 
     /**
      * Opens the Discord IPC named pipe and performs the protocol handshake.
@@ -194,9 +227,14 @@ public class DiscordPresenceClient implements Closeable {
 
         IpcAssets assets = (jacketUrl != null && !jacketUrl.isBlank())
                 ? new IpcAssets(jacketUrl, songTitle != null ? songTitle : "")
-                : new IpcAssets("sdvx_logo", "SOUND VOLTEX");
+                : new IpcAssets("sdvx_logo", "SDVX Exceed Gear");
 
-        IpcActivity activity = new IpcActivity(details, status, new IpcTimestamps(sessionStartTime), assets);
+        String activityName = (songAsTitle && songTitle != null && !songTitle.isBlank())
+                ? truncate(songTitle, 50)
+                : ACTIVITY_NAME;
+
+        IpcActivity activity = new IpcActivity(activityName, details, status, new IpcTimestamps(sessionStartTime),
+                assets);
 
         String payload = jsonb.toJson(new IpcFrame("SET_ACTIVITY",
                 new IpcSetActivityArgs(ProcessHandle.current().pid(), activity), UUID.randomUUID().toString()));
@@ -261,9 +299,12 @@ public class DiscordPresenceClient implements Closeable {
 
         IpcAssets assets = (jacketUrl != null && !jacketUrl.isBlank())
                 ? new IpcAssets(jacketUrl, title != null ? title : "")
-                : new IpcAssets("sdvx_logo", "SOUND VOLTEX");
+                : new IpcAssets("sdvx_logo", "SDVX Exceed Gear");
 
-        IpcActivity activity = new IpcActivity(details, status, new IpcTimestamps(sessionStartTime), assets);
+        String activityName = (songAsTitle && title != null && !title.isBlank()) ? truncate(title, 50) : ACTIVITY_NAME;
+
+        IpcActivity activity = new IpcActivity(activityName, details, status, new IpcTimestamps(sessionStartTime),
+                assets);
 
         String payload = jsonb.toJson(new IpcFrame("SET_ACTIVITY",
                 new IpcSetActivityArgs(ProcessHandle.current().pid(), activity), UUID.randomUUID().toString()));

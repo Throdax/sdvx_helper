@@ -24,7 +24,6 @@ import com.sdvxhelper.ocr.PerceptualHasher;
 import com.sdvxhelper.ocr.TesseractOcr;
 import com.sdvxhelper.service.CsvExportService;
 import com.sdvxhelper.service.ImageAnalysisService;
-import com.sdvxhelper.service.ImageCropNotParsed;
 import com.sdvxhelper.service.SdvxPlayLogService;
 import com.sdvxhelper.service.SummaryGeneratorService;
 import com.sdvxhelper.service.XmlExportService;
@@ -66,11 +65,25 @@ public class ScreenHandler {
 
     private static final Pattern VF_NUMBER_PATTERN = Pattern.compile("(\\d+\\.\\d{3})");
 
+    /**
+     * Region within the preprocessed VF badge image (5× scale, 20 px padding →
+     * 520×220 px) that contains only the numeric value (e.g. {@code 12.233}).
+     * Determined empirically by scanning the badge with 10 px increments and
+     * confirming that Tesseract PSM 8 returns the correct number from this region.
+     */
+    private static final int VF_NUMBER_CROP_X = 200;
+    private static final int VF_NUMBER_CROP_Y = 90;
+    private static final int VF_NUMBER_CROP_W = 300;
+    private static final int VF_NUMBER_CROP_H = 77;
+
     // Volforce capture state
     private String lastVfHash = null;
     private String lastVfNumber = null;
     private TesseractOcr vfOcr = null;
     private boolean genFirstVf = false;
+
+    // Discord OCR title state
+    private TesseractOcr discordTitleOcr = null;
 
     // Result tracking state
     private List<OnePlayData> preloadedPlays = new ArrayList<>();
@@ -555,14 +568,28 @@ public class ScreenHandler {
      *            elapsed
      * @return {@code {title, diff}} array if identified, {@code null} otherwise
      */
+    /**
+     * Handles the DETECT screen using a frame captured <em>after</em> the
+     * {@code detect_wait} delay has already elapsed in the caller.
+     *
+     * <p>
+     * Mirrors Python {@code GenSummary.update_musicinfo()} /
+     * {@code GenSummary.ocr_from_detect()} in {@code gen_summary.py}, which are
+     * invoked only after {@code time.sleep(detect_wait)} and a fresh OBS capture in
+     * the main loop. The caller ({@link DetectionEngine#processDetectMode}) is
+     * responsible for the sleep and the re-capture.
+     * </p>
+     *
+     * @param frame
+     *            fresh frame captured after {@code detect_wait} seconds have
+     *            elapsed
+     * @return {@code {title, diff}} array if identified, {@code null} otherwise
+     */
     public String[] handleDetectMode(BufferedImage frame) {
         updateMusicInfo(frame);
 
-        int dSx = ParamUtils.getInt(params, "info_diff_sx", 917);
-        int dSy = ParamUtils.getInt(params, "info_diff_sy", 1172);
-        int dW = ParamUtils.getInt(params, "info_diff_w", 73);
-        int dH = ParamUtils.getInt(params, "info_diff_h", 12);
-        String detectedDiff = detectDiffFromBandOrFallback(frame, dSx, dSy, dW, dH, "exh");
+        String detectedDiff = imageAnalysisService.detectDifficultyFromButtons(frame, params);
+        log.debug("handleDetectMode: detected difficulty from buttons: '{}'", detectedDiff);
 
         int jSx = ParamUtils.getInt(params, "select_jacket_sx", 94);
         int jSy = ParamUtils.getInt(params, "select_jacket_sy", 242);
@@ -575,20 +602,6 @@ public class ScreenHandler {
             return new String[]{"Unknown", detectedDiff};
         }
         return new String[]{identified[0], detectedDiff};
-    }
-
-    private String detectDiffFromBandOrFallback(BufferedImage frame, int dSx, int dSy, int dW, int dH,
-            String fallback) {
-        try {
-            BufferedImage diffBand = frame.getSubimage(dSx, dSy, dW, dH);
-            String diff = ImageAnalysisService.detectDifficultyFromBand(diffBand);
-            log.debug("handleDetectMode: detected difficulty from band: '{}'", diff);
-            return diff;
-        } catch (ImageCropNotParsed | java.awt.image.RasterFormatException e) {
-            log.warn("handleDetectMode: could not read difficulty band, falling back to '{}' ({})", fallback,
-                    e.getMessage());
-            return fallback;
-        }
     }
 
     /**
@@ -649,6 +662,65 @@ public class ScreenHandler {
         } catch (IOException e) {
             log.debug("updateMusicInfo: failed to save {} crop: {}", name, e.getMessage());
         }
+    }
+
+    // -------------------------------------------------------------------------
+    // Discord title OCR
+    // -------------------------------------------------------------------------
+
+    /**
+     * Reads the previously saved {@code out/select_title.png} crop, preprocesses it
+     * with {@link OcrUtils#preprocessForOcr(BufferedImage)}, and runs Tesseract OCR
+     * over the top half of the image to extract the song title.
+     *
+     * <p>
+     * The top half is used because {@code select_title.png} sometimes includes the
+     * composer name on the lower portion. The Tesseract engine is initialised
+     * lazily with the same language set used by the OCR reporter
+     * ({@code jpn+eng+fra+ell+deu}) so that Japanese, Latin, and European
+     * characters are all recognised.
+     * </p>
+     *
+     * <p>
+     * This method is intended for use with the {@code discord_presence_ocr_titles}
+     * setting. When OCR fails or produces no usable text, {@code null} is returned
+     * and the caller should fall back to the jacket-matched title.
+     * </p>
+     *
+     * @return the OCR-recognised song title, or {@code null} if the file is missing
+     *         or Tesseract produced no usable result
+     */
+    public String ocrSelectTitle() {
+        File titleFile = new File("out", "select_title.png");
+        if (!titleFile.exists()) {
+            log.debug("ocrSelectTitle: out/select_title.png not found, skipping");
+            return null;
+        }
+        BufferedImage titleImage;
+        try {
+            titleImage = ImageIO.read(titleFile);
+        } catch (IOException e) {
+            log.debug("ocrSelectTitle: failed to read select_title.png: {}", e.getMessage());
+            return null;
+        }
+        if (titleImage == null) {
+            log.debug("ocrSelectTitle: select_title.png could not be decoded, skipping");
+            return null;
+        }
+        int topHalfHeight = Math.max(1, titleImage.getHeight() / 2);
+        BufferedImage topHalf = safeCrop(titleImage, 0, 0, titleImage.getWidth(), topHalfHeight);
+        BufferedImage preprocessed = OcrUtils.preprocessForOcr(topHalf);
+        if (discordTitleOcr == null) {
+            discordTitleOcr = new TesseractOcr("jpn+eng+fra+ell+deu");
+        }
+        String result = discordTitleOcr.recognizeText(preprocessed);
+        if (result == null || result.isBlank()) {
+            log.debug("ocrSelectTitle: Tesseract returned blank result");
+            return null;
+        }
+        String cleaned = StringUtils.removeInterCjkSpaces(result).strip();
+        log.debug("ocrSelectTitle: OCR result '{}'", cleaned);
+        return cleaned.isBlank() ? null : cleaned;
     }
 
     // -------------------------------------------------------------------------
@@ -776,21 +848,25 @@ public class ScreenHandler {
             vfOcr = new TesseractOcr("eng");
             vfOcr.setVariable("tessedit_char_whitelist", "0123456789.");
             vfOcr.setPageSegMode(8);
-            log.info("captureVolforce: VF OCR engine initialised (PSM 8, scale 5x)");
+            log.info("captureVolforce: VF OCR engine initialised (PSM 8, scale 5x, number region crop)");
         }
+        File outDir = new File("out");
+        outDir.mkdirs();
+        File preprocessedFile = new File(outDir, "part_volforce_preprocessed.png");
+
         BufferedImage preprocessed = OcrUtils.preprocessForOcr(vfCrop, 5);
-        String raw = vfOcr.recognizeText(preprocessed);
+        try {
+            ImageIO.write(vfCrop, "png", new File(outDir, "part_volforce.png"));
+            ImageIO.write(preprocessed, "png", preprocessedFile);
+        } catch (IOException saveEx) {
+            log.debug("captureVolforce: could not save VF debug crops: {}", saveEx.getMessage());
+        }
+        Rectangle numberRegion = new Rectangle(VF_NUMBER_CROP_X, VF_NUMBER_CROP_Y, VF_NUMBER_CROP_W, VF_NUMBER_CROP_H);
+        String raw = vfOcr.recognizeText(preprocessedFile, numberRegion);
         Matcher matcher = VF_NUMBER_PATTERN.matcher(raw != null ? raw : "");
         if (!matcher.find()) {
-            try {
-                ImageIO.write(vfCrop, "png", new File("out/part_volforce.png"));
-                ImageIO.write(preprocessed, "png", new File("out/part_volforce_preprocessed.png"));
-            } catch (IOException saveEx) {
-                log.debug("captureVolforce: could not save VF debug crops: {}", saveEx.getMessage());
-            }
             log.warn("captureVolforce: OCR produced '{}' - no valid VF number found, "
-                    + "saved out/part_volforce.png and out/part_volforce_preprocessed.png for diagnosis; "
-                    + "falling back to pHash", raw);
+                    + "see out/part_volforce_preprocessed.png for diagnosis; falling back to pHash", raw);
             String vfHash = perceptualHasher.phash(vfCrop);
             boolean changed = (lastVfHash == null) || (perceptualHasher.hammingDistance(vfHash, lastVfHash) > 2);
             lastVfHash = vfHash;
