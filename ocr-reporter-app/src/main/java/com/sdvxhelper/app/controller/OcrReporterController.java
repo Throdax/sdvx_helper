@@ -5,8 +5,10 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.text.MessageFormat;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -23,6 +25,7 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressBar;
@@ -50,14 +53,18 @@ import com.sdvxhelper.app.controller.service.ColorizerService;
 import com.sdvxhelper.app.controller.service.RegistrationWebhookService;
 import com.sdvxhelper.config.SecretConfig;
 import com.sdvxhelper.i18n.LocaleManager;
+import com.sdvxhelper.model.OnePlayData;
+import com.sdvxhelper.model.PlayLog;
 import com.sdvxhelper.network.DiscordWebhookClient;
 import com.sdvxhelper.ocr.PerceptualHasher;
 import com.sdvxhelper.ocr.TesseractLanguageInstaller;
 import com.sdvxhelper.ocr.TesseractOcr;
 import com.sdvxhelper.repository.MusicListRepository;
 import com.sdvxhelper.repository.ParamsRepository;
+import com.sdvxhelper.repository.PlayLogRepository;
 import com.sdvxhelper.repository.SettingsRepository;
 import com.sdvxhelper.service.ImageAnalysisService;
+import com.sdvxhelper.util.PlayLogBackupUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -125,6 +132,8 @@ public class OcrReporterController implements Initializable {
     private Button colorizeButton;
     @FXML
     private Button colorizeMissingButton;
+    @FXML
+    private CheckBox addToPlayLogCheck;
     @FXML
     private Button clearFilterButton;
     @FXML
@@ -274,6 +283,9 @@ public class OcrReporterController implements Initializable {
 
         SettingsRepository settingsRepo = new SettingsRepository();
         settings = settingsRepo.load();
+        addToPlayLogCheck
+                .setSelected("true".equalsIgnoreCase(settings.getOrDefault("ocr_reporter_add_to_play_log", "false")));
+        addToPlayLogCheck.selectedProperty().addListener((obs, oldVal, newVal) -> persistAddToPlayLogSetting(newVal));
         paramsMap = new ParamsRepository().load(settings.getOrDefault("params_json", "resources/params.json"));
         suggestOcr = new TesseractOcr("jpn+eng+fra+ell+deu");
         discordWebhookClient = new DiscordWebhookClient();
@@ -542,7 +554,8 @@ public class OcrReporterController implements Initializable {
         }
         filesProgress.setProgress(-1.0);
         List<File> snapshot = new ArrayList<>(imageFiles);
-        bgExecutor.submit(() -> colorizerService.colorize(snapshot, false, new ColorizerCallbackHandler()));
+        boolean addToPlayLog = addToPlayLogCheck.isSelected();
+        bgExecutor.submit(() -> colorizerService.colorize(snapshot, false, new ColorizerCallbackHandler(addToPlayLog)));
     }
 
     /**
@@ -558,7 +571,8 @@ public class OcrReporterController implements Initializable {
         }
         filesProgress.setProgress(-1.0);
         List<File> snapshot = new ArrayList<>(imageFiles);
-        bgExecutor.submit(() -> colorizerService.colorize(snapshot, true, new ColorizerCallbackHandler()));
+        boolean addToPlayLog = addToPlayLogCheck.isSelected();
+        bgExecutor.submit(() -> colorizerService.colorize(snapshot, true, new ColorizerCallbackHandler(addToPlayLog)));
     }
 
     // -------------------------------------------------------------------------
@@ -583,14 +597,26 @@ public class OcrReporterController implements Initializable {
 
     /**
      * Bridges {@link ColorizerService} callbacks to this controller's UI state.
-     * Accumulates renamed files and colour updates on the background thread, then
-     * applies them all in a single {@code Platform.runLater} call in
-     * {@link #onComplete}.
+     * Accumulates renamed files, colour updates, and new-song records on the
+     * background thread. When the colorize run completes, it optionally persists
+     * the new songs to {@code alllog.xml} (still on the background thread) before
+     * applying all UI changes in a single {@code Platform.runLater} call.
      */
     private class ColorizerCallbackHandler implements ColorizerCallback {
 
+        private boolean addToPlayLog;
         private Map<Integer, File> pendingRenames = new HashMap<>();
         private Map<String, String> pendingColors = new HashMap<>();
+        private List<OnePlayData> newSongs = new ArrayList<>();
+
+        /**
+         * @param addToPlayLog
+         *            when {@code true}, newly renamed songs are appended to
+         *            {@code alllog.xml} on completion
+         */
+        ColorizerCallbackHandler(boolean addToPlayLog) {
+            this.addToPlayLog = addToPlayLog;
+        }
 
         @Override
         public void onProgress(int current, int total, String statusMessage) {
@@ -613,12 +639,21 @@ public class OcrReporterController implements Initializable {
         }
 
         @Override
+        public void onNewSong(OnePlayData play) {
+            newSongs.add(play);
+        }
+
+        @Override
         public void onLog(String message) {
             appendLog(message);
         }
 
         @Override
         public void onComplete(int found, int notFound, double elapsedSeconds) {
+            if (addToPlayLog && !newSongs.isEmpty()) {
+                writeToPlayLog(newSongs);
+            }
+
             Map<Integer, File> renames = new HashMap<>(pendingRenames);
             Map<String, String> colors = new HashMap<>(pendingColors);
             Platform.runLater(() -> {
@@ -799,6 +834,103 @@ public class OcrReporterController implements Initializable {
 
     private Image toFxImage(BufferedImage awt) {
         return SwingFXUtils.toFXImage(awt, null);
+    }
+
+    /**
+     * Persists the "add to play log on colorize" checkbox state to
+     * {@code settings.json} whenever the user toggles it.
+     *
+     * @param value
+     *            the new checkbox value
+     */
+    private void persistAddToPlayLogSetting(boolean value) {
+        settings.put("ocr_reporter_add_to_play_log", String.valueOf(value));
+        SettingsRepository settingsRepo = new SettingsRepository();
+        try {
+            settingsRepo.save(settings);
+        } catch (IOException e) {
+            log.warn("Failed to persist ocr_reporter_add_to_play_log setting: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Appends the given list of newly colorized play records to {@code alllog.xml},
+     * skipping any entry that is already present within a 120-second timestamp
+     * window. The write is atomic (temp-file rename via {@link PlayLogRepository}).
+     *
+     * <p>
+     * This method runs on the background colorize thread. It resolves the log path
+     * from the shared {@code play_log_sync.play_log_path} setting, falling back to
+     * {@code alllog.xml} in the working directory when the setting is absent.
+     * </p>
+     *
+     * @param candidates
+     *            new play records produced by the colorize pass
+     */
+    private void writeToPlayLog(List<OnePlayData> candidates) {
+        String logPath = settings.getOrDefault("play_log_sync.play_log_path", "");
+        if (logPath.isBlank()) {
+            logPath = new File(System.getProperty("user.dir"), "alllog.xml").getAbsolutePath();
+        }
+        PlayLogRepository repo = new PlayLogRepository(new File(logPath));
+        try {
+            PlayLog playLog = repo.load();
+            int added = 0;
+            for (OnePlayData candidate : candidates) {
+                if (!isAlreadyInLog(playLog.getPlays(), candidate)) {
+                    playLog.getPlays().add(candidate);
+                    added++;
+                    appendLog("Play log: added " + candidate.getTitle() + " [" + candidate.getDifficulty().toUpperCase()
+                            + "]");
+                }
+            }
+            if (added > 0) {
+                playLog.getPlays().sort(
+                        Comparator.comparing(OnePlayData::getDate, Comparator.nullsLast(Comparator.naturalOrder())));
+                PlayLogBackupUtils.backup(new File(logPath));
+                repo.save(playLog);
+                appendLog("Play log: " + added + " song(s) saved to " + logPath);
+            } else {
+                appendLog("Play log: all colorized songs already present, nothing added");
+            }
+        } catch (IOException e) {
+            log.error("writeToPlayLog: failed to write alllog.xml", e);
+            appendLog("ERROR: Failed to write to play log: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Determines whether a play-log entry equivalent to {@code candidate} already
+     * exists in {@code logEntries}. Equivalence is defined as matching title and
+     * difficulty with a date difference of less than 120 seconds, matching the
+     * duplicate-detection logic used by the play-log-sync tool.
+     *
+     * @param logEntries
+     *            the existing log entries to search
+     * @param candidate
+     *            the new play record to check
+     * @return {@code true} if a matching entry exists within 120 seconds
+     */
+    private boolean isAlreadyInLog(List<OnePlayData> logEntries, OnePlayData candidate) {
+        if (candidate.getDate() == null) {
+            return false;
+        }
+        for (OnePlayData entry : logEntries) {
+            if (!entry.getTitle().equals(candidate.getTitle())) {
+                continue;
+            }
+            if (!entry.getDifficulty().equalsIgnoreCase(candidate.getDifficulty())) {
+                continue;
+            }
+            if (entry.getDate() == null) {
+                continue;
+            }
+            long diffSeconds = Math.abs(ChronoUnit.SECONDS.between(entry.getDate(), candidate.getDate()));
+            if (diffSeconds < 120) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void appendLog(String line) {

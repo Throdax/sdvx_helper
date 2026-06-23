@@ -3,12 +3,16 @@ package com.sdvxhelper.app.controller.service;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Map;
 import java.util.ResourceBundle;
 import javax.imageio.ImageIO;
 
 import com.sdvxhelper.app.controller.OcrReporterHelper;
+import com.sdvxhelper.model.OnePlayData;
 import com.sdvxhelper.ocr.PerceptualHasher;
 import com.sdvxhelper.repository.MusicListRepository;
 import com.sdvxhelper.service.ImageAnalysisService;
@@ -165,10 +169,19 @@ public class ColorizerService {
             String scorePrefix = OcrReporterHelper.toScorePrefix(score);
             File renamed = renameResultFile(f, title, effectiveDiff, lamp, scorePrefix);
             if (renamed != null) {
+                int preScore = imageAnalysisService != null ? imageAnalysisService.getBestScore(img, paramsMap) : 0;
+                OnePlayData play = new OnePlayData();
+                play.setTitle(title);
+                play.setDifficulty(effectiveDiff.toLowerCase());
+                play.setLamp(lamp);
+                play.setCurScore(score);
+                play.setPreScore(preScore > 0 && preScore <= 10_000_000 ? preScore : 0);
+                play.setDate(parseTimestamp(OcrReporterHelper.extractTimestampFromFilename(f.getName())));
+                callback.onNewSong(play);
                 callback.onFileRenamed(fileIndex, renamed);
                 callback.onFileColorized(renamed.getName(), REGISTERED_STYLE);
                 callback.onLog("OCR: [" + effectiveDiff.toUpperCase() + "] " + lamp + " " + scorePrefix + "xxxx — "
-                        + title + " → " + renamed.getName());
+                        + title + " -> " + renamed.getName());
             } else {
                 callback.onFileColorized(f.getName(), REGISTERED_STYLE);
                 callback.onLog("OCR: [" + effectiveDiff.toUpperCase() + "] " + title + " (rename skipped)");
@@ -177,6 +190,29 @@ public class ColorizerService {
             log.error("colorize: cannot classify difficulty band for '{}': {}", f.getName(), e.getMessage());
             callback.onFileColorized(f.getName(), ERROR_STYLE);
             callback.onLog("ERROR [" + f.getName() + "]: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Parses a {@code YYYYMMDD_HHmmss} timestamp string extracted from a screenshot
+     * filename into a {@link LocalDateTime}. Falls back to the current date-time if
+     * the string is absent or malformed.
+     *
+     * @param timestamp
+     *            raw timestamp string as produced by
+     *            {@link OcrReporterHelper#extractTimestampFromFilename}
+     * @return parsed date-time, or {@link LocalDateTime#now()} on parse failure
+     */
+    private LocalDateTime parseTimestamp(String timestamp) {
+        if (timestamp == null || timestamp.isBlank()) {
+            log.warn("parseTimestamp: timestamp is blank, using current time");
+            return LocalDateTime.now();
+        }
+        try {
+            return LocalDateTime.parse(timestamp, DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+        } catch (DateTimeParseException e) {
+            log.warn("parseTimestamp: could not parse '{}', using current time", timestamp);
+            return LocalDateTime.now();
         }
     }
 

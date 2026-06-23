@@ -2,6 +2,8 @@ package com.sdvxhelper.app.controller.service;
 
 import java.io.File;
 
+import com.sdvxhelper.model.OnePlayData;
+
 /**
  * Callback interface for receiving incremental progress and results from
  * {@link ColorizerService#colorize(java.util.List, boolean, ColorizerCallback)}.
@@ -56,6 +58,17 @@ public interface ColorizerCallback {
      *            log line (no trailing newline required)
      */
     void onLog(String message);
+
+    /**
+     * Invoked for each unprocessed file that was successfully renamed and had its
+     * score, lamp, and difficulty read from the image. Called only when the rename
+     * succeeds, before {@link #onComplete}.
+     *
+     * @param play
+     *            the fully populated {@link OnePlayData} for the renamed file;
+     *            callers may choose to persist this to {@code alllog.xml}
+     */
+    void onNewSong(OnePlayData play);
 
     /**
      * Invoked once when the colorize run finishes.

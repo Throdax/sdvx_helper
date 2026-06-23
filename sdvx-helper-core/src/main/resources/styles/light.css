@@ -73,6 +73,12 @@ Label {
     -fx-font-size: 11;
 }
 
+.discord-presence-active {
+    -fx-text-fill: #5865F2;
+    -fx-font-weight: bold;
+    -fx-font-size: 11;
+}
+
 .capture-indicator {
     -fx-text-fill: #1565c0;
     -fx-font-weight: bold;

@@ -42,6 +42,7 @@
                 <Label fx:id="playCountLabel" text="0" styleClass="value-label"/>
                 <Label fx:id="obsRecordingLabel" text="● REC" styleClass="obs-output-active" visible="false" managed="false"/>
                 <Label fx:id="obsStreamingLabel" text="● STREAM" styleClass="obs-output-active" visible="false" managed="false"/>
+                <Label fx:id="discordPresenceLabel" text="● DISCORD" styleClass="discord-presence-active" visible="false" managed="false"/>
                 <Region HBox.hgrow="ALWAYS"/>
                 <Label text="%label.language" styleClass="muted"/>
                 <ComboBox fx:id="languageCombo" styleClass="lang-combo"/>

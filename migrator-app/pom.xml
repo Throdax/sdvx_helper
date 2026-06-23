@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.sdvxhelper</groupId>
+        <artifactId>sdvx-helper-parent</artifactId>
+        <version>2.0.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>migrator-app</artifactId>
+    <packaging>jar</packaging>
+
+    <name>SDVX Helper :: Migrator</name>
+
+    <description>One-shot migration tool: copies old Python installation to sdvx_helper_old/, extracts
+        the new Java dist, and converts pickle data files to XML.</description>
+
+    <properties>
+        <configuration-finalName>migrate</configuration-finalName>
+    </properties>
+
+    <!--
+      sdvx-helper-dist is declared as a provided/pom dependency solely to enforce reactor
+      build order: the migrator assembly must include the dist ZIP, so it must be produced first.
+    -->
+    <dependencies>
+        <dependency>
+            <groupId>com.sdvxhelper</groupId>
+            <artifactId>sdvx-helper-core</artifactId>
+        </dependency>
+
+        <!-- Build-order guard: migrator-app assembly embeds the dist ZIP -->
+        <dependency>
+            <groupId>com.sdvxhelper</groupId>
+            <artifactId>sdvx-helper-dist</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- Testing -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <configuration>
+                    <finalName>${configuration-finalName}</finalName>
+                    <transformers>
+                        <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                            <mainClass>com.sdvxhelper.app.Launcher</mainClass>
+                        </transformer>
+                        <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
+                    </transformers>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <groupId>org.panteleyev</groupId>
+                <artifactId>jpackage-maven-plugin</artifactId>
+                <configuration>
+                    <name>${configuration-finalName}</name>
+                    <mainJar>${configuration-finalName}.jar</mainJar>
+                    <appVersion>${migrator}</appVersion>
+                </configuration>
+            </plugin>
+
+            <!--
+              Assembly: packs the migrator EXE, its runtime/, app/, the dist ZIP, and
+              the Python migration script into sdvx_helper_java_migrator.zip.
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <version>${maven.assembly.version}</version>
+                <executions>
+                    <execution>
+                        <id>make-migrator-zip</id>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                        <phase>package</phase>
+                        <configuration>
+                            <descriptors>
+                                <descriptor>src/assembly/migrator.xml</descriptor>
+                            </descriptors>
+                            <finalName>sdvx_helper_java_migrator</finalName>
+                            <appendAssemblyId>false</appendAssemblyId>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>properties-maven-plugin</artifactId>
+                <configuration>
+                    <files>
+                        <file>..\version.properties</file>
+                    </files>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>

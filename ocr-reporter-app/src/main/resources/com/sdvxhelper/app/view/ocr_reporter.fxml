@@ -65,6 +65,7 @@
                 <Button fx:id="colorizeButton" text="%button.rescan" onAction="#onColorize" disable="true" />
                 <Button fx:id="colorizeMissingButton" text="%button.rescan.missing" onAction="#onColorizeMissing" disable="true" />
 <!--                 <Button fx:id="mergeButton" text="%button.merge" onAction="#onMerge" /> -->
+                <CheckBox fx:id="addToPlayLogCheck" text="%checkbox.ocr.reporter.add.to.play.log" selected="false" />
             </HBox>
         </VBox>
     </top>

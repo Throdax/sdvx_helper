@@ -7,13 +7,17 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.ResourceBundle;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -36,6 +40,7 @@ import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 import javax.imageio.ImageIO;
 
+import com.sdvxhelper.app.controller.factories.PlayLogSyncOcrThreadFactory;
 import com.sdvxhelper.app.controller.factories.PlayLogSyncThreadFactory;
 import com.sdvxhelper.i18n.LocaleManager;
 import com.sdvxhelper.model.OnePlayData;
@@ -47,6 +52,7 @@ import com.sdvxhelper.repository.SpecialTitlesRepository;
 import com.sdvxhelper.service.ImageAnalysisService;
 import com.sdvxhelper.service.XmlExportService;
 import com.sdvxhelper.util.LampFormatter;
+import com.sdvxhelper.util.PlayLogBackupUtils;
 import com.sdvxhelper.util.ScoreFormatter;
 import com.sdvxhelper.util.SpecialTitles;
 import org.slf4j.Logger;
@@ -67,6 +73,14 @@ import org.slf4j.LoggerFactory;
 public class PlayLogSyncController implements Initializable {
 
     private static final Logger log = LoggerFactory.getLogger(PlayLogSyncController.class);
+
+    /**
+     * Maximum number of worker threads used to process screenshots concurrently
+     * during a sync. Each thread reads a PNG from disk and runs OCR template
+     * matching; raising this value increases throughput on machines with fast
+     * storage and multiple CPU cores.
+     */
+    private static final int SYNC_THREAD_COUNT = 10;
 
     @FXML
     private TextField playLogPathField;
@@ -323,43 +337,63 @@ public class PlayLogSyncController implements Initializable {
                 return;
             }
             Arrays.sort(files, (a, b) -> Long.compare(a.lastModified(), b.lastModified()));
-            appendLog("Processing " + files.length + " screenshot files...");
-
-            int processed = 0;
-            int added = 0;
             int total = files.length;
-            for (File f : files) {
-                OnePlayData parsed = parseScreenshotFilename(f.getName());
-                processed++;
-                if (parsed == null) {
-                    updateProgress(processed, total);
-                    continue;
-                }
-                parsed.setTitle(st.restoreTitle(parsed.getTitle()));
-                if (st.getIgnoredNames().contains(parsed.getTitle())) {
-                    updateProgress(processed, total);
-                    continue;
-                }
+            int poolSize = Math.min(SYNC_THREAD_COUNT, total);
+            appendLog("Processing " + total + " screenshot files with " + poolSize + " threads...");
 
-                ocrScoreFromImage(f, parsed);
-
-                if (!isSongInLog(currentPlayLog.getPlays(), parsed, timeOffsetSeconds)) {
-                    currentPlayLog.getPlays().add(parsed);
-                    added++;
-                    final OnePlayData addedPlay = parsed;
-                    appendLog("[" + processed + "] " + parsed.getTitle() + " [" + parsed.getDifficulty().toUpperCase()
-                            + "] Adding...");
-                    Platform.runLater(() -> plays.add(addedPlay));
+            // Phase 1: fan-out — process every screenshot concurrently (parse + OCR).
+            // Deduplication is intentionally deferred to the single-threaded phase below
+            // so that concurrent futures never race to modify shared state.
+            AtomicInteger processedCount = new AtomicInteger(0);
+            ExecutorService syncPool = Executors.newFixedThreadPool(poolSize, new PlayLogSyncOcrThreadFactory());
+            List<CompletableFuture<Optional<OnePlayData>>> futures = new ArrayList<>(total);
+            try {
+                for (File f : files) {
+                    CompletableFuture<Optional<OnePlayData>> future = CompletableFuture
+                            .supplyAsync(() -> processOneScreenshot(f, st), syncPool).handle((result, ex) -> {
+                                if (ex != null) {
+                                    log.warn("Failed to process screenshot {}: {}", f.getName(), ex.getMessage());
+                                    updateProgress(processedCount.incrementAndGet(), total);
+                                    return Optional.<OnePlayData>empty();
+                                }
+                                updateProgress(processedCount.incrementAndGet(), total);
+                                return result;
+                            });
+                    futures.add(future);
                 }
-                updateProgress(processed, total);
+                CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new)).join();
+            } finally {
+                syncPool.shutdown();
             }
 
+            // Phase 2: single-threaded deduplication.
+            // Futures are iterated in the same order as the files array (sorted by
+            // lastModified) so dedup semantics are identical to the former sequential loop.
+            List<OnePlayData> newPlays = new ArrayList<>();
+            for (CompletableFuture<Optional<OnePlayData>> future : futures) {
+                Optional<OnePlayData> result = future.join();
+                if (result.isEmpty()) {
+                    continue;
+                }
+                OnePlayData parsed = result.get();
+                if (!isSongInLog(currentPlayLog.getPlays(), parsed, timeOffsetSeconds)
+                        && !isSongInLog(newPlays, parsed, timeOffsetSeconds)) {
+                    newPlays.add(parsed);
+                    appendLog("Adding: " + parsed.getTitle() + " [" + parsed.getDifficulty().toUpperCase() + "]");
+                }
+            }
+
+            // Phase 3: atomic persistence.
+            // Mutate the in-memory log, sort, then flush to alllog.xml in one write.
+            int added = newPlays.size();
+            currentPlayLog.getPlays().addAll(newPlays);
             currentPlayLog.getPlays()
                     .sort(Comparator.comparing(OnePlayData::getDate, Comparator.nullsLast(Comparator.naturalOrder())));
+            PlayLogBackupUtils.backup(new File(logPath));
             repo.save(currentPlayLog);
-            final int finalAdded = added;
-            final int finalProcessed = processed;
-            appendLog("Sync complete: " + finalAdded + " songs added out of " + finalProcessed + " files. ("
+            final List<OnePlayData> finalNewPlays = newPlays;
+            Platform.runLater(() -> plays.addAll(finalNewPlays));
+            appendLog("Sync complete: " + added + " songs added out of " + total + " files. ("
                     + formatElapsed(System.nanoTime() - startNanos) + ")");
             showPlays();
         } catch (IOException e) {
@@ -372,6 +406,37 @@ public class PlayLogSyncController implements Initializable {
                 exportButton.setDisable(false);
             });
         }
+    }
+
+    /**
+     * Processes a single screenshot file: parses its filename into a
+     * {@link OnePlayData} record, applies special-title substitutions and the
+     * ignore list, then enriches the score fields via OCR.
+     *
+     * <p>
+     * This method is designed to be submitted to the concurrent OCR thread pool. It
+     * is stateless with respect to the in-memory play log; deduplication is
+     * performed by the caller after all futures have joined.
+     * </p>
+     *
+     * @param imageFile
+     *            the result screenshot PNG file
+     * @param st
+     *            special-titles lookup (thread-safe read-only access)
+     * @return {@link Optional} containing the enriched {@link OnePlayData}, or
+     *         {@link Optional#empty()} if the file should be skipped
+     */
+    private Optional<OnePlayData> processOneScreenshot(File imageFile, SpecialTitles st) {
+        OnePlayData parsed = parseScreenshotFilename(imageFile.getName());
+        if (parsed == null) {
+            return Optional.empty();
+        }
+        parsed.setTitle(st.restoreTitle(parsed.getTitle()));
+        if (st.getIgnoredNames().contains(parsed.getTitle())) {
+            return Optional.empty();
+        }
+        ocrScoreFromImage(imageFile, parsed);
+        return Optional.of(parsed);
     }
 
     /**

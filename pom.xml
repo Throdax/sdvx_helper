@@ -18,6 +18,7 @@
         <module>play-log-sync-app</module>
         <module>updater-app</module>
         <module>sdvx-helper-dist</module>
+        <module>migrator-app</module>
     </modules>
 
     <properties>

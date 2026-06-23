@@ -106,6 +106,8 @@ public class SDVXHelperController implements Initializable, DetectionListener {
     @FXML
     private Label obsStreamingLabel;
     @FXML
+    private Label discordPresenceLabel;
+    @FXML
     private Label totalVfLabel;
     @FXML
     private Label playCountLabel;
@@ -320,6 +322,10 @@ public class SDVXHelperController implements Initializable, DetectionListener {
             client.updatePresence(PlayState.IDLE, null, null, "-", null);
             log.info("Discord Rich Presence connected (song-as-title={})",
                     settings.getOrDefault("discord_presence_song_as_title", "false"));
+            Platform.runLater(() -> {
+                discordPresenceLabel.setVisible(true);
+                discordPresenceLabel.setManaged(true);
+            });
             return client;
         } catch (IOException e) {
             log.warn("Discord Rich Presence unavailable: {}", e.getMessage());

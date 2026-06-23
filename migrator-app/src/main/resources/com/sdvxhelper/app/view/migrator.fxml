@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ProgressBar?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox xmlns="http://javafx.com/javafx"
+      xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.sdvxhelper.app.controller.MigratorController"
+      prefWidth="620"
+      prefHeight="480"
+      spacing="12">
+
+    <padding>
+        <Insets top="16" right="16" bottom="16" left="16" />
+    </padding>
+
+    <!-- Title -->
+    <Label fx:id="titleLabel"
+           text="SDVX Helper — Python to Java Migrator"
+           style="-fx-font-size: 16px; -fx-font-weight: bold;" />
+
+    <!-- Instructions -->
+    <Label wrapText="true"
+           text="This tool will back up your existing Python installation to sdvx_helper_old/, extract the new Java app, migrate your play log and other data files, and copy your settings. Click Migrate to begin." />
+
+    <!-- Migrate button -->
+    <Button fx:id="migrateButton"
+            text="Migrate"
+            prefWidth="120"
+            onAction="#onMigrateClicked" />
+
+    <!-- Overall progress -->
+    <HBox spacing="8" alignment="CENTER_LEFT">
+        <Label text="Overall:" minWidth="60" />
+        <ProgressBar fx:id="progressBar" prefWidth="400" prefHeight="18" progress="0" />
+    </HBox>
+
+    <!-- Current step label -->
+    <Label fx:id="stepLabel" text="Ready." />
+
+    <!-- Log output -->
+    <TextArea fx:id="logArea"
+              editable="false"
+              wrapText="false"
+              style="-fx-font-family: monospace; -fx-font-size: 11px;"
+              VBox.vgrow="ALWAYS"
+              prefHeight="280" />
+
+</VBox>

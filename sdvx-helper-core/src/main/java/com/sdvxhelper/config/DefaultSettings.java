@@ -164,6 +164,9 @@ public final class DefaultSettings {
         defaults.put("discord_presence_upload_jacket", "false");
         defaults.put("discord_presence_ocr_titles", "false");
 
+        // OCR Reporter
+        defaults.put("ocr_reporter_add_to_play_log", "false");
+
         return Collections.unmodifiableMap(defaults);
     }
 }
