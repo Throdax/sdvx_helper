@@ -312,10 +312,11 @@ public class WebhookConfigRepository {
         boolean sendScreenshot = obj.getBoolean("send_screenshot", false);
         boolean sendPlaylist = obj.getBoolean("send_playlist", false);
 
+        // Start from a full default map so that any key added to the code after this
+        // config was saved will default to true rather than disappearing silently.
         LinkedHashMap<String, Boolean> levelMap = new LinkedHashMap<>(WebhookConfigBuilder.buildDefaultLevels(true));
         JsonArray levelsArray = obj.getJsonArray("enabled_levels");
         if (levelsArray != null) {
-            levelMap.clear();
             for (JsonValue v : levelsArray) {
                 if (v.getValueType() == JsonValue.ValueType.OBJECT) {
                     JsonObject entry = v.asJsonObject();
@@ -326,10 +327,11 @@ public class WebhookConfigRepository {
             }
         }
 
+        // Same merge strategy: defaults first, file values override, unknown future
+        // keys (e.g. SKILL CLEAR added after the file was written) stay enabled.
         LinkedHashMap<String, Boolean> lampMap = new LinkedHashMap<>(WebhookConfigBuilder.buildDefaultLamp(true));
         JsonArray lampArray = obj.getJsonArray("enabled_lamp");
         if (lampArray != null) {
-            lampMap.clear();
             for (JsonValue v : lampArray) {
                 if (v.getValueType() == JsonValue.ValueType.OBJECT) {
                     JsonObject entry = v.asJsonObject();

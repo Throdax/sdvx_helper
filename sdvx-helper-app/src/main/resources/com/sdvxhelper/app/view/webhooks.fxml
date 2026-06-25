@@ -76,13 +76,14 @@
         <TitledPane text="%text.webhook.target.lamp" collapsible="true" expanded="true">
             <FlowPane hgap="10" vgap="6">
                 <padding><Insets top="8" right="8" bottom="8" left="8"/></padding>
-                <CheckBox fx:id="lampAllCheck"    text="all"/>
-                <CheckBox fx:id="lampPucCheck"    text="PUC"/>
-                <CheckBox fx:id="lampUcCheck"     text="UC"/>
-                <CheckBox fx:id="lampExhCheck"    text="MAXXIVE"/>
-                <CheckBox fx:id="lampHardCheck"   text="EXC"/>
-                <CheckBox fx:id="lampClearCheck"  text="COMP"/>
-                <CheckBox fx:id="lampFailedCheck" text="Failed"/>
+                <CheckBox fx:id="lampAllCheck"         text="all"/>
+                <CheckBox fx:id="lampPucCheck"         text="PUC"/>
+                <CheckBox fx:id="lampUcCheck"          text="UC"/>
+                <CheckBox fx:id="lampExhCheck"         text="MAXXIVE"/>
+                <CheckBox fx:id="lampHardCheck"        text="EXC"/>
+                <CheckBox fx:id="lampClearCheck"       text="COMP"/>
+                <CheckBox fx:id="lampSkillClearCheck"  text="SKILL CLEAR"/>
+                <CheckBox fx:id="lampFailedCheck"      text="Failed"/>
             </FlowPane>
         </TitledPane>
 

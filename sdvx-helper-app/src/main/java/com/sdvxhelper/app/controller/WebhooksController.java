@@ -45,6 +45,7 @@ import org.slf4j.LoggerFactory;
  * <li>{@code lampExhCheck} → {@code MAXXIVE}</li>
  * <li>{@code lampHardCheck} → {@code HARD}</li>
  * <li>{@code lampClearCheck} → {@code CLEAR}</li>
+ * <li>{@code lampSkillClearCheck} → {@code SKILL CLEAR}</li>
  * <li>{@code lampFailedCheck} → {@code FAILED}</li>
  * </ul>
  * </p>
@@ -82,6 +83,8 @@ public class WebhooksController implements Initializable {
     private CheckBox lampHardCheck;
     @FXML
     private CheckBox lampClearCheck;
+    @FXML
+    private CheckBox lampSkillClearCheck;
     @FXML
     private CheckBox lampFailedCheck;
     @FXML
@@ -286,6 +289,7 @@ public class WebhooksController implements Initializable {
     }
 
     private CheckBox[] lampCheckBoxes() {
-        return new CheckBox[]{lampPucCheck, lampUcCheck, lampExhCheck, lampHardCheck, lampClearCheck, lampFailedCheck};
+        return new CheckBox[]{lampPucCheck, lampUcCheck, lampExhCheck, lampHardCheck, lampClearCheck,
+                lampSkillClearCheck, lampFailedCheck};
     }
 }

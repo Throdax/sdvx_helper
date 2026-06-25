@@ -23,7 +23,7 @@ import com.sdvxhelper.model.OnePlayData;
 import com.sdvxhelper.model.enums.DetectMode;
 import com.sdvxhelper.model.enums.PlayState;
 import com.sdvxhelper.network.DiscordPresenceClient;
-import com.sdvxhelper.network.LitterboxClient;
+import com.sdvxhelper.network.JacketUploadClient;
 import com.sdvxhelper.network.ObsWebSocketClient;
 import com.sdvxhelper.repository.SettingsRepository;
 import com.sdvxhelper.service.ImageAnalysisService;
@@ -98,7 +98,7 @@ public class DetectionEngine {
     private String lastKnownDiff = "";
 
     // Discord enhanced-presence state
-    private LitterboxClient litterboxClient;
+    private JacketUploadClient jacketUploadClient;
     private String lastJacketUrl = null;
     private String lastDiscordTitle = null;
 
@@ -766,27 +766,34 @@ public class DetectionEngine {
      * the default Discord asset is shown.
      */
     private void resolveDiscordJacket() {
-        if (!"true".equalsIgnoreCase(settings.get("discord_presence_upload_jacket")) || litterboxClient == null) {
+        if (!"true".equalsIgnoreCase(settings.get("discord_presence_upload_jacket"))) {
+            log.debug("resolveDiscordJacket: jacket upload disabled by setting, skipping");
+            return;
+        }
+        if (jacketUploadClient == null) {
+            log.warn(
+                    "resolveDiscordJacket: jacket upload is enabled but JacketUploadClient is null - jacket will not appear in Discord");
             return;
         }
         File jacketFile = new File("out", "jacket.png");
         if (!jacketFile.exists()) {
-            log.debug("resolveDiscordJacket: out/jacket.png not found, skipping upload");
+            log.warn("resolveDiscordJacket: out/jacket.png not found - jacket will not appear in Discord");
             lastJacketUrl = null;
             return;
         }
         try {
             byte[] jacketBytes = Files.readAllBytes(jacketFile.toPath());
-            String url = litterboxClient.upload(jacketBytes, "jacket.png", LitterboxClient.EXPIRY_1H);
+            log.info("resolveDiscordJacket: uploading out/jacket.png ({} bytes)", jacketBytes.length);
+            String url = jacketUploadClient.upload(jacketBytes, "jacket.png");
             if (url != null && !url.isBlank()) {
-                log.debug("resolveDiscordJacket: jacket uploaded -> '{}'", url);
+                log.info("resolveDiscordJacket: jacket uploaded successfully -> '{}'", url);
                 lastJacketUrl = url;
             } else {
-                log.warn("resolveDiscordJacket: Litterbox upload returned empty URL, Discord will use default asset");
+                log.warn("resolveDiscordJacket: upload returned empty URL - Discord will use default asset");
                 lastJacketUrl = null;
             }
         } catch (IOException e) {
-            log.warn("resolveDiscordJacket: jacket upload failed: {}", e.getMessage());
+            log.warn("resolveDiscordJacket: jacket upload failed - {}", e.getMessage());
             lastJacketUrl = null;
         }
     }
@@ -885,14 +892,14 @@ public class DetectionEngine {
     }
 
     /**
-     * Sets the optional {@link LitterboxClient} used to upload jacket images for
+     * Sets the optional {@link JacketUploadClient} used to upload jacket images for
      * Discord Rich Presence. When {@code null} (default) jacket upload is skipped.
      *
-     * @param litterboxClient
+     * @param jacketUploadClient
      *            the client, or {@code null} to disable jacket uploads
      */
-    public void setLitterboxClient(LitterboxClient litterboxClient) {
-        this.litterboxClient = litterboxClient;
+    public void setLitterboxClient(JacketUploadClient jacketUploadClient) {
+        this.jacketUploadClient = jacketUploadClient;
     }
 
     /**

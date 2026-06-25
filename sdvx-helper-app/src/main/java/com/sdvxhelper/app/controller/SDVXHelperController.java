@@ -54,6 +54,7 @@ import com.sdvxhelper.model.enums.PlayState;
 import com.sdvxhelper.network.DiscordPresenceClient;
 import com.sdvxhelper.network.DiscordWebhookClient;
 import com.sdvxhelper.network.GoogleDriveClient;
+import com.sdvxhelper.network.JacketUploadClient;
 import com.sdvxhelper.network.LitterboxClient;
 import com.sdvxhelper.network.Maya2Client;
 import com.sdvxhelper.network.ObsWebSocketClient;
@@ -289,9 +290,9 @@ public class SDVXHelperController implements Initializable, DetectionListener {
         WebhookDispatcher webhookDispatcher = new WebhookDispatcher(discordWebhookClient, loggerService, settings,
                 webhookConfigs);
 
-        LitterboxClient litterboxClient = buildLitterboxClient();
+        JacketUploadClient jacketUploadClient = buildJacketUploadClient();
         detectionEngine = DetectionEngine.builder().listener(this).imageAnalysisService(imageAnalysisService)
-                .discordPresenceClient(discordPresenceClient).litterboxClient(litterboxClient)
+                .discordPresenceClient(discordPresenceClient).litterboxClient(jacketUploadClient)
                 .screenHandler(screenHandler).obsOverlayService(obsOverlayService).webhookDispatcher(webhookDispatcher)
                 .params(params).settings(settings).initialMode(initialDetectMode).build();
 
@@ -334,17 +335,21 @@ public class SDVXHelperController implements Initializable, DetectionListener {
     }
 
     /**
-     * Creates a {@link LitterboxClient} when {@code discord_presence_upload_jacket}
-     * is enabled. Returns {@code null} when the setting is disabled.
+     * Creates a {@link JacketUploadClient} when
+     * {@code discord_presence_upload_jacket} is enabled. Currently returns a
+     * {@link LitterboxClient} as the sole implementation. Returns {@code null} when
+     * the setting is disabled so that
+     * {@link com.sdvxhelper.app.controller.detection.DetectionEngine} skips jacket
+     * uploading entirely.
      *
-     * @return a new {@link LitterboxClient}, or {@code null}
+     * @return a new {@link JacketUploadClient}, or {@code null}
      */
-    private LitterboxClient buildLitterboxClient() {
+    private JacketUploadClient buildJacketUploadClient() {
         if (!"true".equalsIgnoreCase(settings.get("discord_presence_upload_jacket"))) {
-            log.debug("Litterbox jacket upload disabled by setting");
+            log.info("Jacket upload disabled - Discord will use default logo asset");
             return null;
         }
-        log.info("Litterbox jacket upload enabled for Discord Rich Presence");
+        log.info("Jacket upload enabled - using LitterboxClient (litterbox.catbox.moe) for Discord Rich Presence");
         return new LitterboxClient();
     }
 

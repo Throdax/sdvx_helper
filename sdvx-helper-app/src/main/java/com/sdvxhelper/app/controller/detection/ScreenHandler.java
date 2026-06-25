@@ -874,7 +874,11 @@ public class ScreenHandler {
         }
         String detectedNumber = matcher.group(1);
         boolean changed = !detectedNumber.equals(lastVfNumber);
-        log.debug("captureVolforce OCR: detected='{}' last='{}' changed={}", detectedNumber, lastVfNumber, changed);
+        if (changed) {
+            log.info("captureVolforce OCR: new VF detected '{}' (was '{}')", detectedNumber, lastVfNumber);
+        } else {
+            log.info("captureVolforce OCR: VF unchanged '{}'", detectedNumber);
+        }
         lastVfNumber = detectedNumber;
         return changed;
     }

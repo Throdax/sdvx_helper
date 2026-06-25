@@ -194,6 +194,16 @@ public class DiscordPresenceClient implements Closeable {
      * last update, or if the client is not connected.
      * </p>
      *
+     * <p>
+     * Presence layout per state:
+     * </p>
+     * <ul>
+     * <li><b>SELECTING</b> — details: {@code "Selecting Song…"}, state: VF
+     * display</li>
+     * <li><b>PLAYING</b> — details: song title, state: {@code "Playing: DIFF"} (no
+     * level)</li>
+     * </ul>
+     *
      * @param state
      *            the current play state
      * @param songTitle
@@ -220,8 +230,8 @@ public class DiscordPresenceClient implements Closeable {
         }
         lastUpdateMs = now;
 
-        String details = buildDetails(state, songTitle, difficulty);
-        String status = "VF: " + vfDisplay;
+        String details = buildDetails(state, songTitle);
+        String status = buildState(state, difficulty, vfDisplay);
 
         log.debug("updatePresence: state={}, details='{}', status='{}'", state, details, status);
 
@@ -249,13 +259,13 @@ public class DiscordPresenceClient implements Closeable {
     }
 
     /**
-     * Updates Discord Rich Presence specifically for the result screen, matching
-     * the Python {@code update_discord_presence_result_screen()} output.
+     * Updates Discord Rich Presence for the result screen.
      *
      * <p>
-     * The presence details line shows the song title; the state line shows
-     * {@code "NOV-15 MAXXIVE: 9958 (+1234)"} (difficulty–level, lamp, abbreviated
-     * score, signed score difference).
+     * Presence layout: details shows the song title; state shows
+     * {@code "Result: DIFF | LAMP | XXXX"} where {@code XXXX} is the abbreviated
+     * score (leading significant digits only). No level and no score difference are
+     * shown.
      * </p>
      *
      * @param title
@@ -263,13 +273,16 @@ public class DiscordPresenceClient implements Closeable {
      * @param difficulty
      *            the chart difficulty (e.g. {@code "nov"})
      * @param level
-     *            the chart level; {@code -1} when unknown (displays as {@code ??})
+     *            the chart level (unused in the displayed text; kept for signature
+     *            compatibility)
      * @param score
      *            the score achieved on this play
      * @param scoreDiff
-     *            {@code curScore - preScore} (may be negative on regression)
+     *            {@code curScore - preScore} (unused in the displayed text; kept
+     *            for signature compatibility)
      * @param lamp
-     *            the result lamp (e.g. {@code "failed"}, {@code "exh"})
+     *            the result lamp (e.g. {@code "exh"} → displayed as
+     *            {@code "MAXXIVE"})
      * @param jacketUrl
      *            optional jacket image URL; {@code null} falls back to default
      *            asset
@@ -288,12 +301,10 @@ public class DiscordPresenceClient implements Closeable {
         }
         lastUpdateMs = now;
 
-        String levelStr = level >= 0 ? String.valueOf(level) : "??";
-        String lampDisplay = toDisplayLamp(lamp);
         String diffDisplay = difficulty != null ? difficulty.toUpperCase() : "??";
-        String status = diffDisplay + "-" + levelStr + " " + lampDisplay + ": " + formatResultScore(score) + " ("
-                + formatSignedDiff(scoreDiff) + ")";
+        String lampDisplay = LampFormatter.formatDisplay(lamp);
         String details = title != null ? truncate(title, 50) : "Unknown";
+        String status = "Result: " + diffDisplay + " | " + lampDisplay + " | " + formatResultScore(score);
 
         log.debug("updatePresenceResult: details='{}', status='{}'", details, status);
 
@@ -469,40 +480,55 @@ public class DiscordPresenceClient implements Closeable {
     // -------------------------------------------------------------------------
 
     /**
-     * Builds the Rich Presence details line from the current play state.
+     * Builds the Rich Presence {@code details} line (first visible line) from the
+     * current play state.
+     *
+     * <ul>
+     * <li>{@code SELECTING} — {@code "Selecting Song..."}</li>
+     * <li>{@code PLAYING} — the song title, or {@code "Unknown"} when absent</li>
+     * <li>{@code RESULT} — {@code "Viewing results"}</li>
+     * <li>{@code IDLE} — {@code "Idle"}</li>
+     * </ul>
      *
      * @param state
      *            the current play state
      * @param title
      *            the song title (may be {@code null})
-     * @param difficulty
-     *            the chart difficulty string (may be {@code null})
      * @return the formatted details string
      */
-    private static String buildDetails(PlayState state, String title, String difficulty) {
+    private static String buildDetails(PlayState state, String title) {
         return switch (state) {
-            case SELECTING -> "Selecting" + (title != null ? ": " + truncate(title, 50) : "");
-            case PLAYING -> "Playing" + (title != null ? ": " + truncate(title, 50) : "")
-                    + (difficulty != null ? " [" + difficulty.toUpperCase() + "]" : "");
+            case SELECTING -> "Selecting Song...";
+            case PLAYING -> title != null && !title.isBlank() ? truncate(title, 50) : "Unknown";
             case RESULT -> "Viewing results";
             case IDLE -> "Idle";
         };
     }
 
     /**
-     * Converts an internal lamp value to its display form, mirroring the Python
-     * {@code discord_presence.py} behaviour where {@code "EXH"} maps to
-     * {@code "MAXXIVE"}.
+     * Builds the Rich Presence {@code state} line (second visible line) from the
+     * current play state.
      *
-     * @param lamp
-     *            raw lamp string (case-insensitive)
-     * @return display lamp string in upper-case
+     * <ul>
+     * <li>{@code SELECTING} — {@code "VF: <vfDisplay>"}</li>
+     * <li>{@code PLAYING} — {@code "Playing: DIFF"} (no level)</li>
+     * <li>Other states — {@code "VF: <vfDisplay>"}</li>
+     * </ul>
+     *
+     * @param state
+     *            the current play state
+     * @param difficulty
+     *            the chart difficulty string (may be {@code null})
+     * @param vfDisplay
+     *            the formatted Volforce string
+     * @return the formatted state string
      */
-    private static String toDisplayLamp(String lamp) {
-        if (lamp == null) {
-            return "FAILED";
+    private static String buildState(PlayState state, String difficulty, String vfDisplay) {
+        if (state == PlayState.PLAYING) {
+            String diffDisplay = difficulty != null && !difficulty.isBlank() ? difficulty.toUpperCase() : "??";
+            return "Playing: " + diffDisplay;
         }
-        return LampFormatter.formatDisplay(lamp);
+        return "VF: " + vfDisplay;
     }
 
     /**
@@ -538,18 +564,6 @@ public class DiscordPresenceClient implements Closeable {
             return str.substring(0, 1);
         }
         return str;
-    }
-
-    /**
-     * Formats a score difference with an explicit {@code "+"} prefix for positive
-     * values.
-     *
-     * @param diff
-     *            score difference
-     * @return signed string
-     */
-    private static String formatSignedDiff(int diff) {
-        return diff > 0 ? "+" + diff : String.valueOf(diff);
     }
 
     /**
