@@ -25,6 +25,7 @@
 
     <!-- Instructions -->
     <Label wrapText="true"
+           maxWidth="Infinity"
            text="This tool will back up your existing Python installation to sdvx_helper_old/, extract the new Java app, migrate your play log and other data files, and copy your settings. Click Migrate to begin." />
 
     <!-- Migrate button -->
@@ -45,7 +46,7 @@
     <!-- Log output -->
     <TextArea fx:id="logArea"
               editable="false"
-              wrapText="false"
+              wrapText="true"
               style="-fx-font-family: monospace; -fx-font-size: 11px;"
               VBox.vgrow="ALWAYS"
               prefHeight="280" />

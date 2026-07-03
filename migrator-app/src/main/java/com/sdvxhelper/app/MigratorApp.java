@@ -1,10 +1,12 @@
 package com.sdvxhelper.app;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
+import javafx.scene.image.Image;
 import javafx.stage.Stage;
 
 import com.sdvxhelper.util.VersionUtil;
@@ -52,10 +54,23 @@ public class MigratorApp extends Application {
             scene.getStylesheets().add(cssUrl.toExternalForm());
         }
         stage.setTitle("SDVX Helper Migrator " + VersionUtil.getVersion("migrator"));
+        applyIcon(stage);
         stage.setScene(scene);
         stage.setResizable(false);
         stage.show();
         log.info("Migrator UI displayed");
+    }
+
+    private void applyIcon(Stage stage) {
+        try (InputStream iconStream = getClass().getResourceAsStream("/icon.ico")) {
+            if (iconStream != null) {
+                stage.getIcons().add(new Image(iconStream));
+            } else {
+                log.warn("icon.ico not found on classpath, window icon will not be set");
+            }
+        } catch (IOException e) {
+            log.warn("Failed to load window icon: {}", e.getMessage());
+        }
     }
 
     @Override

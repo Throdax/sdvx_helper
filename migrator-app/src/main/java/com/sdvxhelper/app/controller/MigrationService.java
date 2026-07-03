@@ -52,6 +52,27 @@ public class MigrationService implements Runnable {
             "sdvx_helper_java_standalone.zip", "migrate_pkl_to_xml.py", "sdvx_helper_old");
 
     /**
+     * ZIP entry name prefixes that must be skipped during extraction.
+     *
+     * <p>
+     * The {@code runtime/} directory is excluded because the jpackage-bundled Java
+     * runtime shipped with {@code migrate.exe} is already present on disk and is
+     * the same runtime used by all other SDVX Helper executables. Attempting to
+     * overwrite it while the migrator itself is running causes a
+     * {@code java.dll is being used by another process} error on Windows.
+     * </p>
+     */
+    private static final Set<String> SKIP_EXTRACT_PREFIXES = Set.of("runtime/", "runtime\\");
+
+    /**
+     * Directories introduced by the Java distribution that do not exist in the old
+     * Python installation and therefore are not present in the
+     * {@code sdvx_helper_old/} backup. These must be deleted explicitly during
+     * rollback because copying the backup back does not remove them.
+     */
+    private static final Set<String> JAVA_ONLY_ENTRIES = Set.of("app");
+
+    /**
      * Known pickle files (relative to {@code sdvx_helper_old/}) and their
      * corresponding output XML names. Each entry is {@code {relative-pkl-path,
      * output-xml-name}}.
@@ -103,8 +124,10 @@ public class MigrationService implements Runnable {
     @Override
     public void run() {
         boolean success = true;
+        boolean backupCompleted = false;
         try {
             runStep(MigrationStep.BACKUP, 0);
+            backupCompleted = true;
             runStep(MigrationStep.EXTRACT, 1);
             runStep(MigrationStep.MIGRATE_PKL, 2);
             runStep(MigrationStep.COPY_SETTINGS, 3);
@@ -112,7 +135,19 @@ public class MigrationService implements Runnable {
         } catch (IOException ioException) {
             log.error("Migration aborted due to fatal IO error", ioException);
             fireLog("FATAL: " + ioException.getMessage());
+            fireLog("");
             success = false;
+            if (backupCompleted) {
+                try {
+                    executeRollback();
+                } catch (IOException rollbackEx) {
+                    log.error("Rollback failed", rollbackEx);
+                    fireLog("ERROR: Rollback also failed — " + rollbackEx.getMessage());
+                    fireLog("       Please restore your files manually from sdvx_helper_old/");
+                }
+            } else {
+                removePartialBackup();
+            }
         }
         final boolean finalSuccess = success;
         Platform.runLater(() -> callback.onComplete(finalSuccess));
@@ -202,7 +237,15 @@ public class MigrationService implements Runnable {
         try (ZipInputStream zis = new ZipInputStream(new FileInputStream(distZip))) {
             ZipEntry entry = zis.getNextEntry();
             while (!Objects.isNull(entry)) {
-                File target = new File(workDir, entry.getName());
+                String entryName = entry.getName();
+                boolean skip = SKIP_EXTRACT_PREFIXES.stream().anyMatch(entryName::startsWith);
+                if (skip) {
+                    fireLog("  skip (runtime already present): " + entryName);
+                    zis.closeEntry();
+                    entry = zis.getNextEntry();
+                    continue;
+                }
+                File target = new File(workDir, entryName);
                 if (entry.isDirectory()) {
                     if (!target.exists() && !target.mkdirs()) {
                         throw new IOException("Failed to create directory: " + target.getAbsolutePath());
@@ -219,7 +262,7 @@ public class MigrationService implements Runnable {
                             fos.write(buffer, 0, bytesRead);
                         }
                     }
-                    fireLog("  extracted: " + entry.getName());
+                    fireLog("  extracted: " + entryName);
                 }
                 zis.closeEntry();
                 entry = zis.getNextEntry();
@@ -337,6 +380,105 @@ public class MigrationService implements Runnable {
             fireLog("Deleted: " + distZip.getName());
         } else {
             fireLog("WARN: Could not delete " + distZip.getName() + " — you may remove it manually.");
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Rollback helpers
+    // -------------------------------------------------------------------------
+
+    /**
+     * Restores the working directory to its pre-migration state after a fatal
+     * failure.
+     *
+     * <p>
+     * The rollback performs three actions in order:
+     * </p>
+     * <ol>
+     * <li>Copies everything from {@code sdvx_helper_old/} back into the working
+     * directory, overwriting any files that were extracted from the distribution
+     * ZIP.</li>
+     * <li>Deletes Java-only directories (see {@link #JAVA_ONLY_ENTRIES}) that were
+     * created by the extraction but are not part of the old Python installation and
+     * therefore not present in the backup.</li>
+     * <li>Removes the {@code sdvx_helper_old/} backup directory itself so the
+     * working directory is left exactly as it was before the migration
+     * started.</li>
+     * </ol>
+     *
+     * @throws IOException
+     *             if any file copy or delete operation fails
+     */
+    private void executeRollback() throws IOException {
+        fireLog("--- Rolling back changes…");
+        File backupDir = new File(workDir, "sdvx_helper_old");
+
+        if (backupDir.exists()) {
+            fireLog("Restoring files from backup…");
+            File[] entries = backupDir.listFiles();
+            if (!Objects.isNull(entries)) {
+                for (File entry : entries) {
+                    File target = new File(workDir, entry.getName());
+                    copyRecursive(entry, target);
+                    fireLog("  restored: " + entry.getName());
+                }
+            }
+        }
+
+        for (String name : JAVA_ONLY_ENTRIES) {
+            File toDelete = new File(workDir, name);
+            if (toDelete.exists()) {
+                deleteRecursive(toDelete);
+                fireLog("  removed (Java-only): " + name);
+            }
+        }
+
+        if (backupDir.exists()) {
+            deleteRecursive(backupDir);
+            fireLog("  removed: sdvx_helper_old");
+        }
+
+        fireLog("Rollback complete. Installation restored to previous state.");
+    }
+
+    /**
+     * Removes a partially-created {@code sdvx_helper_old/} directory when the
+     * backup step itself failed before completing. A failure to delete is logged as
+     * a warning rather than thrown.
+     */
+    private void removePartialBackup() {
+        File backupDir = new File(workDir, "sdvx_helper_old");
+        if (!backupDir.exists()) {
+            return;
+        }
+        try {
+            deleteRecursive(backupDir);
+            fireLog("Cleaned up partial backup directory.");
+        } catch (IOException e) {
+            fireLog("WARN: Could not remove partial backup at sdvx_helper_old/ — remove it manually.");
+        }
+    }
+
+    /**
+     * Recursively deletes {@code file} and all of its children if it is a
+     * directory.
+     *
+     * @param file
+     *            the file or directory to delete; must not be {@code null}
+     * @throws IOException
+     *             if any entry cannot be deleted
+     */
+    private void deleteRecursive(File file) throws IOException {
+        if (file.isDirectory()) {
+            File[] children = file.listFiles();
+            if (!Objects.isNull(children)) {
+                for (File child : children) {
+                    deleteRecursive(child);
+                }
+            }
+        }
+        if (!file.delete()) {
+            throw new IOException("Could not delete: " + file.getAbsolutePath());
         }
     }
 
