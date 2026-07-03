@@ -126,11 +126,11 @@ public class SdvxHelperApp extends Application {
     }
 
     private void applyIcon(Stage stage) {
-        try (InputStream iconStream = getClass().getResourceAsStream("/icon.ico")) {
+        try (InputStream iconStream = getClass().getResourceAsStream("/icon.png")) {
             if (iconStream != null) {
                 stage.getIcons().add(new Image(iconStream));
             } else {
-                log.warn("icon.ico not found on classpath, window icon will not be set");
+                log.warn("icon.png not found on classpath, window icon will not be set");
             }
         } catch (IOException e) {
             log.warn("Failed to load window icon: {}", e.getMessage());

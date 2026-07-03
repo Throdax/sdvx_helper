@@ -1,6 +1,7 @@
 package com.sdvxhelper.app;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
 import java.util.Locale;
 import java.util.ResourceBundle;
@@ -8,6 +9,7 @@ import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
+import javafx.scene.image.Image;
 import javafx.stage.Stage;
 
 import com.sdvxhelper.i18n.LocaleManager;
@@ -59,6 +61,7 @@ public class ScoreViewerApp extends Application {
         }));
         buildScene(LocaleManager.getInstance().getCurrentLocale());
         stage.setTitle("SDVX Score Viewer " + VersionUtil.getVersion("manager"));
+        applyIcon(stage);
         WindowPositionHelper.applyAndPersist(stage, repo, "score_lx", "score_ly");
         stage.show();
         log.info("Score Viewer UI displayed");
@@ -68,6 +71,18 @@ public class ScoreViewerApp extends Application {
     public void stop() {
         log.info("Score Viewer shutting down");
         System.exit(0);
+    }
+
+    private void applyIcon(Stage stage) {
+        try (InputStream iconStream = getClass().getResourceAsStream("/icon.png")) {
+            if (iconStream != null) {
+                stage.getIcons().add(new Image(iconStream));
+            } else {
+                log.warn("icon.png not found on classpath, window icon will not be set");
+            }
+        } catch (IOException e) {
+            log.warn("Failed to load window icon: {}", e.getMessage());
+        }
     }
 
     private void buildScene(Locale locale) throws IOException {
