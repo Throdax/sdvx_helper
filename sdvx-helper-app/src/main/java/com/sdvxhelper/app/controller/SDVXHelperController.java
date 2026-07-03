@@ -354,6 +354,61 @@ public class SDVXHelperController implements Initializable, DetectionListener {
     }
 
     /**
+     * Reloads {@code settings.json} after the Settings dialog is confirmed and
+     * propagates the changes to the already-running components.
+     *
+     * <p>
+     * The detection engine, screen handler, OBS overlay service and webhook
+     * dispatcher all share the same {@code settings} map instance created at
+     * startup, so the map is updated <em>in place</em> (cleared and re-filled)
+     * rather than reassigned. This ensures those components observe the new values
+     * on their next read and fixes stale-setting bugs where a runtime toggle (e.g.
+     * disabling Discord jacket upload) was ignored by the detection loop.
+     * </p>
+     */
+    private void applyReloadedSettings() {
+        Map<String, String> reloaded = new SettingsRepository().load();
+        settings.clear();
+        settings.putAll(reloaded);
+        applyDiscordRuntimeSettings();
+    }
+
+    /**
+     * Re-applies Discord Rich Presence settings to the live clients after a
+     * settings change. Unlike the shared settings map, the Discord clients capture
+     * some values at construction time, so this method connects/closes the presence
+     * client to match {@code discord_presence_enable}, refreshes the song-as-title
+     * flag, and rebuilds the jacket upload client to match
+     * {@code discord_presence_upload_jacket}.
+     */
+    private void applyDiscordRuntimeSettings() {
+        boolean presenceEnabled = "true".equalsIgnoreCase(settings.get("discord_presence_enable"));
+        if (presenceEnabled && discordPresenceClient == null) {
+            discordPresenceClient = buildDiscordPresenceClient();
+            if (detectionEngine != null) {
+                detectionEngine.setDiscordPresenceClient(discordPresenceClient);
+            }
+        } else if (!presenceEnabled && discordPresenceClient != null) {
+            discordPresenceClient.close();
+            discordPresenceClient = null;
+            if (detectionEngine != null) {
+                detectionEngine.setDiscordPresenceClient(null);
+            }
+            Platform.runLater(() -> {
+                discordPresenceLabel.setVisible(false);
+                discordPresenceLabel.setManaged(false);
+            });
+        } else if (discordPresenceClient != null) {
+            discordPresenceClient
+                    .setSongAsTitle("true".equalsIgnoreCase(settings.get("discord_presence_song_as_title")));
+        }
+
+        if (detectionEngine != null) {
+            detectionEngine.setLitterboxClient(buildJacketUploadClient());
+        }
+    }
+
+    /**
      * Updates the session log section heading to show the current play count in the
      * format "Session Log: N plays".
      */
@@ -696,7 +751,7 @@ public class SDVXHelperController implements Initializable, DetectionListener {
             dlg.setOnShown(_ -> Platform.runLater(() -> clampToScreen(dlg)));
             dlg.showAndWait().filter(bt -> bt == ButtonType.OK).ifPresent(_ -> {
                 ctrl.save();
-                settings = new SettingsRepository().load();
+                applyReloadedSettings();
             });
         } catch (IOException e) {
             log.error("Failed to open Settings dialog", e);

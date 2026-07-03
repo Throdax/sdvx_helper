@@ -49,6 +49,15 @@ public class IpcActivity {
     @JsonbProperty("assets")
     private IpcAssets assets;
 
+    /**
+     * Controls which activity field Discord renders as the primary "Playing X"
+     * headline in the member list: {@code 0} = name (default), {@code 1} = state,
+     * {@code 2} = details. Mirrors the Python {@code StatusDisplayType} passed to
+     * {@code pypresence}. {@code null} omits the field (Discord defaults to name).
+     */
+    @JsonbProperty("status_display_type")
+    private Integer statusDisplayType;
+
     /** No-argument constructor required by JSON-B. */
     public IpcActivity() {
     }
@@ -69,11 +78,37 @@ public class IpcActivity {
      *            the image {@link IpcAssets} block
      */
     public IpcActivity(String name, String details, String state, IpcTimestamps timestamps, IpcAssets assets) {
+        this(name, details, state, timestamps, assets, null);
+    }
+
+    /**
+     * Constructs a fully populated activity payload including the status display
+     * type.
+     *
+     * @param name
+     *            the activity name; Discord shows this as "Playing X" only when
+     *            {@code statusDisplayType} is {@code 0}/name
+     * @param details
+     *            the first line of text (used as the headline when
+     *            {@code statusDisplayType} is {@code 2}/details)
+     * @param state
+     *            the second line of text (e.g. Volforce display)
+     * @param timestamps
+     *            the elapsed-time {@link IpcTimestamps} block
+     * @param assets
+     *            the image {@link IpcAssets} block
+     * @param statusDisplayType
+     *            {@code 0} = name, {@code 1} = state, {@code 2} = details, or
+     *            {@code null} to omit
+     */
+    public IpcActivity(String name, String details, String state, IpcTimestamps timestamps, IpcAssets assets,
+            Integer statusDisplayType) {
         this.name = name;
         this.details = details;
         this.state = state;
         this.timestamps = timestamps;
         this.assets = assets;
+        this.statusDisplayType = statusDisplayType;
     }
 
     /**
@@ -169,5 +204,27 @@ public class IpcActivity {
      */
     public void setAssets(IpcAssets assets) {
         this.assets = assets;
+    }
+
+    /**
+     * Returns the status display type ({@code 0} = name, {@code 1} = state,
+     * {@code 2} = details, or {@code null}).
+     *
+     * @return the status display type, or {@code null}
+     */
+    public Integer getStatusDisplayType() {
+        return statusDisplayType;
+    }
+
+    /**
+     * Sets the status display type controlling which field Discord shows as the
+     * "Playing X" headline.
+     *
+     * @param statusDisplayType
+     *            {@code 0} = name, {@code 1} = state, {@code 2} = details, or
+     *            {@code null} to omit
+     */
+    public void setStatusDisplayType(Integer statusDisplayType) {
+        this.statusDisplayType = statusDisplayType;
     }
 }

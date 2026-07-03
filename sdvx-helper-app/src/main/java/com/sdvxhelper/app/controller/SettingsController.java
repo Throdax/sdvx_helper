@@ -3,6 +3,7 @@ package com.sdvxhelper.app.controller;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.ResourceBundle;
 import javafx.event.ActionEvent;
@@ -139,13 +140,62 @@ public class SettingsController implements Initializable {
      * {@code MainController} when the OK button is pressed.
      */
     public void save() {
+        Map<String, String> before = new HashMap<>(settings);
         collectFields();
+        logChangedSettings(before, settings);
         try {
             settingsRepo.save(settings);
             log.info("Settings saved successfully");
         } catch (IOException e) {
             log.error("Failed to save settings", e);
         }
+    }
+
+    /**
+     * Logs every setting whose value changed between the snapshot taken before the
+     * dialog fields were collected and the newly collected values. Sensitive values
+     * (e.g. the OBS password) are masked.
+     *
+     * @param before
+     *            the settings map as it was before the user's edits were applied
+     * @param after
+     *            the settings map after {@link #collectFields()} applied the dialog
+     *            values
+     */
+    private void logChangedSettings(Map<String, String> before, Map<String, String> after) {
+        int changes = 0;
+        for (Map.Entry<String, String> entry : after.entrySet()) {
+            String key = entry.getKey();
+            String newValue = entry.getValue();
+            String oldValue = before.get(key);
+            if (!java.util.Objects.equals(oldValue, newValue)) {
+                log.info("Setting changed: {} '{}' -> '{}'", key, mask(key, oldValue), mask(key, newValue));
+                changes++;
+            }
+        }
+        if (changes == 0) {
+            log.info("Settings saved with no value changes");
+        }
+    }
+
+    /**
+     * Masks the value of sensitive settings keys so secrets are not written to the
+     * log.
+     *
+     * @param key
+     *            the settings key
+     * @param value
+     *            the value to potentially mask
+     * @return the original value, or a masked placeholder for sensitive keys
+     */
+    private String mask(String key, String value) {
+        if (value == null) {
+            return "<none>";
+        }
+        if ("passwd".equals(key)) {
+            return value.isEmpty() ? "<empty>" : "***";
+        }
+        return value;
     }
 
     /**

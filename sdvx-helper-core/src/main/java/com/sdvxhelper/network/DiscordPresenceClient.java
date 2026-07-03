@@ -79,10 +79,24 @@ public class DiscordPresenceClient implements Closeable {
     private static final long MIN_UPDATE_INTERVAL_MS = 5_000;
 
     /**
-     * Activity name shown as "Playing X" in Discord, overriding the portal app
-     * name.
+     * Activity name shown as "Playing X" in Discord when
+     * {@link #STATUS_DISPLAY_NAME} is used.
      */
     private static final String ACTIVITY_NAME = "Sound Voltex Exceed Gear";
+
+    /**
+     * {@code status_display_type} value that makes Discord use the activity
+     * {@code name} as the "Playing X" headline (default behaviour).
+     */
+    private static final int STATUS_DISPLAY_NAME = 0;
+
+    /**
+     * {@code status_display_type} value that makes Discord use the activity
+     * {@code details} field (the song title) as the "Playing X" headline. Mirrors
+     * the Python {@code StatusDisplayType.DETAILS} used when "song as title" is
+     * enabled.
+     */
+    private static final int STATUS_DISPLAY_DETAILS = 2;
 
     // -------------------------------------------------------------------------
     // State
@@ -239,12 +253,14 @@ public class DiscordPresenceClient implements Closeable {
                 ? new IpcAssets(jacketUrl, songTitle != null ? songTitle : "")
                 : new IpcAssets("sdvx_logo", "SDVX Exceed Gear");
 
-        String activityName = (songAsTitle && songTitle != null && !songTitle.isBlank())
-                ? truncate(songTitle, 50)
-                : ACTIVITY_NAME;
+        // The activity "name" is always the app name; Discord ignores it for the
+        // headline unless status_display_type = 0. To show the song as the headline we
+        // keep the title in "details" and switch status_display_type to DETAILS,
+        // mirroring the Python StatusDisplayType.DETAILS approach.
+        int statusDisplayType = songAsTitle ? STATUS_DISPLAY_DETAILS : STATUS_DISPLAY_NAME;
 
-        IpcActivity activity = new IpcActivity(activityName, details, status, new IpcTimestamps(sessionStartTime),
-                assets);
+        IpcActivity activity = new IpcActivity(ACTIVITY_NAME, details, status, new IpcTimestamps(sessionStartTime),
+                assets, statusDisplayType);
 
         String payload = jsonb.toJson(new IpcFrame("SET_ACTIVITY",
                 new IpcSetActivityArgs(ProcessHandle.current().pid(), activity), UUID.randomUUID().toString()));
@@ -312,10 +328,12 @@ public class DiscordPresenceClient implements Closeable {
                 ? new IpcAssets(jacketUrl, title != null ? title : "")
                 : new IpcAssets("sdvx_logo", "SDVX Exceed Gear");
 
-        String activityName = (songAsTitle && title != null && !title.isBlank()) ? truncate(title, 50) : ACTIVITY_NAME;
+        // Keep name = app name and drive the "song as title" headline via
+        // status_display_type = DETAILS (the title is already in "details").
+        int statusDisplayType = songAsTitle ? STATUS_DISPLAY_DETAILS : STATUS_DISPLAY_NAME;
 
-        IpcActivity activity = new IpcActivity(activityName, details, status, new IpcTimestamps(sessionStartTime),
-                assets);
+        IpcActivity activity = new IpcActivity(ACTIVITY_NAME, details, status, new IpcTimestamps(sessionStartTime),
+                assets, statusDisplayType);
 
         String payload = jsonb.toJson(new IpcFrame("SET_ACTIVITY",
                 new IpcSetActivityArgs(ProcessHandle.current().pid(), activity), UUID.randomUUID().toString()));

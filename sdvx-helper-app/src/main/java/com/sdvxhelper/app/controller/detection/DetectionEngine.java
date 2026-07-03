@@ -760,10 +760,10 @@ public class DetectionEngine {
     /**
      * Resolves the Discord jacket URL for the current song. When
      * {@code discord_presence_upload_jacket} is enabled and a
-     * {@link LitterboxClient} is available, reads the saved {@code out/jacket.png}
-     * bytes and uploads them to Litterbox. On success the returned URL is stored in
-     * {@link #lastJacketUrl}; on any failure {@code lastJacketUrl} is cleared so
-     * the default Discord asset is shown.
+     * {@link LitterboxClient} is available, reads the saved
+     * {@code out/select_jacket.png} bytes and uploads them to Litterbox. On success
+     * the returned URL is stored in {@link #lastJacketUrl}; on any failure
+     * {@code lastJacketUrl} is cleared so the default Discord asset is shown.
      */
     private void resolveDiscordJacket() {
         if (!"true".equalsIgnoreCase(settings.get("discord_presence_upload_jacket"))) {
@@ -775,15 +775,15 @@ public class DetectionEngine {
                     "resolveDiscordJacket: jacket upload is enabled but JacketUploadClient is null - jacket will not appear in Discord");
             return;
         }
-        File jacketFile = new File("out", "jacket.png");
+        File jacketFile = new File("out", "select_jacket.png");
         if (!jacketFile.exists()) {
-            log.warn("resolveDiscordJacket: out/jacket.png not found - jacket will not appear in Discord");
+            log.warn("resolveDiscordJacket: out/select_jacket.png not found - jacket will not appear in Discord");
             lastJacketUrl = null;
             return;
         }
         try {
             byte[] jacketBytes = Files.readAllBytes(jacketFile.toPath());
-            log.info("resolveDiscordJacket: uploading out/jacket.png ({} bytes)", jacketBytes.length);
+            log.info("resolveDiscordJacket: uploading out/select_jacket.png ({} bytes)", jacketBytes.length);
             String url = jacketUploadClient.upload(jacketBytes, "jacket.png");
             if (url != null && !url.isBlank()) {
                 log.info("resolveDiscordJacket: jacket uploaded successfully -> '{}'", url);
