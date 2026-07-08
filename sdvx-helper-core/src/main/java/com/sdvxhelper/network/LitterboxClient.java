@@ -77,7 +77,11 @@ public class LitterboxClient implements JacketUploadClient {
             log.info("Litterbox upload succeeded: {} -> {}", filename, url);
             return url;
         }
-        log.warn("Litterbox upload failed: HTTP {} body='{}'", resp.statusCode(), resp.body().trim());
+        String errorSummary = resp.body().trim().replaceAll("<[^>]*>", "").replaceAll("\\s+", " ").strip();
+        if (errorSummary.length() > 120) {
+            errorSummary = errorSummary.substring(0, 120) + "…";
+        }
+        log.warn("Litterbox upload failed: HTTP {} - {}", resp.statusCode(), errorSummary);
         return null;
     }
 }

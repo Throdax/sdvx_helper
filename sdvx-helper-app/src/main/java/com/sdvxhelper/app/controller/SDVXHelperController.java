@@ -404,7 +404,11 @@ public class SDVXHelperController implements Initializable, DetectionListener {
         }
 
         if (detectionEngine != null) {
-            detectionEngine.setLitterboxClient(buildJacketUploadClient());
+            JacketUploadClient newClient = buildJacketUploadClient();
+            detectionEngine.setLitterboxClient(newClient);
+            if (newClient == null) {
+                detectionEngine.clearJacketUrl();
+            }
         }
     }
 

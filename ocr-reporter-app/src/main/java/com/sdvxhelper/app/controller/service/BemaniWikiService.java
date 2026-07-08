@@ -194,9 +194,11 @@ public class BemaniWikiService {
      *   7: 配信日 (release date, ignored)
      * </pre>
      * <p>
-     * When the artist cell carries a {@code rowspan} attribute the following rows
-     * have only 7 cells; an {@code offset = -1} is applied so that the difficulty
-     * indices still resolve correctly.
+     * When only the artist cell carries a {@code rowspan} attribute the following
+     * rows have 7 cells; when both the artist and the release-date cells share a
+     * {@code rowspan} (e.g. a group of songs released together by the same artist)
+     * the following rows have 6 cells. In both cases an {@code offset = -1} is
+     * applied so that the difficulty indices still resolve correctly.
      * </p>
      */
     private void fetchFullList(HttpClient http, String url, Map<String, WikiSongRow> out, double progressStart,
@@ -227,10 +229,11 @@ public class BemaniWikiService {
                 Elements tds = tr.select("td");
                 int n = tds.size();
 
-                // Full row = 8 cells; artist-rowspan row = 7 cells.
+                // Full row = 8 cells; artist-rowspan row = 7 cells; artist+date
+                // double-rowspan row = 6 cells.
                 // Sub-header colspan rows (GRV / HVN / VVD / XCD / MXM) have n=1.
                 // Header rows using <th> have n=0. All others are skipped.
-                if (n != 8 && n != 7) {
+                if (n != 8 && n != 7 && n != 6) {
                     cntRowspanArtist = Math.max(0, cntRowspanArtist - 1);
                     continue;
                 }

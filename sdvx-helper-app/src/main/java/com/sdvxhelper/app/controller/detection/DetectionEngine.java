@@ -12,6 +12,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -65,6 +66,16 @@ public class DetectionEngine {
 
     // OBS connection
     private ScheduledExecutorService obsReconnectScheduler;
+
+    /**
+     * Single-thread executor for jacket uploads. Runs off the detection loop so
+     * that network I/O never delays frame processing.
+     */
+    private final ExecutorService jacketUploadExecutor = Executors.newSingleThreadExecutor(r -> {
+        Thread t = new Thread(r, "jacket-upload");
+        t.setDaemon(true);
+        return t;
+    });
     private ObsWebSocketClient obsClient;
 
     // Detection loop state
@@ -99,7 +110,7 @@ public class DetectionEngine {
 
     // Discord enhanced-presence state
     private JacketUploadClient jacketUploadClient;
-    private String lastJacketUrl = null;
+    private volatile String lastJacketUrl = null;
     private String lastDiscordTitle = null;
 
     /**
@@ -155,6 +166,7 @@ public class DetectionEngine {
     /** Shuts down the OBS reconnect scheduler and closes the OBS connection. */
     public void shutdown() {
         detectionRunning = false;
+        jacketUploadExecutor.shutdown();
         if (obsReconnectScheduler != null) {
             obsReconnectScheduler.shutdownNow();
             obsReconnectScheduler = null;
@@ -770,9 +782,11 @@ public class DetectionEngine {
             log.debug("resolveDiscordJacket: jacket upload disabled by setting, skipping");
             return;
         }
-        if (jacketUploadClient == null) {
-            log.warn(
-                    "resolveDiscordJacket: jacket upload is enabled but JacketUploadClient is null - jacket will not appear in Discord");
+        // Snapshot both clients so the lambda below is not affected by concurrent
+        // setLitterboxClient() / close() calls from the JavaFX thread.
+        JacketUploadClient client = jacketUploadClient;
+        if (client == null) {
+            log.warn("resolveDiscordJacket: upload enabled but JacketUploadClient is null - jacket will not appear");
             return;
         }
         File jacketFile = new File("out", "select_jacket.png");
@@ -781,21 +795,35 @@ public class DetectionEngine {
             lastJacketUrl = null;
             return;
         }
-        try {
-            byte[] jacketBytes = Files.readAllBytes(jacketFile.toPath());
-            log.info("resolveDiscordJacket: uploading out/select_jacket.png ({} bytes)", jacketBytes.length);
-            String url = jacketUploadClient.upload(jacketBytes, "jacket.png");
-            if (url != null && !url.isBlank()) {
-                log.info("resolveDiscordJacket: jacket uploaded successfully -> '{}'", url);
-                lastJacketUrl = url;
-            } else {
-                log.warn("resolveDiscordJacket: upload returned empty URL - Discord will use default asset");
+
+        // Hand off the blocking file-read + HTTP upload to a background thread so the
+        // detection loop is never stalled waiting for network I/O.
+        jacketUploadExecutor.submit(() -> {
+            try {
+                byte[] jacketBytes = Files.readAllBytes(jacketFile.toPath());
+                log.info("resolveDiscordJacket: uploading select_jacket.png ({} bytes) [async]", jacketBytes.length);
+                String url = client.upload(jacketBytes, "select_jacket.png");
+                if (url != null && !url.isBlank()) {
+                    log.info("resolveDiscordJacket: jacket uploaded -> '{}'", url);
+                    lastJacketUrl = url;
+                    // Re-push presence so Discord picks up the jacket without waiting for
+                    // the next natural state transition.
+                    DiscordPresenceClient dpc = discordPresenceClient;
+                    if (dpc != null) {
+                        PlayState state = currentMode == DetectMode.PLAY ? PlayState.PLAYING
+                                : currentMode == DetectMode.SELECT ? PlayState.SELECTING : PlayState.IDLE;
+                        String vf = ScoreFormatter.formatTotalVf((int) (screenHandler.getCurrentTotalVf() * 1000));
+                        dpc.updatePresence(state, lastDiscordTitle, lastKnownDiff, vf, url);
+                    }
+                } else {
+                    log.warn("resolveDiscordJacket: upload returned empty URL - Discord will use default asset");
+                    lastJacketUrl = null;
+                }
+            } catch (IOException e) {
+                log.warn("resolveDiscordJacket: jacket upload failed - {}", e.getMessage());
                 lastJacketUrl = null;
             }
-        } catch (IOException e) {
-            log.warn("resolveDiscordJacket: jacket upload failed - {}", e.getMessage());
-            lastJacketUrl = null;
-        }
+        });
     }
 
     // -------------------------------------------------------------------------
@@ -900,6 +928,34 @@ public class DetectionEngine {
      */
     public void setLitterboxClient(JacketUploadClient jacketUploadClient) {
         this.jacketUploadClient = jacketUploadClient;
+    }
+
+    /**
+     * Clears the cached jacket URL and immediately re-pushes the current Discord
+     * Rich Presence activity without a jacket image.
+     *
+     * <p>
+     * Called when the user disables jacket upload mid-session so that Discord
+     * reverts to the default logo asset right away rather than waiting for the next
+     * detection cycle.
+     * </p>
+     */
+    public void clearJacketUrl() {
+        lastJacketUrl = null;
+        if (discordPresenceClient == null) {
+            return;
+        }
+        PlayState state;
+        if (currentMode == DetectMode.PLAY) {
+            state = PlayState.PLAYING;
+        } else if (currentMode == DetectMode.SELECT) {
+            state = PlayState.SELECTING;
+        } else {
+            state = PlayState.IDLE;
+        }
+        String vf = ScoreFormatter.formatTotalVf((int) (screenHandler.getCurrentTotalVf() * 1000));
+        discordPresenceClient.updatePresence(state, lastDiscordTitle, lastKnownDiff, vf, null);
+        log.debug("clearJacketUrl: presence re-pushed with null jacket (state={})", state);
     }
 
     /**

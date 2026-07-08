@@ -230,7 +230,7 @@ public class DiscordPresenceClient implements Closeable {
      *            the URL of the jacket image for the large image asset (may be
      *            {@code null})
      */
-    public void updatePresence(PlayState state, String songTitle, String difficulty, String vfDisplay,
+    public synchronized void updatePresence(PlayState state, String songTitle, String difficulty, String vfDisplay,
             String jacketUrl) {
         if (!connected) {
             log.debug("updatePresence: not connected, skipping");
@@ -303,7 +303,7 @@ public class DiscordPresenceClient implements Closeable {
      *            optional jacket image URL; {@code null} falls back to default
      *            asset
      */
-    public void updatePresenceResult(String title, String difficulty, int level, int score, int scoreDiff, String lamp,
+    public synchronized void updatePresenceResult(String title, String difficulty, int level, int score, int scoreDiff, String lamp,
             String jacketUrl) {
         if (!connected) {
             log.debug("updatePresenceResult: not connected, skipping");
@@ -350,7 +350,7 @@ public class DiscordPresenceClient implements Closeable {
     /**
      * Clears the Discord Rich Presence, removing all displayed fields.
      */
-    public void clearPresence() {
+    public synchronized void clearPresence() {
         if (!connected) {
             log.debug("clearPresence: not connected to Discord, skipping");
             return;
@@ -371,7 +371,7 @@ public class DiscordPresenceClient implements Closeable {
      * Clears the presence, sends a CLOSE frame, and closes the named pipe.
      */
     @Override
-    public void close() {
+    public synchronized void close() {
         if (!connected) {
             log.debug("close: not connected to Discord, nothing to close");
             return;

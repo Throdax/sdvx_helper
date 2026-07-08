@@ -863,10 +863,14 @@ public class ScreenHandler {
         }
         Rectangle numberRegion = new Rectangle(VF_NUMBER_CROP_X, VF_NUMBER_CROP_Y, VF_NUMBER_CROP_W, VF_NUMBER_CROP_H);
         String raw = vfOcr.recognizeText(preprocessedFile, numberRegion);
-        Matcher matcher = VF_NUMBER_PATTERN.matcher(raw != null ? raw : "");
+        String normalized = restoreMissingVfDot(raw);
+        if (normalized != null && !normalized.equals(raw)) {
+            log.debug("captureVolforce: OCR dot recovery '{}' -> '{}'", raw, normalized);
+        }
+        Matcher matcher = VF_NUMBER_PATTERN.matcher(normalized != null ? normalized : "");
         if (!matcher.find()) {
-            log.warn("captureVolforce: OCR produced '{}' - no valid VF number found, "
-                    + "see out/part_volforce_preprocessed.png for diagnosis; falling back to pHash", raw);
+            log.warn("captureVolforce: OCR produced '{}' (normalized: '{}') - no valid VF number found, "
+                    + "see out/part_volforce_preprocessed.png for diagnosis; falling back to pHash", raw, normalized);
             String vfHash = perceptualHasher.phash(vfCrop);
             boolean changed = (lastVfHash == null) || (perceptualHasher.hammingDistance(vfHash, lastVfHash) > 2);
             lastVfHash = vfHash;
@@ -881,6 +885,46 @@ public class ScreenHandler {
         }
         lastVfNumber = detectedNumber;
         return changed;
+    }
+
+    /**
+     * Recovers a missing decimal point from a Tesseract OCR result for the VF
+     * number when the period pixel was erased by the binary threshold step.
+     *
+     * <p>
+     * VF numbers always follow the pattern {@code ##.###} (two integer digits) or
+     * {@code #.###} (one integer digit). When Tesseract returns a pure digit string
+     * with no period, we can unambiguously reinsert it:
+     * </p>
+     * <ul>
+     * <li>5 consecutive digits → {@code ##.###} (e.g. {@code "12233"} →
+     * {@code "12.233"})</li>
+     * <li>4 consecutive digits → {@code #.###} (e.g. {@code "9999"} →
+     * {@code "9.999"})</li>
+     * </ul>
+     *
+     * <p>
+     * If the raw string already contains a period, or is {@code null}/empty, it is
+     * returned unchanged. Any surrounding whitespace is stripped first.
+     * </p>
+     *
+     * @param raw
+     *            the raw string returned by Tesseract (may be {@code null})
+     * @return the normalised string with the period restored, or {@code raw} if no
+     *         recovery was possible
+     */
+    private static String restoreMissingVfDot(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return raw;
+        }
+        String trimmed = raw.strip();
+        if (trimmed.matches("\\d{5}")) {
+            return trimmed.substring(0, 2) + "." + trimmed.substring(2);
+        }
+        if (trimmed.matches("\\d{4}")) {
+            return trimmed.substring(0, 1) + "." + trimmed.substring(1);
+        }
+        return raw;
     }
 
     private long computeTopLeftPixelSum(BufferedImage frame) {
