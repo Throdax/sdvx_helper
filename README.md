@@ -5,15 +5,15 @@ I've changed the images from the english manual to the english ones provided by 
 
 I will continue to update this README with the new features I've added in this fork.
 
-You can find the uploads of my play sessions and sdvx_helper in action on my [Youtube channel](https://www.youtube.com/playlist?list=PL8wHeBFaeU8i4D0MueTlCZKHkWgqBq89-) (fair warning, I'm not that good)
+You can find the uploads of my play sessions and SDVX Helper - Puni Edition in action on my [Youtube channel](https://www.youtube.com/playlist?list=PL8wHeBFaeU8i4D0MueTlCZKHkWgqBq89-) (fair warning, I'm not that good)
 
 # Manual 
 dj-kata created a simple English version of the manual.
 
 説明書の日本語版は[こちら](https://github.com/Throdax/sdvx_helper#README_JP.md)。
 
-# sdvx_helper
-The sdvx_helper is an application for SOUND VOLTEX EXCEED GEAR コナステ.  
+# SDVX Helper - Puni Edition
+SDVX Helper - Puni Edition is an application for SOUND VOLTEX EXCEED GEAR コナステ.  
 It aims for streaming with Open Broadcaster Software (OBS).  
 Even when the chart area is enlarged on your streaming layout,  current music information can be displayed clearly with this application.
 ![image](https://github.com/user-attachments/assets/287f6de5-767f-4c04-b328-6e429bdccbb3)
@@ -55,7 +55,7 @@ Just a heads up, your antivirus might block communication with OBS through TCP p
 
 |file name|description|
 |-|-|
-|sdvx_helper.exe|Execution file for sdvx_helper|
+|sdvx_helper.exe|Execution file for SDVX Helper - Puni Edition|
 |update.exe|Execution file for auto-updating this application|
 |manage_score.exe|A standalone tool to manage your play log|
 |ocr_reporter.exe|A standalone tool to help identify unrecognized songs that have been played|
@@ -69,15 +69,76 @@ Just a heads up, your antivirus might block communication with OBS through TCP p
 |resources/images|Set of files for recognition|
 |resources/i18n|Language files used to set the applications in the desired languages (feel free to contribute new translations via pull requests)|
 
+# New features in the Puni Edition
+This fork extends the original application with a number of quality-of-life improvements.
+
+## Discord Rich Presence
+SDVX Helper - Puni Edition can update your Discord status automatically while you play.
+It shows the song currently being played, your Volforce, and the current in-game screen.
+See the [Discord Presence](#discord-presence) section further below for setup instructions.
+
+## OCR title suggestion in the OCR Reporter
+The `ocr_reporter.exe` tool can now use OCR to read the title directly from an unidentified result screenshot and suggest a match automatically, rather than requiring you to identify the song manually.
+
+## Automatic play log entry on recognition
+When an unrecognised song is identified through OCR, the result is automatically added to the play log when colorized
+
+## OBS recording and streaming detection
+SDVX Helper - Puni Edition can detect when OBS starts or stops a recording or stream.
+This allows it to automatically format and export an end-of-session playlist when you finish, so your session log on the Discord webhook will include the timestamps of when the logs were played for easy youtube labeling.
+
+## OCR-based Volforce detection
+In addition to image-based detection, it can now use OCR to read your Volforce number directly from the screen, providing a more reliable fallback when the image matcher is uncertain.
+
+<!-- TODO: add Puni Edition feature screenshots here -->
+
 # How to install
-Download the ```sdvx_helper.zip``` at the top of [the release page](https://github.com/Throdax/sdvx_helper/releases)
+Download the ```sdvx_helper_puni_standalone.zip``` at the top of [the release page](https://github.com/Throdax/sdvx_helper/releases)
 and extract it to a folder of your choice (excluding the desktop). Click on ```sdvx_helper.exe``` to run it.
 
 An automatic update function is equipped in this tool,
 which executes an update process if there are any
 updates.
 
-# How to setup sdvx_helper
+# How to Migrate
+If you were previously using an older installation of this helper, you can migrate your existing data — play history, song database, and settings — to the Puni Edition automatically using the bundled migrator tool.
+Your result screenshots, recorded songs, and scores are unaffected by the migration.
+
+## What you need
+- Your existing helper installation folder (the one containing `sdvx_helper.exe` and your data files).
+- The `sdvx_helper_puni_migrator.zip` package downloaded from [the release page](https://github.com/Throdax/sdvx_helper/releases).
+- Python installed and available on your PATH (required to convert data files; download from [python.org](https://www.python.org/downloads/) if needed).
+
+## Steps
+
+### 1. Place the migrator files
+Extract the contents of `sdvx_helper_puni_migrator.zip` directly into your **existing installation folder** — the same folder that contains your current `sdvx_helper.exe`.
+After extracting you should see `migrate.exe` alongside your existing files.
+
+### 2. Run migrate.exe
+Double-click `migrate.exe`. The migrator window will open and display a description of what it is about to do.
+
+### 3. Click Migrate
+Press the **Migrate** button to start. The migrator will:
+
+1. Back up your entire existing installation to a folder named `<your folder>_old/` in the same parent directory.
+2. Extract the new Puni Edition files.
+3. Convert your data files to the new format — your play history and song database are preserved.
+4. Copy your existing settings across so the application launches with your previous configuration.
+
+Progress is shown in the log area at the bottom of the window.
+
+### 4. Done
+Once the log shows that migration has completed successfully, you can close `migrate.exe` and launch `sdvx_helper.exe` as normal.
+The `migrate.exe`, `app/` folder, and `runtime/` folder can be deleted at any point after closing the migrator — they are no longer needed.
+
+## Reverting
+If you need to go back to your previous installation, reopen `migrate.exe`.
+It will detect that a migration has already been performed and show a **Revert Migration** button instead.
+Pressing it will restore your old installation from the `<folder>_old/` backup and remove all Puni Edition files.
+Note that `migrate.exe`, `app/`, and `runtime/` must be deleted manually after closing the migrator, as they cannot be removed while the migrator itself is running.
+
+# How to setup SDVX Helper - Puni Edition
 ## 1. Configure WebSocket on OBS(version 28 or later).
 If OBSwebsocket is not installed, please download the latest alpha version without 'alpha'
 in the name (e.g., ~Windows-Installer.exe)
@@ -177,6 +238,27 @@ By dragging and dropping the following image files into OBS, you can display inf
 - vf_pre.png: VF at the app's startup
 - class_cur.png: Current grade
 - class_pre.png: Grade at the app's startup
+
+# Discord Presence
+SDVX Helper - Puni Edition can update your Discord Rich Presence automatically while you play,
+showing the current song, your Volforce, and the current in-game screen to anyone viewing your profile.
+
+<!-- TODO: add Discord Presence screenshot here -->
+
+## Setup
+1. Open the settings window from the menu bar.
+2. Enable **Discord Presence** in the Discord section.
+3. Optionally enable **Show song as title** to promote the current song name to the primary line of your Discord status.
+4. Optionally enable **Upload jacket for Discord** to show the current song's jacket art in your Discord status.
+   Jackets are hosted temporarily via Litterbox and linked directly in your Discord status.
+5. Close the settings window. Discord Presence will activate automatically when the game is detected.
+
+<!-- TODO: add Discord Presence settings screenshot here -->
+
+## Notes
+- Discord must be running on the same PC for Rich Presence to work.
+- Jacket uploads are processed on a background thread and do not affect detection timing.
+- If you disable jacket uploading mid-session, the Discord image reverts to the default immediately.
 
 # How to Use
 If you have set up the above, simply keep it running when doing OBS streaming or recording.
