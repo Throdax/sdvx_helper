@@ -46,7 +46,8 @@ public final class VersionUtil {
     /**
      * Reads a named version property from {@code version.properties} on the
      * classpath. Supported keys include {@code helper}, {@code ocr},
-     * {@code manager}, {@code sync}, {@code updater}, and {@code version}.
+     * {@code manager}, {@code sync}, {@code updater}, {@code migrator}, and
+     * {@code version}.
      *
      * @param key
      *            property key to read

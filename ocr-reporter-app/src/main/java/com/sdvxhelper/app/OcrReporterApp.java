@@ -50,7 +50,6 @@ public class OcrReporterApp extends Application {
 
     @Override
     public void start(Stage stage) throws IOException {
-        dismissSplashScreen();
         this.primaryStage = stage;
         SettingsRepository repo = new SettingsRepository();
         LocaleManager.getInstance().init(repo);
@@ -85,6 +84,7 @@ public class OcrReporterApp extends Application {
                 controller.onWindowClose();
             }
         });
+        dismissSplashScreen();
         stage.show();
         log.info("OCR Reporter UI displayed");
     }

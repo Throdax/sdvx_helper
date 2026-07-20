@@ -48,7 +48,6 @@ public class ScoreViewerApp extends Application {
 
     @Override
     public void start(Stage stage) throws IOException {
-        dismissSplashScreen();
         this.primaryStage = stage;
         SettingsRepository repo = new SettingsRepository();
         LocaleManager.getInstance().init(repo);
@@ -64,6 +63,7 @@ public class ScoreViewerApp extends Application {
         stage.setTitle("SDVX Score Viewer - Puni Edition " + VersionUtil.getVersion("manager"));
         applyIcon(stage);
         WindowPositionHelper.applyAndPersist(stage, repo, "score_lx", "score_ly");
+        dismissSplashScreen();
         stage.show();
         log.info("Score Viewer UI displayed");
     }

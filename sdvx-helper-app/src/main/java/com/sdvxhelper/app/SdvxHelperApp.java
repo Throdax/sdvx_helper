@@ -55,7 +55,6 @@ public class SdvxHelperApp extends Application {
 
     @Override
     public void start(Stage stage) throws IOException {
-        dismissSplashScreen();
         this.primaryStage = stage;
         SettingsRepository repo = new SettingsRepository();
         LocaleManager.getInstance().init(repo);
@@ -70,6 +69,7 @@ public class SdvxHelperApp extends Application {
         applyIcon(stage);
         stage.setTitle("SDVX Helper - Puni Edition " + VersionUtil.getVersion("helper"));
         WindowPositionHelper.applyAndPersist(stage, repo, "lx", "ly");
+        dismissSplashScreen();
         stage.show();
         log.info("SDVX Helper UI displayed");
     }

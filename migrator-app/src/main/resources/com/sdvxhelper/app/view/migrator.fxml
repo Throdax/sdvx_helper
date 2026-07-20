@@ -31,10 +31,12 @@
            style="-fx-font-size: 16px; -fx-font-weight: bold;" />
 
     <!-- Instructions -->
-    <Label fx:id="descriptionLabel"
-           wrapText="true"
-           maxWidth="Infinity"
-           text="" />
+    <TextArea fx:id="descriptionLabel"
+              editable="false"
+              wrapText="true"
+              prefRowCount="4"
+              style="-fx-background-color: transparent; -fx-background-insets: 0; -fx-padding: 0; -fx-border-color: transparent; -fx-border-width: 0;"
+              text="" />
 
     <!-- Migrate button -->
     <Button fx:id="migrateButton"

@@ -48,7 +48,6 @@ public class PlayLogSyncApp extends Application {
 
     @Override
     public void start(Stage stage) throws IOException {
-        dismissSplashScreen();
         this.primaryStage = stage;
         SettingsRepository repo = new SettingsRepository();
         LocaleManager.getInstance().init(repo);
@@ -63,6 +62,7 @@ public class PlayLogSyncApp extends Application {
         stage.setTitle("SDVX Play Log Sync - Puni Edition " + VersionUtil.getVersion("sync"));
         applyIcon(stage);
         WindowPositionHelper.applyAndPersist(stage, repo, "sync_lx", "sync_ly");
+        dismissSplashScreen();
         stage.show();
         log.info("Play Log Sync UI displayed");
     }

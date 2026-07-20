@@ -59,7 +59,7 @@ public class MigratorController {
     private Label titleLabel;
 
     @FXML
-    private Label descriptionLabel;
+    private TextArea descriptionLabel;
 
     @FXML
     private Button migrateButton;
@@ -241,7 +241,7 @@ public class MigratorController {
     private void applyLanguage() {
         languageLabel.setText(t("Language:", "\u8a00\u8a9e:"));
         titleLabel.setText(t("SDVX Helper \u2014 Puni Edition Migrator",
-                "SDVX \u30d8\u30eb\u30d1\u30fc \u2014 Puni \u30a8\u30c7\u30a3\u30b7\u30e7\u30f3 \u30de\u30a4\u30b0\u30ec\u30fc\u30bf\u30fc"));
+                "SDVX \u30d8\u30eb\u30d1\u30fc \u2014 \u30d7\u30cb \u30a8\u30c7\u30a3\u30b7\u30e7\u30f3 \u30de\u30a4\u30b0\u30ec\u30fc\u30bf\u30fc"));
         migrateButton.setText(t("Migrate", "\u30de\u30a4\u30b0\u30ec\u30fc\u30c8"));
         revertButton.setText(t("Revert Migration",
                 "\u30de\u30a4\u30b0\u30ec\u30fc\u30b7\u30e7\u30f3\u3092\u5143\u306b\u623b\u3059"));
@@ -252,24 +252,27 @@ public class MigratorController {
                     "SDVX Helper \u2014 Puni Edition is already installed. Your previous"
                             + " installation was backed up to " + backupDirName + "/."
                             + " You may revert to the previous installation using the button below."
-                            + " Alternatively, you can safely delete migrate.exe.",
-                    "SDVX Helper \u2014 Puni Edition \u306f\u3059\u3067\u306b\u30a4\u30f3\u30b9\u30c8\u30fc\u30eb\u3055\u308c\u3066\u3044\u307e\u3059\u3002"
+                            + " Alternatively, you can safely delete migrate.exe."
+                            + " All your result screenshots, recorded songs and scores remain intact.",
+                    "SDVX Helper \u2014 \u30d7\u30cb \u30a8\u30c7\u30a3\u30b7\u30e7\u30f3 \u306f\u3059\u3067\u306b\u30a4\u30f3\u30b9\u30c8\u30fc\u30eb\u3055\u308c\u3066\u3044\u307e\u3059\u3002"
                             + "\u4ee5\u524d\u306e\u30a4\u30f3\u30b9\u30c8\u30fc\u30eb\u306f " + backupDirName
                             + "/ \u306b\u30d0\u30c3\u30af\u30a2\u30c3\u30d7\u3055\u308c\u3066\u3044\u307e\u3059\u3002"
                             + "\u4ee5\u4e0b\u306e\u30dc\u30bf\u30f3\u3067\u4ee5\u524d\u306e\u30a4\u30f3\u30b9\u30c8\u30fc\u30eb\u306b\u623b\u3059\u3053\u3068\u304c\u3067\u304d\u307e\u3059\u3002"
-                            + "migrate.exe \u306f\u5b89\u5168\u306b\u524a\u9664\u3067\u304d\u307e\u3059\u3002"));
+                            + "migrate.exe \u306f\u5b89\u5168\u306b\u524a\u9664\u3067\u304d\u307e\u3059\u3002"
+                            + "\u30ea\u30b6\u30eb\u30c8\u30b9\u30af\u30ea\u30fc\u30f3\u30b7\u30e7\u30c3\u30c8\u3001\u8a18\u9332\u3055\u308c\u305f\u697d\u66f2\u3001\u30b9\u30b3\u30a2\u306f\u3059\u3079\u3066\u4fdd\u6301\u3055\u308c\u3066\u3044\u307e\u3059\u3002"));
             stepLabel.setText(t("Puni Edition already installed \u2014 migrate.exe can be safely deleted.",
-                    "Puni Edition \u306f\u3059\u3067\u306b\u30a4\u30f3\u30b9\u30c8\u30fc\u30eb\u6e08\u307f \u2014 migrate.exe \u306f\u5b89\u5168\u306b\u524a\u9664\u3067\u304d\u307e\u3059\u3002"));
+                    "\u30d7\u30cb \u30a8\u30c7\u30a3\u30b7\u30e7\u30f3 \u306f\u3059\u3067\u306b\u30a4\u30f3\u30b9\u30c8\u30fc\u30eb\u6e08\u307f \u2014 migrate.exe \u306f\u5b89\u5168\u306b\u524a\u9664\u3067\u304d\u307e\u3059\u3002"));
         } else {
             descriptionLabel.setText(t(
                     "This tool will back up your existing installation to " + backupDirName
-                            + "/, extract Puni Edition, migrate your data files, and copy your"
-                            + " settings. Click Migrate to begin.",
+                            + "/, extract Puni Edition, and migrate your data files and settings."
+                            + " All your result screenshots, recorded songs and scores will be preserved."
+                            + " Click Migrate to begin.",
                     "\u3053\u306e\u30c4\u30fc\u30eb\u306f\u65e2\u5b58\u306e\u30a4\u30f3\u30b9\u30c8\u30fc\u30eb\u3092 "
                             + backupDirName
-                            + "/ \u306b\u30d0\u30c3\u30af\u30a2\u30c3\u30d7\u3057\u3001Puni \u30a8\u30c7\u30a3\u30b7\u30e7\u30f3\u3092"
-                            + "\u5c55\u958b\u3057\u3066\u30c7\u30fc\u30bf\u30d5\u30a1\u30a4\u30eb\u3092\u79fb\u884c\u3057\u3001"
-                            + "\u8a2d\u5b9a\u3092\u30b3\u30d4\u30fc\u3057\u307e\u3059\u3002"
+                            + "/ \u306b\u30d0\u30c3\u30af\u30a2\u30c3\u30d7\u3057\u3001\u30d7\u30cb \u30a8\u30c7\u30a3\u30b7\u30e7\u30f3\u3092"
+                            + "\u5c55\u958b\u3057\u3066\u30c7\u30fc\u30bf\u30d5\u30a1\u30a4\u30eb\u3068\u8a2d\u5b9a\u3092\u79fb\u884c\u3057\u307e\u3059\u3002"
+                            + "\u30ea\u30b6\u30eb\u30c8\u30b9\u30af\u30ea\u30fc\u30f3\u30b7\u30e7\u30c3\u30c8\u3001\u8a18\u9332\u3055\u308c\u305f\u697d\u66f2\u3001\u30b9\u30b3\u30a2\u306f\u3059\u3079\u3066\u5f15\u304d\u7d99\u304c\u308c\u307e\u3059\u3002"
                             + "\u300c\u30de\u30a4\u30b0\u30ec\u30fc\u30c8\u300d\u3092\u30af\u30ea\u30c3\u30af\u3057\u3066\u958b\u59cb\u3057\u3066\u304f\u3060\u3055\u3044\u3002"));
             if (!migrateButton.isDisabled()) {
                 stepLabel.setText(t("Ready.", "\u6e96\u5099\u5b8c\u4e86\u3002"));
@@ -278,7 +281,7 @@ public class MigratorController {
 
         if (stage != null) {
             stage.setTitle(t("SDVX Helper - Puni Edition Migrator ",
-                    "SDVX \u30d8\u30eb\u30d1\u30fc - Puni \u30a8\u30c7\u30a3\u30b7\u30e7\u30f3 \u30de\u30a4\u30b0\u30ec\u30fc\u30bf\u30fc ")
+                    "SDVX \u30d8\u30eb\u30d1\u30fc - \u30d7\u30cb \u30a8\u30c7\u30a3\u30b7\u30e7\u30f3 \u30de\u30a4\u30b0\u30ec\u30fc\u30bf\u30fc ")
                     + VersionUtil.getVersion("migrator"));
         }
     }
