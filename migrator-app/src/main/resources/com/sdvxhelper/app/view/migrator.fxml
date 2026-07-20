@@ -38,19 +38,20 @@
               style="-fx-background-color: transparent; -fx-background-insets: 0; -fx-padding: 0; -fx-border-color: transparent; -fx-border-width: 0;"
               text="" />
 
-    <!-- Migrate button -->
-    <Button fx:id="migrateButton"
-            text="Migrate"
-            prefWidth="120"
-            onAction="#onMigrateClicked" />
+    <!-- Action buttons: Migrate (always visible) and Revert (shown when already migrated) -->
+    <HBox spacing="8">
+        <Button fx:id="migrateButton"
+                text="Migrate"
+                prefWidth="120"
+                onAction="#onMigrateClicked" />
 
-    <!-- Revert button: visible only when migration already detected -->
-    <Button fx:id="revertButton"
-            text="Revert Migration"
-            prefWidth="180"
-            visible="false"
-            managed="false"
-            onAction="#onRevertClicked" />
+        <Button fx:id="revertButton"
+                text="Revert Migration"
+                prefWidth="180"
+                visible="false"
+                managed="false"
+                onAction="#onRevertClicked" />
+    </HBox>
 
     <!-- Overall progress -->
     <HBox spacing="8" alignment="CENTER_LEFT">

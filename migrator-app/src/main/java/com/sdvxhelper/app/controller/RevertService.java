@@ -118,6 +118,13 @@ public class RevertService implements Runnable {
      * Copies every entry from the backup directory back into the working directory,
      * overwriting any Puni Edition files with the originals from the backup.
      *
+     * <p>
+     * The {@code log/} directory is intentionally skipped: the log files are
+     * written by the running migrator process and the destination
+     * {@code log/migrator.log} is locked by Log4j. Old log files from the backup
+     * do not need to be restored.
+     * </p>
+     *
      * @param backupDir
      *            the backup directory to restore from
      * @throws IOException
@@ -131,6 +138,10 @@ public class RevertService implements Runnable {
             return;
         }
         for (File entry : entries) {
+            if ("log".equalsIgnoreCase(entry.getName()) && entry.isDirectory()) {
+                fireLog("  skip (log files remain active): log/");
+                continue;
+            }
             MigrationFileUtils.copyRecursive(entry, new File(workDir, entry.getName()));
             fireLog("  restored: " + entry.getName());
         }

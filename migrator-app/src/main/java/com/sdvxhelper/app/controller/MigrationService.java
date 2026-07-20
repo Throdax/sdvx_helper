@@ -76,13 +76,16 @@ public class MigrationService implements Runnable {
 
     /**
      * Known pickle files (relative to {@code sdvx_helper_old/}) and their
-     * corresponding output XML names. Each entry is {@code {relative-pkl-path,
-     * output-xml-name}}.
+     * corresponding output sub-directory and XML names. Each entry is
+     * {@code {relative-pkl-path, output-subdir, output-xml-name}} where
+     * {@code output-subdir} is relative to {@code workDir} (empty string means
+     * the working directory root).
      */
-    private static final List<String[]> PKL_DESCRIPTORS = Arrays.asList(new String[]{"alllog.pkl", "alllog.xml"},
-            new String[]{"resources/musiclist.pkl", "musiclist.xml"},
-            new String[]{"out/rival_log.pkl", "rival_log.xml"},
-            new String[]{"resources/title_conv_table.pkl", "title_conv_table.xml"});
+    private static final List<String[]> PKL_DESCRIPTORS = Arrays.asList(
+            new String[]{"alllog.pkl", "", "alllog.xml"},
+            new String[]{"resources/musiclist.pkl", "resources", "musiclist.xml"},
+            new String[]{"out/rival_log.pkl", "", "rival_log.xml"},
+            new String[]{"resources/title_conv_table.pkl", "resources", "title_conv_table.xml"});
 
     private static final MigrationStep[] STEPS = MigrationStep.values();
 
@@ -298,20 +301,34 @@ public class MigrationService implements Runnable {
         }
         for (String[] descriptor : PKL_DESCRIPTORS) {
             String relativePklPath = descriptor[0];
+            String outputSubDir = descriptor[1];
+            String outputXmlName = descriptor[2];
             File pklFile = new File(oldDir, relativePklPath);
             if (!pklFile.exists()) {
                 fireLog("  skip (not found): " + relativePklPath);
                 continue;
             }
+            File outputDir = outputSubDir.isEmpty() ? workDir : new File(workDir, outputSubDir);
+            File existingXml = new File(outputDir, outputXmlName);
+            if (existingXml.exists()) {
+                fireLog("  overwriting distribution " + outputXmlName + " with user data from " + relativePklPath);
+            }
+            if (!outputDir.exists() && !outputDir.mkdirs()) {
+                fireLog("  WARN: could not create output directory " + outputDir.getAbsolutePath()
+                        + " — skipping " + relativePklPath);
+                continue;
+            }
             fireLog("  migrating: " + relativePklPath);
-            migrateOnePkl(pklFile, workDir, pythonScript);
+            migrateOnePkl(pklFile, outputDir, pythonScript);
         }
         fireLog("Pickle migration step complete.");
     }
 
     /**
      * Launches the Python migration script for a single pickle file, streaming its
-     * stdout/stderr to the log callback. A non-zero exit code or an
+     * stdout/stderr to the log callback. It first tries the {@code python} command
+     * and falls back to {@code py} (Windows Python Launcher) when
+     * {@code python} is not on the PATH. A non-zero exit code or an
      * {@link IOException} (e.g. Python not installed) is logged as a warning rather
      * than aborting the migration.
      *
@@ -323,35 +340,41 @@ public class MigrationService implements Runnable {
      *            the {@code migrate_pkl_to_xml.py} script file
      */
     private void migrateOnePkl(File pklFile, File outputDir, File pythonScript) {
-        ProcessBuilder processBuilder = new ProcessBuilder("python", pythonScript.getAbsolutePath(), "--pkl-file",
-                pklFile.getAbsolutePath(), "--output-dir", outputDir.getAbsolutePath());
-        processBuilder.redirectErrorStream(true);
-        processBuilder.directory(workDir);
-        try {
-            Process process = processBuilder.start();
-            try (BufferedReader br = new BufferedReader(
-                    new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))) {
-                String line = br.readLine();
-                while (!Objects.isNull(line)) {
-                    fireLog("    [python] " + line);
-                    line = br.readLine();
+        for (String pythonCmd : new String[]{"python", "py"}) {
+            ProcessBuilder processBuilder = new ProcessBuilder(pythonCmd, pythonScript.getAbsolutePath(),
+                    "--pkl-file", pklFile.getAbsolutePath(), "--output-dir", outputDir.getAbsolutePath());
+            processBuilder.redirectErrorStream(true);
+            processBuilder.directory(workDir);
+            try {
+                Process process = processBuilder.start();
+                try (BufferedReader br = new BufferedReader(
+                        new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))) {
+                    String line = br.readLine();
+                    while (!Objects.isNull(line)) {
+                        fireLog("    [python] " + line);
+                        line = br.readLine();
+                    }
                 }
+                int exitCode = process.waitFor();
+                if (exitCode != 0) {
+                    fireLog("  WARN: script exited with code " + exitCode + " for " + pklFile.getName());
+                } else {
+                    fireLog("  done: " + pklFile.getName());
+                }
+                return;
+            } catch (IOException ioException) {
+                log.debug("Command '{}' not available for pkl migration of {}: {}", pythonCmd, pklFile.getName(),
+                        ioException.getMessage());
+            } catch (InterruptedException interruptedException) {
+                Thread.currentThread().interrupt();
+                log.warn("Interrupted while waiting for Python process for {}", pklFile.getName());
+                fireLog("  WARN: Migration of " + pklFile.getName() + " was interrupted.");
+                return;
             }
-            int exitCode = process.waitFor();
-            if (exitCode != 0) {
-                fireLog("  WARN: script exited with code " + exitCode + " for " + pklFile.getName());
-            } else {
-                fireLog("  done: " + pklFile.getName());
-            }
-        } catch (IOException ioException) {
-            log.warn("Could not start Python for pkl migration of {}: {}", pklFile.getName(), ioException.getMessage());
-            fireLog("  WARN: Python not available — skipping " + pklFile.getName());
-            fireLog("        Install Python and re-run, or migrate manually later.");
-        } catch (InterruptedException interruptedException) {
-            Thread.currentThread().interrupt();
-            log.warn("Interrupted while waiting for Python process for {}", pklFile.getName());
-            fireLog("  WARN: Migration of " + pklFile.getName() + " was interrupted.");
         }
+        log.warn("Neither 'python' nor 'py' found on PATH for pkl migration of {}", pklFile.getName());
+        fireLog("  WARN: Python not available — skipping " + pklFile.getName());
+        fireLog("        Install Python and re-run, or migrate manually later.");
     }
 
     /**

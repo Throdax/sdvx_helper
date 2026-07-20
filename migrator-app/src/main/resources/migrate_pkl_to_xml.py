@@ -199,6 +199,10 @@ def main():
 
     if args.pkl_file:
         # Single-file mode: migrate exactly the specified pkl and exit.
+        # Add the script's directory to sys.path so that domain classes
+        # (e.g. OnePlayData defined in sdvx_helper.py) can be found when
+        # unpickling.
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)) or '.')
         name = os.path.basename(args.pkl_file)
         dispatch = {
             'alllog.pkl':           (migrate_alllog,           'alllog.xml'),
