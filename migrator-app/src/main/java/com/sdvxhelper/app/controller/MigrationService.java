@@ -529,7 +529,7 @@ public class MigrationService implements Runnable {
      *            the message to send; must not be {@code null}
      */
     private void fireLog(String message) {
-        log.debug(message);
+        log.info(message);
         Platform.runLater(() -> callback.onLog(message));
     }
 }

@@ -22,6 +22,16 @@ import org.slf4j.LoggerFactory;
  * </p>
  *
  * <p>
+ * After restoring from backup, the service performs a diff of the working
+ * directory against the backup. Any file or directory that exists in the
+ * working directory but was absent from the backup (e.g. {@code webhooks.json},
+ * {@code alllog.xml}, {@code resources/musiclist.xml},
+ * {@code resources/tessdata/jpn.traineddata}) is considered a Puni Edition-only
+ * artifact and is deleted. The diff recurses into directories that exist in both
+ * locations so that nested Puni-only files are also removed.
+ * </p>
+ *
+ * <p>
  * After a successful revert the Puni Edition executables ({@code migrate.exe}
  * and the {@code runtime/} folder) are still present because this process is
  * itself running from them. The user is instructed to delete those manually
@@ -36,12 +46,12 @@ public class RevertService implements Runnable {
     private static final Logger log = LoggerFactory.getLogger(RevertService.class);
 
     /**
-     * Puni Edition-only directories that must be removed during revert but are
-     * absent from the backup. {@code app/} and {@code runtime/} are intentionally
-     * excluded here because the migrator itself runs from those directories and
-     * they cannot be deleted while the process is alive.
+     * Names that must never be deleted during the diff-based cleanup step,
+     * regardless of whether they appear in the backup. Includes the migrator's
+     * own runtime directories (which cannot be deleted while the process is
+     * alive) and the active log directory.
      */
-    private static final Set<String> PUNI_ONLY_ENTRIES = Set.of();
+    private static final Set<String> ALWAYS_RETAIN = Set.of("migrate.exe", "runtime", "app", "log");
 
     private File workDir;
     private RevertCallback callback;
@@ -93,7 +103,7 @@ public class RevertService implements Runnable {
             }
 
             restoreBackup(backupDir);
-            removePuniEditionArtifacts();
+            removePuniOnlyArtifacts(backupDir);
             removeDistributionZip();
             removeBackupDir(backupDir);
 
@@ -149,27 +159,56 @@ public class RevertService implements Runnable {
     }
 
     /**
-     * Deletes each directory listed in {@link #PUNI_ONLY_ENTRIES} that exists in
-     * the working directory. These directories were introduced by the Puni Edition
-     * distribution and are absent from the backup, so restoring the backup alone
-     * would not remove them.
+     * Removes any file or directory that exists in the working directory but is
+     * absent from the backup. Such entries were introduced by the Puni Edition
+     * installation (e.g. {@code webhooks.json}, {@code alllog.xml},
+     * {@code resources/musiclist.xml}, {@code resources/tessdata/jpn.traineddata})
+     * and must be deleted so the working directory is left exactly as it was
+     * before the migration.
      *
      * <p>
-     * {@code app/} and {@code runtime/} are deliberately excluded from this set
-     * because the migrator process itself runs from those directories and cannot
-     * delete them while it is alive. The user is instructed to remove them manually
-     * after closing the migrator.
+     * Entries listed in {@link #ALWAYS_RETAIN} (migrator's own files and the
+     * active log directory) are never touched. The backup directory itself is also
+     * skipped.
      * </p>
      *
+     * @param backupDir
+     *            the backup directory used as the reference for the diff
      * @throws IOException
      *             if any entry cannot be deleted
      */
-    private void removePuniEditionArtifacts() throws IOException {
-        for (String name : PUNI_ONLY_ENTRIES) {
-            File toDelete = new File(workDir, name);
-            if (toDelete.exists()) {
-                MigrationFileUtils.deleteRecursive(toDelete);
-                fireLog("  removed (Puni Edition): " + name);
+    private void removePuniOnlyArtifacts(File backupDir) throws IOException {
+        fireLog("Removing Puni Edition-only artifacts\u2026");
+        removePuniOnlyRecursive(workDir, backupDir);
+    }
+
+    /**
+     * Recursively removes entries present in {@code current} that have no
+     * corresponding entry in {@code backupEquivalent}. Shared directories are
+     * recursed into so that nested Puni-only files are also caught.
+     *
+     * @param current
+     *            the directory being scanned in the working tree
+     * @param backupEquivalent
+     *            the corresponding directory in the backup tree
+     * @throws IOException
+     *             if any entry cannot be deleted
+     */
+    private void removePuniOnlyRecursive(File current, File backupEquivalent) throws IOException {
+        File[] entries = current.listFiles();
+        if (Objects.isNull(entries)) {
+            return;
+        }
+        for (File entry : entries) {
+            if (ALWAYS_RETAIN.contains(entry.getName()) || entry.getName().equals(backupDirName)) {
+                continue;
+            }
+            File backupEntry = new File(backupEquivalent, entry.getName());
+            if (!backupEntry.exists()) {
+                MigrationFileUtils.deleteRecursive(entry);
+                fireLog("  removed (Puni Edition-only): " + entry.getName());
+            } else if (entry.isDirectory() && backupEntry.isDirectory()) {
+                removePuniOnlyRecursive(entry, backupEntry);
             }
         }
     }
@@ -217,7 +256,7 @@ public class RevertService implements Runnable {
      *            the message to send; must not be {@code null}
      */
     private void fireLog(String message) {
-        log.debug(message);
+        log.info(message);
         Platform.runLater(() -> callback.onLog(message));
     }
 }

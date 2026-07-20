@@ -24,6 +24,23 @@ from xml.dom import minidom
 # Helpers
 # ---------------------------------------------------------------------------
 
+class _FlexibleUnpickler(pickle.Unpickler):
+    """Unpickler that substitutes a plain namespace class for any type that
+    cannot be imported from the pickle stream.
+
+    This allows migration of pickle files without requiring the original SDVX
+    Helper source files (sdvx_helper.py, etc.) to be importable, which would
+    fail when those files pull in GUI or hardware dependencies.
+    """
+
+    def find_class(self, module, name):
+        try:
+            return super().find_class(module, name)
+        except (AttributeError, ImportError, ModuleNotFoundError):
+            # Return a bare class; pickle will populate its __dict__ with the
+            # stored instance attributes so field access (e.g. play.title) works.
+            return type(str(name), (), {})
+
 def _pretty(elem: ET.Element, encoding: str = 'UTF-8') -> str:
     """Return a pretty-printed XML string for the element."""
     rough = ET.tostring(elem, encoding='unicode')
@@ -39,12 +56,12 @@ def _write(path: str, root: ET.Element) -> None:
 
 
 def _load_pkl(path: str):
-    """Load and return a pickle file, or None if not found."""
+    """Load and return a pickle file using the flexible unpickler, or None if not found."""
     if not os.path.exists(path):
         print(f"  WARNING: {path} not found, skipping.")
         return None
     with open(path, 'rb') as f:
-        return pickle.load(f)
+        return _FlexibleUnpickler(f).load()
 
 
 # ---------------------------------------------------------------------------
