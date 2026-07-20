@@ -36,7 +36,7 @@ import org.slf4j.LoggerFactory;
  * than loaded from a {@code ResourceBundle}.
  * </p>
  *
- * @author Filipe Cristino
+ * @author Throdax
  * @since 2.0.0
  */
 public class MigratorController {

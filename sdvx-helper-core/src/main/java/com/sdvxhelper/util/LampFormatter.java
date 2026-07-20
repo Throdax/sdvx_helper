@@ -11,7 +11,7 @@ package com.sdvxhelper.util;
  * Discord outputs.
  * </p>
  *
- * @author Filipe Cristino
+ * @author Throdax
  * @since 2.0.0
  */
 public class LampFormatter {

@@ -9,7 +9,7 @@ package com.sdvxhelper.app.controller;
  * {@code MIGRATE_PKL} → {@code COPY_SETTINGS} → {@code CLEANUP}.
  * </p>
  *
- * @author Filipe Cristino
+ * @author Throdax
  * @since 2.0.0
  */
 public enum MigrationStep {

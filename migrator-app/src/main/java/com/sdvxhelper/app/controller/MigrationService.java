@@ -37,7 +37,7 @@ import org.slf4j.LoggerFactory;
  * ({@code System.getProperty("user.dir")}).
  * </p>
  *
- * @author Filipe Cristino
+ * @author Throdax
  * @since 2.0.0
  */
 public class MigrationService implements Runnable {

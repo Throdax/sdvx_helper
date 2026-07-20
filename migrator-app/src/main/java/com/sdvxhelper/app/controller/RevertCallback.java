@@ -10,7 +10,7 @@ package com.sdvxhelper.app.controller;
  * {@link javafx.application.Platform#runLater} wrappers.
  * </p>
  *
- * @author Filipe Cristino
+ * @author Throdax
  * @since 2.0.0
  */
 public interface RevertCallback {

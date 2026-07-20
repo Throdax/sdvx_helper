@@ -12,7 +12,7 @@ package com.sdvxhelper.app.controller;
  * in the implementation.
  * </p>
  *
- * @author Filipe Cristino
+ * @author Throdax
  * @since 2.0.0
  */
 public interface MigrationCallback {

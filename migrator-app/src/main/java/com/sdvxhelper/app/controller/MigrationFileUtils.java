@@ -16,7 +16,7 @@ import java.util.Objects;
  * defined exactly once.
  * </p>
  *
- * @author Filipe Cristino
+ * @author Throdax
  * @since 2.0.0
  */
 public final class MigrationFileUtils {

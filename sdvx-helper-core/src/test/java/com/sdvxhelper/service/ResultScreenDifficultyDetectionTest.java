@@ -23,7 +23,7 @@ import org.mockito.Mockito;
  * are loaded from the bundled {@code params.json}, ensuring the test exercises
  * the exact same crop region used by the runtime application.
  *
- * @author Filipe Cristino
+ * @author Throdax
  * @since 2.0.0
  */
 class ResultScreenDifficultyDetectionTest {

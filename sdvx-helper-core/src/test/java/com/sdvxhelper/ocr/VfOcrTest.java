@@ -30,7 +30,7 @@ import org.junit.jupiter.api.Test;
  * Tesseract is correctly recognised.
  * </p>
  *
- * @author Filipe Cristino
+ * @author Throdax
  * @since 2.0.0
  */
 class VfOcrTest {

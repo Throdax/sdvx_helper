@@ -32,7 +32,7 @@ import org.junit.jupiter.api.Test;
  * is attempted.
  * </p>
  *
- * @author Filipe Cristino
+ * @author Throdax
  * @since 2.0.0
  */
 class SummaryGeneratorServiceTest {

@@ -20,7 +20,7 @@ import java.io.IOException;
  * detection-loop background thread at any time.
  * </p>
  *
- * @author Filipe Cristino
+ * @author Throdax
  * @since 2.0.0
  * @see LitterboxClient
  */

@@ -20,7 +20,7 @@ package com.sdvxhelper.app;
  * a code path that is tolerant of the classpath deployment model.
  * </p>
  *
- * @author Filipe Cristino
+ * @author Throdax
  * @since 2.0.0
  */
 public class Launcher {
