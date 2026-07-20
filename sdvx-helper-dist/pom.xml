@@ -18,7 +18,7 @@
         Java equivalent of the packaging section in python/build.cmd.</description>
 
     <properties>
-        <zip-final-name>sdvx_helper_java_standalone</zip-final-name>
+        <zip-final-name>sdvx_helper_puni_standalone</zip-final-name>
     </properties>
 
     <!--

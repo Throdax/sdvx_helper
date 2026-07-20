@@ -2,16 +2,16 @@
 <!--
   Assembly descriptor for the SDVX Helper Migrator ZIP.
 
-  Produces:  sdvx_helper_java_migrator.zip
+  Produces:  sdvx_helper_puni_migrator.zip
 
-  ZIP layout (user unzips this into the root of their Python installation):
+  ZIP layout (user unzips this into the root of their existing installation):
 
-    migrate.exe                   – migrator launcher EXE
-    runtime/                      – bundled JRE for the migrator
-    app/                          – migrator JAR + jpackage launcher config
+    migrate.exe                      – migrator launcher EXE
+    runtime/                         – bundled JRE for the migrator
+    app/                             – migrator JAR + jpackage launcher config
 
-    sdvx_helper_java_standalone.zip – the full Java dist (extracted by the migrator at runtime)
-    migrate_pkl_to_xml.py           – Python migration script (called by the migrator)
+    sdvx_helper_puni_standalone.zip  – the full Puni Edition dist (extracted by the migrator at runtime)
+    migrate_pkl_to_xml.py            – Python migration script (called by the migrator)
 -->
 <assembly xmlns="http://maven.apache.org/ASSEMBLY/2.2.0"
           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -61,7 +61,7 @@
             <directory>../sdvx-helper-dist/target</directory>
             <outputDirectory>.</outputDirectory>
             <includes>
-                <include>sdvx_helper_java_standalone.zip</include>
+                <include>sdvx_helper_puni_standalone.zip</include>
             </includes>
         </fileSet>
 

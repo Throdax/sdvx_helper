@@ -21,8 +21,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Performs the five-step migration from the old Python SDVX Helper installation
- * to the new Java distribution.
+ * Performs the five-step migration from the existing SDVX Helper installation
+ * to the new Puni Edition distribution.
  *
  * <p>
  * An instance of this class is constructed once per migration attempt. It runs
@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory;
  *
  * <p>
  * The working directory ({@code workDir}) is the directory from which the
- * migrator EXE was launched, i.e. the root of the old Python installation
+ * migrator EXE was launched, i.e. the root of the existing installation
  * ({@code System.getProperty("user.dir")}).
  * </p>
  *
@@ -46,10 +46,12 @@ public class MigrationService implements Runnable {
 
     /**
      * Files and directories that belong to the migrator itself and must not be
-     * copied into the {@code sdvx_helper_old/} backup folder.
+     * copied into the backup folder. The backup directory itself is excluded
+     * dynamically via {@link #backupDirName} to support arbitrary installation
+     * folder names.
      */
     private static final Set<String> OWN_FILES = Set.of("migrate.exe", "runtime", "app",
-            "sdvx_helper_java_standalone.zip", "migrate_pkl_to_xml.py", "sdvx_helper_old");
+            "sdvx_helper_puni_standalone.zip", "migrate_pkl_to_xml.py");
 
     /**
      * ZIP entry name prefixes that must be skipped during extraction.
@@ -88,6 +90,13 @@ public class MigrationService implements Runnable {
     private MigrationCallback callback;
 
     /**
+     * Name of the backup sub-directory derived from the working directory name. For
+     * example, if {@code workDir} is {@code sdvx_helper/}, the backup is created at
+     * {@code sdvx_helper_old/}.
+     */
+    private String backupDirName;
+
+    /**
      * Constructs a new {@code MigrationService} instance.
      *
      * @param workDir
@@ -100,6 +109,7 @@ public class MigrationService implements Runnable {
     public MigrationService(File workDir, MigrationCallback callback) {
         validateInputs(workDir, callback);
         this.workDir = workDir;
+        this.backupDirName = workDir.getName() + "_old";
         this.callback = callback;
     }
 
@@ -143,7 +153,7 @@ public class MigrationService implements Runnable {
                 } catch (IOException rollbackEx) {
                     log.error("Rollback failed", rollbackEx);
                     fireLog("ERROR: Rollback also failed — " + rollbackEx.getMessage());
-                    fireLog("       Please restore your files manually from sdvx_helper_old/");
+                    fireLog("       Please restore your files manually from " + backupDirName + "/");
                 }
             } else {
                 removePartialBackup();
@@ -192,14 +202,14 @@ public class MigrationService implements Runnable {
 
     /**
      * Copies all non-own files and directories from the working directory to a
-     * {@code sdvx_helper_old/} sub-directory, preserving the layout of the old
-     * Python installation.
+     * {@code <name>_old/} sub-directory, preserving the layout of the existing
+     * installation.
      *
      * @throws IOException
      *             if creating the backup directory or copying any entry fails
      */
     private void executeBackup() throws IOException {
-        File backupDir = new File(workDir, "sdvx_helper_old");
+        File backupDir = new File(workDir, backupDirName);
         if (!backupDir.exists() && !backupDir.mkdirs()) {
             throw new IOException("Could not create backup directory: " + backupDir.getAbsolutePath());
         }
@@ -210,7 +220,7 @@ public class MigrationService implements Runnable {
             return;
         }
         for (File entry : entries) {
-            if (OWN_FILES.contains(entry.getName())) {
+            if (OWN_FILES.contains(entry.getName()) || entry.getName().equals(backupDirName)) {
                 fireLog("  skip (own file): " + entry.getName());
                 continue;
             }
@@ -221,7 +231,7 @@ public class MigrationService implements Runnable {
     }
 
     /**
-     * Extracts {@code sdvx_helper_java_standalone.zip} from the working directory
+     * Extracts {@code sdvx_helper_puni_standalone.zip} from the working directory
      * into the working directory, creating parent directories for each entry as
      * needed.
      *
@@ -229,7 +239,7 @@ public class MigrationService implements Runnable {
      *             if the ZIP file is missing or any entry cannot be written
      */
     private void executeExtract() throws IOException {
-        File distZip = new File(workDir, "sdvx_helper_java_standalone.zip");
+        File distZip = new File(workDir, "sdvx_helper_puni_standalone.zip");
         if (!distZip.exists()) {
             throw new IOException("Distribution ZIP not found: " + distZip.getAbsolutePath());
         }
@@ -279,7 +289,7 @@ public class MigrationService implements Runnable {
      * attempted.
      */
     private void executeMigratePkl() {
-        File oldDir = new File(workDir, "sdvx_helper_old");
+        File oldDir = new File(workDir, backupDirName);
         File pythonScript = new File(workDir, "migrate_pkl_to_xml.py");
         if (!pythonScript.exists()) {
             fireLog("WARN: migrate_pkl_to_xml.py not found next to the migrator — skipping pkl migration.");
@@ -345,18 +355,18 @@ public class MigrationService implements Runnable {
     }
 
     /**
-     * Copies {@code sdvx_helper_old/settings.json} to {@code settings.json} in the
-     * working directory, preserving the user's existing preferences so they are
-     * automatically applied on the first launch of the Java application.
+     * Copies {@code <backup>/settings.json} to {@code settings.json} in the working
+     * directory, preserving the user's existing preferences so they are
+     * automatically applied on the first launch of Puni Edition.
      *
      * @throws IOException
      *             if the source settings file does not exist or cannot be copied
      */
     private void executeCopySettings() throws IOException {
-        File sourceSettings = new File(workDir, "sdvx_helper_old/settings.json");
+        File sourceSettings = new File(new File(workDir, backupDirName), "settings.json");
         File targetSettings = new File(workDir, "settings.json");
         if (!sourceSettings.exists()) {
-            fireLog("WARN: sdvx_helper_old/settings.json not found — skipping settings copy.");
+            fireLog("WARN: " + backupDirName + "/settings.json not found — skipping settings copy.");
             fireLog("      Default settings will be generated on first launch.");
             return;
         }
@@ -365,13 +375,13 @@ public class MigrationService implements Runnable {
     }
 
     /**
-     * Deletes the {@code sdvx_helper_java_standalone.zip} archive from the working
+     * Deletes the {@code sdvx_helper_puni_standalone.zip} archive from the working
      * directory now that it has been fully extracted. A failure to delete is logged
      * as a warning because it does not affect the usability of the new
      * installation.
      */
     private void executeCleanup() {
-        File distZip = new File(workDir, "sdvx_helper_java_standalone.zip");
+        File distZip = new File(workDir, "sdvx_helper_puni_standalone.zip");
         if (!distZip.exists()) {
             fireLog("Distribution ZIP already removed — nothing to clean up.");
             return;
@@ -395,26 +405,25 @@ public class MigrationService implements Runnable {
      * The rollback performs three actions in order:
      * </p>
      * <ol>
-     * <li>Copies everything from {@code sdvx_helper_old/} back into the working
+     * <li>Copies everything from the backup directory back into the working
      * directory, overwriting any files that were extracted from the distribution
      * ZIP.</li>
-     * <li>Deletes Java-only directories (see {@link #JAVA_ONLY_ENTRIES}) that were
-     * created by the extraction but are not part of the old Python installation and
-     * therefore not present in the backup.</li>
-     * <li>Removes the {@code sdvx_helper_old/} backup directory itself so the
-     * working directory is left exactly as it was before the migration
-     * started.</li>
+     * <li>Deletes Puni Edition-only directories (see {@link #JAVA_ONLY_ENTRIES})
+     * that were created by the extraction but are not part of the existing
+     * installation and therefore not present in the backup.</li>
+     * <li>Removes the backup directory itself so the working directory is left
+     * exactly as it was before the migration started.</li>
      * </ol>
      *
      * @throws IOException
      *             if any file copy or delete operation fails
      */
     private void executeRollback() throws IOException {
-        fireLog("--- Rolling back changes…");
-        File backupDir = new File(workDir, "sdvx_helper_old");
+        fireLog("--- Rolling back changes\u2026");
+        File backupDir = new File(workDir, backupDirName);
 
         if (backupDir.exists()) {
-            fireLog("Restoring files from backup…");
+            fireLog("Restoring files from backup\u2026");
             File[] entries = backupDir.listFiles();
             if (!Objects.isNull(entries)) {
                 for (File entry : entries) {
@@ -429,25 +438,25 @@ public class MigrationService implements Runnable {
             File toDelete = new File(workDir, name);
             if (toDelete.exists()) {
                 deleteRecursive(toDelete);
-                fireLog("  removed (Java-only): " + name);
+                fireLog("  removed (Puni Edition-only): " + name);
             }
         }
 
         if (backupDir.exists()) {
             deleteRecursive(backupDir);
-            fireLog("  removed: sdvx_helper_old");
+            fireLog("  removed: " + backupDirName);
         }
 
         fireLog("Rollback complete. Installation restored to previous state.");
     }
 
     /**
-     * Removes a partially-created {@code sdvx_helper_old/} directory when the
-     * backup step itself failed before completing. A failure to delete is logged as
-     * a warning rather than thrown.
+     * Removes a partially-created backup directory when the backup step itself
+     * failed before completing. A failure to delete is logged as a warning rather
+     * than thrown.
      */
     private void removePartialBackup() {
-        File backupDir = new File(workDir, "sdvx_helper_old");
+        File backupDir = new File(workDir, backupDirName);
         if (!backupDir.exists()) {
             return;
         }
@@ -455,30 +464,7 @@ public class MigrationService implements Runnable {
             deleteRecursive(backupDir);
             fireLog("Cleaned up partial backup directory.");
         } catch (IOException e) {
-            fireLog("WARN: Could not remove partial backup at sdvx_helper_old/ — remove it manually.");
-        }
-    }
-
-    /**
-     * Recursively deletes {@code file} and all of its children if it is a
-     * directory.
-     *
-     * @param file
-     *            the file or directory to delete; must not be {@code null}
-     * @throws IOException
-     *             if any entry cannot be deleted
-     */
-    private void deleteRecursive(File file) throws IOException {
-        if (file.isDirectory()) {
-            File[] children = file.listFiles();
-            if (!Objects.isNull(children)) {
-                for (File child : children) {
-                    deleteRecursive(child);
-                }
-            }
-        }
-        if (!file.delete()) {
-            throw new IOException("Could not delete: " + file.getAbsolutePath());
+            fireLog("WARN: Could not remove partial backup at " + backupDirName + "/ — remove it manually.");
         }
     }
 
@@ -487,35 +473,29 @@ public class MigrationService implements Runnable {
     // -------------------------------------------------------------------------
 
     /**
-     * Recursively copies {@code source} to {@code destination}. If {@code source}
-     * is a directory, all of its children are copied recursively; if it is a
-     * regular file it is copied directly.
+     * Delegates to {@link MigrationFileUtils#copyRecursive(File, File)}.
      *
      * @param source
-     *            the file or directory to copy; must not be {@code null}
+     *            the file or directory to copy
      * @param destination
-     *            the target path; must not be {@code null}
+     *            the target path
      * @throws IOException
      *             if any file cannot be created or copied
      */
     private void copyRecursive(File source, File destination) throws IOException {
-        if (source.isDirectory()) {
-            if (!destination.exists() && !destination.mkdirs()) {
-                throw new IOException("Could not create directory: " + destination.getAbsolutePath());
-            }
-            File[] children = source.listFiles();
-            if (!Objects.isNull(children)) {
-                for (File child : children) {
-                    copyRecursive(child, new File(destination, child.getName()));
-                }
-            }
-        } else {
-            File parentDir = destination.getParentFile();
-            if (!parentDir.exists() && !parentDir.mkdirs()) {
-                throw new IOException("Could not create parent directory: " + parentDir.getAbsolutePath());
-            }
-            Files.copy(source.toPath(), destination.toPath(), StandardCopyOption.REPLACE_EXISTING);
-        }
+        MigrationFileUtils.copyRecursive(source, destination);
+    }
+
+    /**
+     * Delegates to {@link MigrationFileUtils#deleteRecursive(File)}.
+     *
+     * @param file
+     *            the file or directory to delete
+     * @throws IOException
+     *             if any entry cannot be deleted
+     */
+    private void deleteRecursive(File file) throws IOException {
+        MigrationFileUtils.deleteRecursive(file);
     }
 
     /**

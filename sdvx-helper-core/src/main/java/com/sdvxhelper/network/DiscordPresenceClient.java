@@ -303,8 +303,8 @@ public class DiscordPresenceClient implements Closeable {
      *            optional jacket image URL; {@code null} falls back to default
      *            asset
      */
-    public synchronized void updatePresenceResult(String title, String difficulty, int level, int score, int scoreDiff, String lamp,
-            String jacketUrl) {
+    public synchronized void updatePresenceResult(String title, String difficulty, int level, int score, int scoreDiff,
+            String lamp, String jacketUrl) {
         if (!connected) {
             log.debug("updatePresenceResult: not connected, skipping");
             return;

@@ -48,6 +48,7 @@ public class PlayLogSyncApp extends Application {
 
     @Override
     public void start(Stage stage) throws IOException {
+        dismissSplashScreen();
         this.primaryStage = stage;
         SettingsRepository repo = new SettingsRepository();
         LocaleManager.getInstance().init(repo);
@@ -59,7 +60,7 @@ public class PlayLogSyncApp extends Application {
             }
         }));
         buildScene(LocaleManager.getInstance().getCurrentLocale());
-        stage.setTitle("SDVX Play Log Sync " + VersionUtil.getVersion("sync"));
+        stage.setTitle("SDVX Play Log Sync - Puni Edition " + VersionUtil.getVersion("sync"));
         applyIcon(stage);
         WindowPositionHelper.applyAndPersist(stage, repo, "sync_lx", "sync_ly");
         stage.show();
@@ -81,6 +82,19 @@ public class PlayLogSyncApp extends Application {
             }
         } catch (IOException e) {
             log.warn("Failed to load window icon: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Closes the AWT splash screen if one is active. The splash is shown by the
+     * JVM before JavaFX initialises (declared via {@code SplashScreen-Image} in
+     * {@code MANIFEST.MF}); it must be dismissed programmatically once the main
+     * window is ready to display.
+     */
+    private void dismissSplashScreen() {
+        java.awt.SplashScreen splash = java.awt.SplashScreen.getSplashScreen();
+        if (splash != null && splash.isVisible()) {
+            splash.close();
         }
     }
 

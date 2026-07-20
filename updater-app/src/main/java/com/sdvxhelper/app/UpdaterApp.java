@@ -60,7 +60,7 @@ public class UpdaterApp extends Application {
                     }
                 }));
         buildScene(LocaleManager.getInstance().getCurrentLocale());
-        stage.setTitle("SDVX Helper Updater " + VersionUtil.getVersion("updater"));
+        stage.setTitle("SDVX Helper Updater - Puni Edition " + VersionUtil.getVersion("updater"));
         applyIcon(stage);
         WindowPositionHelper.applyAndPersist(stage, repo, "updater_lx", "updater_ly");
         stage.show();

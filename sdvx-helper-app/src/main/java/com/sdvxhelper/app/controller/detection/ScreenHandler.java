@@ -869,8 +869,10 @@ public class ScreenHandler {
         }
         Matcher matcher = VF_NUMBER_PATTERN.matcher(normalized != null ? normalized : "");
         if (!matcher.find()) {
-            log.warn("captureVolforce: OCR produced '{}' (normalized: '{}') - no valid VF number found, "
-                    + "see out/part_volforce_preprocessed.png for diagnosis; falling back to pHash", raw, normalized);
+            log.warn(
+                    "captureVolforce: OCR produced '{}' (normalized: '{}') - no valid VF number found, "
+                            + "see out/part_volforce_preprocessed.png for diagnosis; falling back to pHash",
+                    raw, normalized);
             String vfHash = perceptualHasher.phash(vfCrop);
             boolean changed = (lastVfHash == null) || (perceptualHasher.hammingDistance(vfHash, lastVfHash) > 2);
             lastVfHash = vfHash;

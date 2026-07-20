@@ -55,6 +55,7 @@ public class SdvxHelperApp extends Application {
 
     @Override
     public void start(Stage stage) throws IOException {
+        dismissSplashScreen();
         this.primaryStage = stage;
         SettingsRepository repo = new SettingsRepository();
         LocaleManager.getInstance().init(repo);
@@ -67,7 +68,7 @@ public class SdvxHelperApp extends Application {
         }));
         buildScene(LocaleManager.getInstance().getCurrentLocale());
         applyIcon(stage);
-        stage.setTitle("SDVX Helper " + VersionUtil.getVersion("helper"));
+        stage.setTitle("SDVX Helper - Puni Edition " + VersionUtil.getVersion("helper"));
         WindowPositionHelper.applyAndPersist(stage, repo, "lx", "ly");
         stage.show();
         log.info("SDVX Helper UI displayed");
@@ -134,6 +135,19 @@ public class SdvxHelperApp extends Application {
             }
         } catch (IOException e) {
             log.warn("Failed to load window icon: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Closes the AWT splash screen if one is active. The splash is shown by the
+     * JVM before JavaFX initialises (declared via {@code SplashScreen-Image} in
+     * {@code MANIFEST.MF}); it must be dismissed programmatically once the main
+     * window is ready to display.
+     */
+    private void dismissSplashScreen() {
+        java.awt.SplashScreen splash = java.awt.SplashScreen.getSplashScreen();
+        if (splash != null && splash.isVisible()) {
+            splash.close();
         }
     }
 }

@@ -48,6 +48,7 @@ public class ScoreViewerApp extends Application {
 
     @Override
     public void start(Stage stage) throws IOException {
+        dismissSplashScreen();
         this.primaryStage = stage;
         SettingsRepository repo = new SettingsRepository();
         LocaleManager.getInstance().init(repo);
@@ -60,7 +61,7 @@ public class ScoreViewerApp extends Application {
             }
         }));
         buildScene(LocaleManager.getInstance().getCurrentLocale());
-        stage.setTitle("SDVX Score Viewer " + VersionUtil.getVersion("manager"));
+        stage.setTitle("SDVX Score Viewer - Puni Edition " + VersionUtil.getVersion("manager"));
         applyIcon(stage);
         WindowPositionHelper.applyAndPersist(stage, repo, "score_lx", "score_ly");
         stage.show();
@@ -82,6 +83,19 @@ public class ScoreViewerApp extends Application {
             }
         } catch (IOException e) {
             log.warn("Failed to load window icon: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Closes the AWT splash screen if one is active. The splash is shown by the
+     * JVM before JavaFX initialises (declared via {@code SplashScreen-Image} in
+     * {@code MANIFEST.MF}); it must be dismissed programmatically once the main
+     * window is ready to display.
+     */
+    private void dismissSplashScreen() {
+        java.awt.SplashScreen splash = java.awt.SplashScreen.getSplashScreen();
+        if (splash != null && splash.isVisible()) {
+            splash.close();
         }
     }
 

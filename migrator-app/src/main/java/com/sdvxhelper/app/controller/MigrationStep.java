@@ -15,34 +15,34 @@ package com.sdvxhelper.app.controller;
 public enum MigrationStep {
 
     /**
-     * Copies all Python installation files (excluding the migrator's own files) to
-     * a {@code sdvx_helper_old/} sub-directory.
+     * Copies all existing installation files (excluding the migrator's own files)
+     * to a {@code <name>_old/} sub-directory as a safety backup.
      */
-    BACKUP("Backing up old Python files…"),
+    BACKUP("Backing up existing installation\u2026"),
 
     /**
-     * Extracts {@code sdvx_helper_java_standalone.zip} into the working directory
-     * so the new Java application layout is in place.
+     * Extracts {@code sdvx_helper_puni_standalone.zip} into the working directory
+     * so the new Puni Edition application layout is in place.
      */
-    EXTRACT("Extracting new Java distribution…"),
+    EXTRACT("Extracting Puni Edition\u2026"),
 
     /**
      * Calls the bundled {@code migrate_pkl_to_xml.py} script once per known pickle
      * file, converting each to its XML counterpart.
      */
-    MIGRATE_PKL("Migrating pickle data files…"),
+    MIGRATE_PKL("Migrating data files\u2026"),
 
     /**
-     * Copies {@code sdvx_helper_old/settings.json} to the new {@code settings.json}
-     * so existing user preferences are preserved.
+     * Copies {@code <backup>/settings.json} to the new {@code settings.json} so
+     * existing user preferences are preserved.
      */
-    COPY_SETTINGS("Copying settings…"),
+    COPY_SETTINGS("Copying settings\u2026"),
 
     /**
-     * Deletes the {@code sdvx_helper_java_standalone.zip} archive now that it has
+     * Deletes the {@code sdvx_helper_puni_standalone.zip} archive now that it has
      * been fully extracted.
      */
-    CLEANUP("Cleaning up…");
+    CLEANUP("Cleaning up\u2026");
 
     private String displayName;
 

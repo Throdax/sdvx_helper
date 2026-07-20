@@ -810,7 +810,8 @@ public class DetectionEngine {
                     // the next natural state transition.
                     DiscordPresenceClient dpc = discordPresenceClient;
                     if (dpc != null) {
-                        PlayState state = currentMode == DetectMode.PLAY ? PlayState.PLAYING
+                        PlayState state = currentMode == DetectMode.PLAY
+                                ? PlayState.PLAYING
                                 : currentMode == DetectMode.SELECT ? PlayState.SELECTING : PlayState.IDLE;
                         String vf = ScoreFormatter.formatTotalVf((int) (screenHandler.getCurrentTotalVf() * 1000));
                         dpc.updatePresence(state, lastDiscordTitle, lastKnownDiff, vf, url);

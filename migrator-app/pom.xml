@@ -91,7 +91,7 @@
 
             <!--
               Assembly: packs the migrator EXE, its runtime/, app/, the dist ZIP, and
-              the Python migration script into sdvx_helper_java_migrator.zip.
+              the Python migration script into sdvx_helper_puni_migrator.zip.
             -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -108,7 +108,7 @@
                             <descriptors>
                                 <descriptor>src/assembly/migrator.xml</descriptor>
                             </descriptors>
-                            <finalName>sdvx_helper_java_migrator</finalName>
+                            <finalName>sdvx_helper_puni_migrator</finalName>
                             <appendAssemblyId>false</appendAssemblyId>
                         </configuration>
                     </execution>

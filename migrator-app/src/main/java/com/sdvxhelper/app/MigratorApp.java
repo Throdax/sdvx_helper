@@ -9,19 +9,20 @@ import javafx.scene.Scene;
 import javafx.scene.image.Image;
 import javafx.stage.Stage;
 
+import com.sdvxhelper.app.controller.MigratorController;
 import com.sdvxhelper.util.VersionUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * JavaFX entry point for the SDVX Helper Migrator application.
+ * JavaFX entry point for the SDVX Helper - Puni Edition Migrator application.
  *
  * <p>
  * This single-window application guides the user through a one-shot migration
- * from the old Python-based SDVX Helper installation to the new Java
- * distribution. It copies the old files to a {@code sdvx_helper_old/} backup
- * folder, extracts the new Java dist ZIP, converts pickle data files to XML via
- * the bundled Python script, and cleans up the dist ZIP afterwards.
+ * from the existing SDVX Helper installation to the Puni Edition distribution.
+ * It backs up the existing files, extracts the new distribution ZIP, converts
+ * pickle data files to XML via the bundled Python script, and cleans up the
+ * dist ZIP afterwards.
  * </p>
  *
  * @author Filipe Cristino
@@ -53,7 +54,9 @@ public class MigratorApp extends Application {
         if (cssUrl != null) {
             scene.getStylesheets().add(cssUrl.toExternalForm());
         }
-        stage.setTitle("SDVX Helper Migrator " + VersionUtil.getVersion("migrator"));
+        MigratorController controller = loader.getController();
+        controller.setStage(stage);
+        stage.setTitle("SDVX Helper - Puni Edition Migrator " + VersionUtil.getVersion("migrator"));
         applyIcon(stage);
         stage.setScene(scene);
         stage.setResizable(false);
