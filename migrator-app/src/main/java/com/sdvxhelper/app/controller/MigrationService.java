@@ -78,11 +78,10 @@ public class MigrationService implements Runnable {
      * Known pickle files (relative to {@code sdvx_helper_old/}) and their
      * corresponding output sub-directory and XML names. Each entry is
      * {@code {relative-pkl-path, output-subdir, output-xml-name}} where
-     * {@code output-subdir} is relative to {@code workDir} (empty string means
-     * the working directory root).
+     * {@code output-subdir} is relative to {@code workDir} (empty string means the
+     * working directory root).
      */
-    private static final List<String[]> PKL_DESCRIPTORS = Arrays.asList(
-            new String[]{"alllog.pkl", "", "alllog.xml"},
+    private static final List<String[]> PKL_DESCRIPTORS = Arrays.asList(new String[]{"alllog.pkl", "", "alllog.xml"},
             new String[]{"resources/musiclist.pkl", "resources", "musiclist.xml"},
             new String[]{"out/rival_log.pkl", "", "rival_log.xml"},
             new String[]{"resources/title_conv_table.pkl", "resources", "title_conv_table.xml"});
@@ -314,8 +313,8 @@ public class MigrationService implements Runnable {
                 fireLog("  overwriting distribution " + outputXmlName + " with user data from " + relativePklPath);
             }
             if (!outputDir.exists() && !outputDir.mkdirs()) {
-                fireLog("  WARN: could not create output directory " + outputDir.getAbsolutePath()
-                        + " — skipping " + relativePklPath);
+                fireLog("  WARN: could not create output directory " + outputDir.getAbsolutePath() + " — skipping "
+                        + relativePklPath);
                 continue;
             }
             fireLog("  migrating: " + relativePklPath);
@@ -327,10 +326,9 @@ public class MigrationService implements Runnable {
     /**
      * Launches the Python migration script for a single pickle file, streaming its
      * stdout/stderr to the log callback. It first tries the {@code python} command
-     * and falls back to {@code py} (Windows Python Launcher) when
-     * {@code python} is not on the PATH. A non-zero exit code or an
-     * {@link IOException} (e.g. Python not installed) is logged as a warning rather
-     * than aborting the migration.
+     * and falls back to {@code py} (Windows Python Launcher) when {@code python} is
+     * not on the PATH. A non-zero exit code or an {@link IOException} (e.g. Python
+     * not installed) is logged as a warning rather than aborting the migration.
      *
      * @param pklFile
      *            the pickle file to migrate
@@ -341,8 +339,8 @@ public class MigrationService implements Runnable {
      */
     private void migrateOnePkl(File pklFile, File outputDir, File pythonScript) {
         for (String pythonCmd : new String[]{"python", "py"}) {
-            ProcessBuilder processBuilder = new ProcessBuilder(pythonCmd, pythonScript.getAbsolutePath(),
-                    "--pkl-file", pklFile.getAbsolutePath(), "--output-dir", outputDir.getAbsolutePath());
+            ProcessBuilder processBuilder = new ProcessBuilder(pythonCmd, pythonScript.getAbsolutePath(), "--pkl-file",
+                    pklFile.getAbsolutePath(), "--output-dir", outputDir.getAbsolutePath());
             processBuilder.redirectErrorStream(true);
             processBuilder.directory(workDir);
             try {

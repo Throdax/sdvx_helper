@@ -27,8 +27,8 @@ import org.slf4j.LoggerFactory;
  * working directory but was absent from the backup (e.g. {@code webhooks.json},
  * {@code alllog.xml}, {@code resources/musiclist.xml},
  * {@code resources/tessdata/jpn.traineddata}) is considered a Puni Edition-only
- * artifact and is deleted. The diff recurses into directories that exist in both
- * locations so that nested Puni-only files are also removed.
+ * artifact and is deleted. The diff recurses into directories that exist in
+ * both locations so that nested Puni-only files are also removed.
  * </p>
  *
  * <p>
@@ -47,9 +47,9 @@ public class RevertService implements Runnable {
 
     /**
      * Names that must never be deleted during the diff-based cleanup step,
-     * regardless of whether they appear in the backup. Includes the migrator's
-     * own runtime directories (which cannot be deleted while the process is
-     * alive) and the active log directory.
+     * regardless of whether they appear in the backup. Includes the migrator's own
+     * runtime directories (which cannot be deleted while the process is alive) and
+     * the active log directory.
      */
     private static final Set<String> ALWAYS_RETAIN = Set.of("migrate.exe", "runtime", "app", "log");
 
@@ -131,8 +131,8 @@ public class RevertService implements Runnable {
      * <p>
      * The {@code log/} directory is intentionally skipped: the log files are
      * written by the running migrator process and the destination
-     * {@code log/migrator.log} is locked by Log4j. Old log files from the backup
-     * do not need to be restored.
+     * {@code log/migrator.log} is locked by Log4j. Old log files from the backup do
+     * not need to be restored.
      * </p>
      *
      * @param backupDir
@@ -163,12 +163,12 @@ public class RevertService implements Runnable {
      * absent from the backup. Such entries were introduced by the Puni Edition
      * installation (e.g. {@code webhooks.json}, {@code alllog.xml},
      * {@code resources/musiclist.xml}, {@code resources/tessdata/jpn.traineddata})
-     * and must be deleted so the working directory is left exactly as it was
-     * before the migration.
+     * and must be deleted so the working directory is left exactly as it was before
+     * the migration.
      *
      * <p>
-     * Entries listed in {@link #ALWAYS_RETAIN} (migrator's own files and the
-     * active log directory) are never touched. The backup directory itself is also
+     * Entries listed in {@link #ALWAYS_RETAIN} (migrator's own files and the active
+     * log directory) are never touched. The backup directory itself is also
      * skipped.
      * </p>
      *

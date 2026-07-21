@@ -139,8 +139,8 @@ public class SdvxHelperApp extends Application {
     }
 
     /**
-     * Closes the AWT splash screen if one is active. The splash is shown by the
-     * JVM before JavaFX initialises (declared via {@code SplashScreen-Image} in
+     * Closes the AWT splash screen if one is active. The splash is shown by the JVM
+     * before JavaFX initialises (declared via {@code SplashScreen-Image} in
      * {@code MANIFEST.MF}); it must be dismissed programmatically once the main
      * window is ready to display.
      */
