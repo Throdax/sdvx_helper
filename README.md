@@ -150,11 +150,12 @@ then select 'WebSocket Server Settings' and configure it as follows."
 ## 2. Run sdvx_helper.exe and open '設定(settings)' from the menu bar.
 ## 3. Enter the port number and password you configured in step 1.
 If you see a message saying 'Cannot connect to OBS', suspect the following.  
-![image](https://github.com/user-attachments/assets/329644e4-7e92-49ae-8119-3de98d01bae7)
+![image](https://github.com/user-attachments/assets/6daa4288-0698-4101-965d-70bafc7ee082)
+
 
 ## 4. Select the orientation of the screen specified in the e-AMUSEMENT Cloud version of Sound Voltex in the settings.
 The settings in Sound Voltex and this tool correspond as follows:
-![image](https://github.com/user-attachments/assets/83b98355-e46e-421e-83b2-962a16373ba7)
+![image](https://github.com/user-attachments/assets/e54e1475-76cf-4887-b496-685d8255fdd1)
 
 ## 5. Close the settings window.
 ## 6. Open 'OBS制御設定(OBS control settings)' from the menu bar.
@@ -210,7 +211,8 @@ deleting the respective result image file will fix it in the next generation pro
 By checking 'Remind with sound when BLASTER GAUGE is at maximum' in the settings,
 an alert sound (resources\blastermax.wav) will play when the gauge is
 at maximum on the song selection screen.
-![image](https://github.com/user-attachments/assets/4cc28b8d-2aed-4a27-98ee-fc958263f55f)
+
+![image](https://github.com/user-attachments/assets/2e29c353-fb45-49d0-b066-b35d00adb7c5)
 
 Also, if you create a text source (GDI+) named 'sdvx_helper_blastermax' in OBS,
 it will display the text 'BLASTER GAUGE is at maximum!'
