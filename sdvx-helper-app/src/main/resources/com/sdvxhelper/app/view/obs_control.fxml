@@ -32,6 +32,22 @@
 
     <Separator/>
 
+    <VBox spacing="6">
+        <HBox spacing="8" alignment="CENTER_LEFT">
+            <Label text="%label.obs.sdvxScene" styleClass="muted"/>
+            <ComboBox fx:id="sdvxSceneCombo" prefWidth="180"/>
+            <Label text="%label.obs.sdvxSource" styleClass="muted"/>
+            <ComboBox fx:id="sdvxSourceCombo" prefWidth="220"/>
+            <Button text="%button.obs.selectSource" fx:id="selectSourceButton" onAction="#onSelectSource"/>
+        </HBox>
+        <HBox spacing="6" alignment="CENTER_LEFT">
+            <Label text="%label.obs.sdvxSourceSaved" styleClass="muted"/>
+            <Label fx:id="savedSourceLabel" text=""/>
+        </HBox>
+    </VBox>
+
+    <Separator/>
+
     <TabPane tabClosingPolicy="UNAVAILABLE" VBox.vgrow="ALWAYS">
 
         <Tab text="%label.obs.boot">

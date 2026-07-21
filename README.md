@@ -150,17 +150,18 @@ then select 'WebSocket Server Settings' and configure it as follows."
 ## 2. Run sdvx_helper.exe and open '設定(settings)' from the menu bar.
 ## 3. Enter the port number and password you configured in step 1.
 If you see a message saying 'Cannot connect to OBS', suspect the following.  
-![image](https://github.com/user-attachments/assets/329644e4-7e92-49ae-8119-3de98d01bae7)
+![image](https://github.com/user-attachments/assets/6daa4288-0698-4101-965d-70bafc7ee082)
+
 
 ## 4. Select the orientation of the screen specified in the e-AMUSEMENT Cloud version of Sound Voltex in the settings.
 The settings in Sound Voltex and this tool correspond as follows:
-![image](https://github.com/user-attachments/assets/83b98355-e46e-421e-83b2-962a16373ba7)
+![image](https://github.com/user-attachments/assets/e54e1475-76cf-4887-b496-685d8255fdd1)
 
 ## 5. Close the settings window.
 ## 6. Open 'OBS制御設定(OBS control settings)' from the menu bar.
 ## 7. Choose the scene name for OBS streaming, select the source name to capture the game screen, and then press 'set' next to the game screen.
 These settings are essential to capture the game screen.
-![image](https://github.com/user-attachments/assets/79ee2b6a-6b80-4520-a89c-be32c378e1e5)
+![image](https://github.com/user-attachments/assets/7fd08f54-9e0c-4106-9348-b303eb3f4454)
 
 By the way, in the OBS control settings, you can control the visibility of sources for each scene (song selection, playing, results).
 
@@ -210,7 +211,8 @@ deleting the respective result image file will fix it in the next generation pro
 By checking 'Remind with sound when BLASTER GAUGE is at maximum' in the settings,
 an alert sound (resources\blastermax.wav) will play when the gauge is
 at maximum on the song selection screen.
-![image](https://github.com/user-attachments/assets/4cc28b8d-2aed-4a27-98ee-fc958263f55f)
+
+![image](https://github.com/user-attachments/assets/2e29c353-fb45-49d0-b066-b35d00adb7c5)
 
 Also, if you create a text source (GDI+) named 'sdvx_helper_blastermax' in OBS,
 it will display the text 'BLASTER GAUGE is at maximum!'
@@ -243,8 +245,6 @@ By dragging and dropping the following image files into OBS, you can display inf
 SDVX Helper - Puni Edition can update your Discord Rich Presence automatically while you play,
 showing the current song, your Volforce, and the current in-game screen to anyone viewing your profile.
 
-<!-- TODO: add Discord Presence screenshot here -->
-
 ## Setup
 1. Open the settings window from the menu bar.
 2. Enable **Discord Presence** in the Discord section.
@@ -253,12 +253,33 @@ showing the current song, your Volforce, and the current in-game screen to anyon
    Jackets are hosted temporarily via Litterbox and linked directly in your Discord status.
 5. Close the settings window. Discord Presence will activate automatically when the game is detected.
 
-<!-- TODO: add Discord Presence settings screenshot here -->
+![image](https://github.com/user-attachments/assets/885df080-cb76-4147-b7fb-da5394c05447)
 
 ## Notes
 - Discord must be running on the same PC for Rich Presence to work.
 - Jacket uploads are processed on a background thread and do not affect detection timing.
-- If you disable jacket uploading mid-session, the Discord image reverts to the default immediately.
+- If you disable jacket uploading mid-session, the Discord image reverts to the default immediately
+
+#### Default activity 
+![image](https://github.com/user-attachments/assets/be3e5acc-8748-4cf8-8d52-02fa2f17b0d8)
+
+#### During song selection
+![image](https://github.com/user-attachments/assets/9e9070c7-00c3-4385-8e2f-7acdd0afe14a)
+
+#### During playing a song 
+![image](https://github.com/user-attachments/assets/82393612-7842-4910-8260-5651b8bde7cd) ![image](https://github.com/user-attachments/assets/08d2b965-b854-43aa-b74e-4d08454a213a)
+
+#### During the results screen 
+![image](https://github.com/user-attachments/assets/c8673807-ad64-4cd5-844e-434537ccfc34)
+
+#### Discord members list 
+![image](https://github.com/user-attachments/assets/57f40a36-ad33-4c57-9591-c80f79ec4948)
+
+### Use song name as tittle
+With this option enabled, the song title will show up on the Discord members list instead of "Sound Voltext Exeed Gear". The detail activity  is unchanged
+
+![image](https://github.com/user-attachments/assets/e95c23c9-1db7-469c-ae75-46143b5616d1)
+
 
 # How to Use
 If you have set up the above, simply keep it running when doing OBS streaming or recording.

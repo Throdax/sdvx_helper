@@ -48,6 +48,15 @@ public class ObsControlController implements Initializable {
     private Button disconnectButton;
 
     @FXML
+    private ComboBox<String> sdvxSceneCombo;
+    @FXML
+    private ComboBox<String> sdvxSourceCombo;
+    @FXML
+    private Button selectSourceButton;
+    @FXML
+    private Label savedSourceLabel;
+
+    @FXML
     private ComboBox<String> bootSceneCombo;
     @FXML
     private ListView<String> bootEnableList;
@@ -94,6 +103,7 @@ public class ObsControlController implements Initializable {
         updateConnectionUi(false);
         wireSceneChangeListeners();
         populateFields();
+        savedSourceLabel.setText(settings.getOrDefault("obs_source", ""));
         onConnect(null);
     }
 
@@ -131,6 +141,32 @@ public class ObsControlController implements Initializable {
         } catch (IOException e) {
             log.warn("Failed to connect to OBS: {}", e.getMessage());
             connStatusLabel.setText("Error: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Persists the source currently selected in the SDVX source combo box as the
+     * {@code obs_source} setting and refreshes the saved-value label to reflect it.
+     * The write happens immediately, independently of the dialog's OK/Cancel flow,
+     * so the selection is not lost if the dialog is later cancelled.
+     *
+     * @param event
+     *            the action event triggered by the Select button
+     */
+    @FXML
+    public void onSelectSource(ActionEvent event) {
+        String source = sdvxSourceCombo.getValue();
+        if (source == null || source.isBlank()) {
+            log.warn("onSelectSource: no SDVX source selected, ignoring");
+            return;
+        }
+        settings.put("obs_source", source);
+        savedSourceLabel.setText(source);
+        try {
+            settingsRepo.save(settings);
+            log.info("Saved obs_source setting: {}", source);
+        } catch (IOException e) {
+            log.error("Failed to save obs_source setting", e);
         }
     }
 
@@ -176,6 +212,7 @@ public class ObsControlController implements Initializable {
     }
 
     private void reloadAllSources() {
+        loadSdvxSources(sdvxSceneCombo.getValue());
         loadSources(bootSceneCombo.getValue(), bootEnableList, bootDisableList, "obs_enable_boot", "obs_disable_boot");
         loadSources(selectSceneCombo.getValue(), selectEnableList, selectDisableList, "obs_enable_select0",
                 "obs_disable_select0");
@@ -187,15 +224,44 @@ public class ObsControlController implements Initializable {
     }
 
     private List<ComboBox<String>> allSceneCombos() {
-        return List.of(bootSceneCombo, selectSceneCombo, playSceneCombo, resultSceneCombo, quitSceneCombo);
+        return List.of(sdvxSceneCombo, bootSceneCombo, selectSceneCombo, playSceneCombo, resultSceneCombo,
+                quitSceneCombo);
     }
 
     private void wireSceneChangeListeners() {
+        sdvxSceneCombo.valueProperty().addListener((_, _, scene) -> loadSdvxSources(scene));
         wire(bootSceneCombo, bootEnableList, bootDisableList, "obs_enable_boot", "obs_disable_boot");
         wire(selectSceneCombo, selectEnableList, selectDisableList, "obs_enable_select0", "obs_disable_select0");
         wire(playSceneCombo, playEnableList, playDisableList, "obs_enable_play0", "obs_disable_play0");
         wire(resultSceneCombo, resultEnableList, resultDisableList, "obs_enable_result0", "obs_disable_result0");
         wire(quitSceneCombo, quitEnableList, quitDisableList, "obs_enable_quit", "obs_disable_quit");
+    }
+
+    /**
+     * Populates {@link #sdvxSourceCombo} with the source names available in the
+     * given OBS scene, preserving the previously selected value when it is still
+     * present in the refreshed list. Clears the combo entirely when OBS is not
+     * connected or no scene is selected.
+     *
+     * @param scene
+     *            the OBS scene name to load sources for, may be {@code null}
+     */
+    private void loadSdvxSources(String scene) {
+        String current = sdvxSourceCombo.getValue();
+        if (obsClient == null || scene == null || scene.isBlank()) {
+            sdvxSourceCombo.getItems().clear();
+            return;
+        }
+        try {
+            List<String> sources = obsClient.getSourceNames(scene);
+            sdvxSourceCombo.getItems().setAll(sources);
+            if (current != null && sources.contains(current)) {
+                sdvxSourceCombo.setValue(current);
+            }
+        } catch (IOException e) {
+            log.warn("Failed to load OBS sources for SDVX scene '{}': {}", scene, e.getMessage());
+            sdvxSourceCombo.getItems().clear();
+        }
     }
 
     private void wire(ComboBox<String> cb, ListView<String> enable, ListView<String> disable, String enKey,
