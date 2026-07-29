@@ -108,10 +108,30 @@ public class DetectionEngine {
     private String lastKnownTitle = "";
     private String lastKnownDiff = "";
 
+    // Last known result info, cached so a delayed jacket-upload callback or
+    // clearJacketUrl() can correctly rebuild the result presence if the engine is
+    // still on the RESULT screen when they run.
+    private int lastResultLevel = 0;
+    private int lastResultScore = 0;
+    private int lastResultScoreDiff = 0;
+    private String lastResultLamp = "";
+
     // Discord enhanced-presence state
     private JacketUploadClient jacketUploadClient;
     private volatile String lastJacketUrl = null;
     private String lastDiscordTitle = null;
+
+    /**
+     * The {@link PlayState} of the most recent presence push. Deliberately tracked
+     * independently of {@link #currentMode}: a song is already "logically" playing
+     * (and pushed as {@link PlayState#PLAYING}) from the moment
+     * {@link #processDetectMode(BufferedImage)} resolves it, several frames before
+     * {@link #currentMode} actually flips to {@link DetectMode#PLAY}. Re-deriving
+     * the presence state from {@link #currentMode} in that window (e.g. from a
+     * delayed jacket-upload callback) would incorrectly read it as
+     * {@link DetectMode#INIT} and fall back to {@link PlayState#IDLE}.
+     */
+    private volatile PlayState lastPresenceState = PlayState.IDLE;
 
     /**
      * Returns a new builder for constructing a {@link DetectionEngine}.
@@ -552,6 +572,7 @@ public class DetectionEngine {
         obsOverlayService.controlSources("play0");
         obsOverlayService.updatePlaysText(playCount);
         if (discordPresenceClient != null) {
+            lastPresenceState = PlayState.PLAYING;
             discordPresenceClient.updatePresence(PlayState.PLAYING, lastDiscordTitle, lastKnownDiff,
                     ScoreFormatter.formatTotalVf((int) (screenHandler.getCurrentTotalVf() * 1000)), lastJacketUrl);
         }
@@ -615,6 +636,11 @@ public class DetectionEngine {
             int level = screenHandler.getLevelFor(play.getTitle(), play.getDifficulty());
             int scoreDiff = play.getCurScore() - play.getPreScore();
             String discordTitle = lastDiscordTitle != null ? lastDiscordTitle : play.getTitle();
+            lastResultLevel = level;
+            lastResultScore = play.getCurScore();
+            lastResultScoreDiff = scoreDiff;
+            lastResultLamp = play.getLamp();
+            lastPresenceState = PlayState.RESULT;
             discordPresenceClient.updatePresenceResult(discordTitle, play.getDifficulty(), level, play.getCurScore(),
                     scoreDiff, play.getLamp(), lastJacketUrl);
         }
@@ -652,6 +678,7 @@ public class DetectionEngine {
             log.debug("Select screen processing returned no result (jacket not identified)");
         }
         if (discordPresenceClient != null) {
+            lastPresenceState = PlayState.SELECTING;
             discordPresenceClient.updatePresence(PlayState.SELECTING, result != null ? lastKnownTitle : null,
                     result != null ? lastKnownDiff : null,
                     ScoreFormatter.formatTotalVf((int) (screenHandler.getCurrentTotalVf() * 1000)), lastJacketUrl);
@@ -721,6 +748,10 @@ public class DetectionEngine {
             obsClient.refreshBrowserSource("nowplaying");
         }
         if (discordPresenceClient != null) {
+            // The song is already logically "playing" from the user's perspective
+            // (they just committed to it), even though currentMode has not yet
+            // flipped from INIT to PLAY at this point in the detection loop.
+            lastPresenceState = PlayState.PLAYING;
             discordPresenceClient.updatePresence(PlayState.PLAYING, lastDiscordTitle, lastKnownDiff,
                     ScoreFormatter.formatTotalVf((int) (screenHandler.getCurrentTotalVf() * 1000)), lastJacketUrl);
         }
@@ -807,15 +838,10 @@ public class DetectionEngine {
                     log.info("resolveDiscordJacket: jacket uploaded -> '{}'", url);
                     lastJacketUrl = url;
                     // Re-push presence so Discord picks up the jacket without waiting for
-                    // the next natural state transition.
-                    DiscordPresenceClient dpc = discordPresenceClient;
-                    if (dpc != null) {
-                        PlayState state = currentMode == DetectMode.PLAY
-                                ? PlayState.PLAYING
-                                : currentMode == DetectMode.SELECT ? PlayState.SELECTING : PlayState.IDLE;
-                        String vf = ScoreFormatter.formatTotalVf((int) (screenHandler.getCurrentTotalVf() * 1000));
-                        dpc.updatePresence(state, lastDiscordTitle, lastKnownDiff, vf, url);
-                    }
+                    // the next natural state transition. The upload is asynchronous, so by
+                    // the time it completes the engine may already be on a different
+                    // screen (e.g. RESULT) than when the upload was started.
+                    refreshLastPresence(url);
                 } else {
                     log.warn("resolveDiscordJacket: upload returned empty URL - Discord will use default asset");
                     lastJacketUrl = null;
@@ -943,20 +969,42 @@ public class DetectionEngine {
      */
     public void clearJacketUrl() {
         lastJacketUrl = null;
-        if (discordPresenceClient == null) {
+        refreshLastPresence(null);
+        log.debug("clearJacketUrl: presence re-pushed with null jacket (state={})", lastPresenceState);
+    }
+
+    /**
+     * Re-pushes the Discord Rich Presence activity for {@link #lastPresenceState} —
+     * the state of the most recent presence push — using the given jacket URL.
+     *
+     * <p>
+     * Deliberately reuses {@link #lastPresenceState} rather than re-deriving the
+     * presence state from {@link #currentMode}: the two lag behind each other (see
+     * {@link #lastPresenceState}'s Javadoc), and re-deriving from
+     * {@link #currentMode} previously caused a stray push to show
+     * {@link PlayState#IDLE} while a song was already logically playing (or a
+     * result was on screen). Centralises the "rebuild whatever is currently being
+     * shown, just with a different jacket" logic so it only needs to be correct in
+     * one place; used both by the asynchronous jacket-upload-completion callback in
+     * {@link #resolveDiscordJacket()} and by {@link #clearJacketUrl()}.
+     * </p>
+     *
+     * @param jacketUrl
+     *            the jacket URL to include in the refreshed presence, or
+     *            {@code null} for the default asset
+     */
+    private void refreshLastPresence(String jacketUrl) {
+        DiscordPresenceClient dpc = discordPresenceClient;
+        if (dpc == null) {
             return;
         }
-        PlayState state;
-        if (currentMode == DetectMode.PLAY) {
-            state = PlayState.PLAYING;
-        } else if (currentMode == DetectMode.SELECT) {
-            state = PlayState.SELECTING;
-        } else {
-            state = PlayState.IDLE;
+        if (lastPresenceState == PlayState.RESULT) {
+            dpc.updatePresenceResult(lastDiscordTitle, lastKnownDiff, lastResultLevel, lastResultScore,
+                    lastResultScoreDiff, lastResultLamp, jacketUrl);
+            return;
         }
         String vf = ScoreFormatter.formatTotalVf((int) (screenHandler.getCurrentTotalVf() * 1000));
-        discordPresenceClient.updatePresence(state, lastDiscordTitle, lastKnownDiff, vf, null);
-        log.debug("clearJacketUrl: presence re-pushed with null jacket (state={})", state);
+        dpc.updatePresence(lastPresenceState, lastDiscordTitle, lastKnownDiff, vf, jacketUrl);
     }
 
     /**

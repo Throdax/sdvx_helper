@@ -9,6 +9,9 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.time.Instant;
 import java.util.UUID;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import jakarta.json.bind.Jsonb;
 import jakarta.json.bind.JsonbBuilder;
 
@@ -115,6 +118,29 @@ public class DiscordPresenceClient implements Closeable {
     private volatile boolean connected = false;
     private long lastUpdateMs = 0;
 
+    /**
+     * Executor used to flush a throttled presence update once the minimum interval
+     * has elapsed, so an update that arrives too soon after the previous one is
+     * delayed rather than silently discarded.
+     */
+    private final ScheduledExecutorService retryScheduler = Executors.newSingleThreadScheduledExecutor(runnable -> {
+        Thread t = new Thread(runnable, "discord-presence-retry");
+        t.setDaemon(true);
+        return t;
+    });
+
+    /**
+     * The most recently requested update that arrived while still inside the
+     * throttle window. Only ever holds the latest request — an update superseded by
+     * a newer one before the window elapses is never sent.
+     */
+    private Runnable pendingUpdate;
+
+    /**
+     * {@code true} while a flush of {@link #pendingUpdate} is already scheduled.
+     */
+    private boolean retryScheduled;
+
     /** Epoch-second timestamp captured once when {@link #connect()} succeeds. */
     private long sessionStartTime = 0;
 
@@ -204,8 +230,10 @@ public class DiscordPresenceClient implements Closeable {
      * Updates the Discord Rich Presence with the given state information.
      *
      * <p>
-     * Updates are silently skipped if fewer than 5 seconds have elapsed since the
-     * last update, or if the client is not connected.
+     * If fewer than 5 seconds have elapsed since the last update, the request is
+     * not dropped — it is deferred and automatically flushed once the cooldown
+     * window elapses (see {@link #scheduleOrSend(Runnable)}), so a state transition
+     * is never silently lost. Skipped outright only if the client is not connected.
      * </p>
      *
      * <p>
@@ -236,13 +264,32 @@ public class DiscordPresenceClient implements Closeable {
             log.debug("updatePresence: not connected, skipping");
             return;
         }
+        scheduleOrSend(() -> sendPresence(state, songTitle, difficulty, vfDisplay, jacketUrl));
+    }
 
-        long now = System.currentTimeMillis();
-        if (now - lastUpdateMs < MIN_UPDATE_INTERVAL_MS) {
-            log.debug("updatePresence: throttled ({}ms since last update)", now - lastUpdateMs);
+    /**
+     * Builds and sends the {@code SET_ACTIVITY} frame for a regular (non-result)
+     * presence state. Extracted from {@link #updatePresence} so it can be invoked
+     * either immediately or from a deferred {@link #pendingUpdate}.
+     *
+     * @param state
+     *            the current play state
+     * @param songTitle
+     *            the currently selected/playing song title (may be {@code null})
+     * @param difficulty
+     *            the chart difficulty string (may be {@code null})
+     * @param vfDisplay
+     *            the formatted Volforce string (e.g. {@code "17.255"})
+     * @param jacketUrl
+     *            the URL of the jacket image for the large image asset (may be
+     *            {@code null})
+     */
+    private void sendPresence(PlayState state, String songTitle, String difficulty, String vfDisplay,
+            String jacketUrl) {
+        if (!connected) {
+            log.debug("sendPresence: connection lost before deferred update could be sent, skipping");
             return;
         }
-        lastUpdateMs = now;
 
         String details = buildDetails(state, songTitle);
         String status = buildState(state, difficulty, vfDisplay);
@@ -309,13 +356,39 @@ public class DiscordPresenceClient implements Closeable {
             log.debug("updatePresenceResult: not connected, skipping");
             return;
         }
+        scheduleOrSend(() -> sendPresenceResult(title, difficulty, level, score, scoreDiff, lamp, jacketUrl));
+    }
 
-        long now = System.currentTimeMillis();
-        if (now - lastUpdateMs < MIN_UPDATE_INTERVAL_MS) {
-            log.debug("updatePresenceResult: throttled ({}ms since last update)", now - lastUpdateMs);
+    /**
+     * Builds and sends the {@code SET_ACTIVITY} frame for the result-screen
+     * presence state. Extracted from {@link #updatePresenceResult} so it can be
+     * invoked either immediately or from a deferred {@link #pendingUpdate}.
+     *
+     * @param title
+     *            the song title displayed on the result screen
+     * @param difficulty
+     *            the chart difficulty (e.g. {@code "nov"})
+     * @param level
+     *            the chart level (unused in the displayed text; kept for signature
+     *            compatibility)
+     * @param score
+     *            the score achieved on this play
+     * @param scoreDiff
+     *            {@code curScore - preScore} (unused in the displayed text; kept
+     *            for signature compatibility)
+     * @param lamp
+     *            the result lamp (e.g. {@code "exh"} → displayed as
+     *            {@code "MAXXIVE"})
+     * @param jacketUrl
+     *            optional jacket image URL; {@code null} falls back to default
+     *            asset
+     */
+    private void sendPresenceResult(String title, String difficulty, int level, int score, int scoreDiff, String lamp,
+            String jacketUrl) {
+        if (!connected) {
+            log.debug("sendPresenceResult: connection lost before deferred update could be sent, skipping");
             return;
         }
-        lastUpdateMs = now;
 
         String diffDisplay = difficulty != null ? difficulty.toUpperCase() : "??";
         String lampDisplay = LampFormatter.formatDisplay(lamp);
@@ -369,9 +442,19 @@ public class DiscordPresenceClient implements Closeable {
 
     /**
      * Clears the presence, sends a CLOSE frame, and closes the named pipe.
+     *
+     * <p>
+     * Also discards any not-yet-flushed deferred update (see
+     * {@link #scheduleOrSend(Runnable)}) and shuts down the retry scheduler, since
+     * this client is not reused after closing — the caller always constructs a new
+     * instance to reconnect.
+     * </p>
      */
     @Override
     public synchronized void close() {
+        pendingUpdate = null;
+        retryScheduled = false;
+        retryScheduler.shutdownNow();
         if (!connected) {
             log.debug("close: not connected to Discord, nothing to close");
             return;
@@ -385,6 +468,59 @@ public class DiscordPresenceClient implements Closeable {
         }
         connected = false;
         closePipe();
+    }
+
+    // -------------------------------------------------------------------------
+    // Update throttling
+    // -------------------------------------------------------------------------
+
+    /**
+     * Sends the given presence-update action immediately if at least
+     * {@value #MIN_UPDATE_INTERVAL_MS}ms have elapsed since the last update;
+     * otherwise defers it.
+     *
+     * <p>
+     * A deferred action is not dropped: it is remembered as {@link #pendingUpdate}
+     * and a single flush is scheduled for when the cooldown window elapses (see
+     * {@link #flushPendingUpdate()}). If another update is requested before that
+     * flush runs, it simply replaces {@link #pendingUpdate} — only the latest
+     * request is ever sent, but a request is never silently discarded outright.
+     * </p>
+     *
+     * @param sendAction
+     *            builds and sends the IPC frame for one specific presence state
+     */
+    private synchronized void scheduleOrSend(Runnable sendAction) {
+        long now = System.currentTimeMillis();
+        long elapsed = now - lastUpdateMs;
+        if (elapsed >= MIN_UPDATE_INTERVAL_MS) {
+            lastUpdateMs = now;
+            pendingUpdate = null;
+            sendAction.run();
+            return;
+        }
+        log.debug("presence update throttled ({}ms since last update) - deferring instead of dropping", elapsed);
+        pendingUpdate = sendAction;
+        if (!retryScheduled) {
+            retryScheduled = true;
+            long delay = MIN_UPDATE_INTERVAL_MS - elapsed;
+            retryScheduler.schedule(this::flushPendingUpdate, delay, TimeUnit.MILLISECONDS);
+        }
+    }
+
+    /**
+     * Sends {@link #pendingUpdate} (whichever update was most recently requested
+     * while throttled), if any is still queued.
+     */
+    private synchronized void flushPendingUpdate() {
+        retryScheduled = false;
+        Runnable action = pendingUpdate;
+        pendingUpdate = null;
+        if (action == null) {
+            return;
+        }
+        lastUpdateMs = System.currentTimeMillis();
+        action.run();
     }
 
     // -------------------------------------------------------------------------
