@@ -99,7 +99,9 @@ special_titles = {
         'cloche(といぼっくすうぃんぐ みっくす)':'cloche(といぼっくすうぃんぐ　みっくす)',
         'Critical Crystal(brz remix)':'Critical Crystal(brz_remix)',
         'Φndyou':'Φnd:you',
-        'うぇるかむ -祭みっくす-':'うぇるかむ -||祭みっくす||-'
+        'うぇるかむ -祭みっくす-':'うぇるかむ -||祭みっくす||-',
+        'Profession (αirlemoneX Mechanical Engineering Remix)':'Profession (αirlemoneX "Mechanical Engineering" Remix)',
+        'PANIC HOLIC (かめりあ\'s 24600 POWER Remix)':'PANIC HOLIC (かめりあ\'s "24600 POWER" Remix)',
 }
 
 direct_overides = {
