@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.image.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.sdvxhelper.app.controller.SDVXHelperController"
+            prefWidth="940" prefHeight="640">
+
+    <top>
+        <VBox>
+            <!-- Menu bar -->
+            <MenuBar styleClass="menu-bar">
+                <Menu text="%menu.file">
+                    <MenuItem text="%menu.file.settings"    fx:id="menuSettings"    onAction="#onSettings"/>
+                    <MenuItem text="%menu.file.obs"         fx:id="menuObsControl"  onAction="#onObsControl"/>
+                    <MenuItem text="%menu.tools.webhooks"     fx:id="menuWebhooks"    onAction="#onWebhooks"/>
+                    <SeparatorMenuItem/>
+                    <MenuItem text="%menu.file.exit"        onAction="#onExit"/>
+                </Menu>
+                <Menu text="%menu.tools">
+                    <MenuItem text="%menu.tools.google.drive" fx:id="menuGoogleDrive" onAction="#onGoogleDrive"/>
+                </Menu>
+                <Menu text="%menu.analysis">
+                    <MenuItem text="%menu.analysis.csv"     fx:id="menuExportAllCsv"  onAction="#onExportAllCsv"/>
+                    <MenuItem text="%menu.analysis.csvBest" fx:id="menuExportBestCsv" onAction="#onExportBestCsv"/>
+                </Menu>
+            </MenuBar>
+
+            <!-- Status / indicator bar -->
+            <HBox spacing="10" styleClass="toolbar-bar" alignment="CENTER_LEFT">
+                <Label text="%label.main.obs" styleClass="muted"/>
+                <Label fx:id="obsStatusLabel" text="%label.main.obs.disconnected" styleClass="obs-disconnected"/>
+                <Label text="  |  " styleClass="muted"/>
+                <Label text="%label.main.vf" styleClass="muted"/>
+                <Label fx:id="totalVfLabel" text="0.000" styleClass="highlight-label"/>
+                <Label text="  |  " styleClass="muted"/>
+                <Label text="%label.main.plays" styleClass="muted"/>
+                <Label fx:id="playCountLabel" text="0" styleClass="value-label"/>
+                <Label fx:id="obsRecordingLabel" text="● REC" styleClass="obs-output-active" visible="false" managed="false"/>
+                <Label fx:id="obsStreamingLabel" text="● STREAM" styleClass="obs-output-active" visible="false" managed="false"/>
+                <Label fx:id="discordPresenceLabel" text="● DISCORD" styleClass="discord-presence-active" visible="false" managed="false"/>
+                <Region HBox.hgrow="ALWAYS"/>
+                <Label text="%label.language" styleClass="muted"/>
+                <ComboBox fx:id="languageCombo" styleClass="lang-combo"/>
+            </HBox>
+
+            <!-- F1-F3 reserved keys hint bar -->
+            <HBox spacing="20" styleClass="shortcut-hint-bar" alignment="CENTER_LEFT">
+                <Label text="F1: " styleClass="shortcut-hint"/>
+                <Label text="%text.main.shortcut.f1" styleClass="shortcut-hint"/>
+                <Label text="   F2: " styleClass="shortcut-hint"/>
+                <Label text="%text.main.shortcut.f2" styleClass="shortcut-hint"/>
+                <Label text="   F3: " styleClass="shortcut-hint"/>
+                <Label text="%text.main.shortcut.f3" styleClass="shortcut-hint"/>
+            </HBox>
+
+            <!-- F4-F9 function key toolbar (text-only keybind labels) -->
+            <HBox spacing="6" styleClass="shortcut-toolbar" alignment="CENTER_LEFT">
+                <Button fx:id="f4Button" text="%text.main.shortcut.f4" styleClass="shortcut-key-button"
+                        onAction="#onSaveVolforce">
+                    <tooltip><Tooltip text="%text.main.shortcut.f4"/></tooltip>
+                </Button>
+                <Button fx:id="f5Button" text="%text.main.shortcut.f5" styleClass="shortcut-key-button"
+                        onAction="#onSaveSummary">
+                    <tooltip><Tooltip text="%text.main.shortcut.f5"/></tooltip>
+                </Button>
+                <Button fx:id="f6Button" text="%text.main.shortcut.f6" styleClass="shortcut-key-button"
+                        onAction="#onSaveResult">
+                    <tooltip><Tooltip text="%text.main.shortcut.f6"/></tooltip>
+                </Button>
+                <Button fx:id="f7Button" text="%text.main.shortcut.f7" styleClass="shortcut-key-button"
+                        onAction="#onImportScore">
+                    <tooltip><Tooltip text="%text.main.shortcut.f7"/></tooltip>
+                </Button>
+                <Button fx:id="f8Button" text="%text.main.shortcut.f8" styleClass="shortcut-key-button"
+                        onAction="#onUpdateRival">
+                    <tooltip><Tooltip text="%text.main.shortcut.f8"/></tooltip>
+                </Button>
+                <Button fx:id="f9Button" text="%text.main.shortcut.f9" styleClass="shortcut-key-button"
+                        onAction="#onStartRta">
+                    <tooltip><Tooltip text="%text.main.shortcut.f9"/></tooltip>
+                </Button>
+            </HBox>
+        </VBox>
+    </top>
+
+    <!-- Centre: detection state + session log -->
+    <center>
+        <VBox spacing="8">
+            <padding><Insets top="12" right="12" bottom="12" left="12"/></padding>
+            <Label text="%label.main.detection.state" styleClass="sub-heading"/>
+            <HBox spacing="8" alignment="CENTER_LEFT">
+
+                <!-- Fixed-width panel: mode label. Wide enough for "RESULT" (longest value). -->
+                <HBox minWidth="70" maxWidth="70" alignment="CENTER_LEFT">
+                    <Label fx:id="detectModeLabel" text="INIT" styleClass="status-label"/>
+                </HBox>
+
+                <!-- Fixed-width panel: capture indicators. minWidth reserves space even when
+                     all indicators are hidden (managed=false). -->
+                <HBox minWidth="340" alignment="CENTER_LEFT" spacing="6">
+                    <Label fx:id="captureScreenshotIcon" text="%indicator.main.capture.screenshot"
+                           styleClass="capture-indicator" visible="false" managed="false"/>
+                    <Label fx:id="captureSummaryIcon" text="%indicator.main.capture.summary"
+                           styleClass="capture-indicator" visible="false" managed="false"/>
+                    <Label fx:id="captureVfIcon" text="%indicator.main.capture.vf"
+                           styleClass="capture-indicator" visible="false" managed="false"/>
+                </HBox>
+
+            </HBox>
+            <Separator/>
+            <Label fx:id="sessionLogLabel" text="%label.main.session.log" styleClass="section-heading"/>
+            <SplitPane VBox.vgrow="ALWAYS" orientation="VERTICAL" dividerPositions="0.75">
+                <TableView fx:id="sessionLogTable">
+                    <columns>
+                        <TableColumn fx:id="logTitleColumn" text="%table.header.title"      prefWidth="280"/>
+                        <TableColumn fx:id="logDiffColumn"  text="%table.header.difficulty" prefWidth="60"/>
+                        <TableColumn fx:id="logScoreColumn" text="%table.header.score"      prefWidth="90"/>
+                        <TableColumn fx:id="logLampColumn"  text="%table.header.lamp"       prefWidth="60"/>
+                        <TableColumn fx:id="logDateColumn"  text="%table.header.date"       prefWidth="100"/>
+                    </columns>
+                </TableView>
+                <TextArea fx:id="outputArea" editable="false"
+                          style="-fx-font-family: monospace;"/>
+            </SplitPane>
+        </VBox>
+    </center>
+
+    <!-- Bottom: status bar -->
+    <bottom>
+        <HBox styleClass="toolbar-bar">
+            <Label fx:id="statusLabel" text="Ready" styleClass="status-label"/>
+        </HBox>
+    </bottom>
+</BorderPane>

@@ -1,0 +1,410 @@
+package com.sdvxhelper.repository;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import jakarta.xml.bind.JAXBException;
+
+import com.sdvxhelper.model.DifficultyHashGroup;
+import com.sdvxhelper.model.DifficultyHashes;
+import com.sdvxhelper.model.GradeSEntry;
+import com.sdvxhelper.model.HashEntry;
+import com.sdvxhelper.model.MusicInfo;
+import com.sdvxhelper.model.MusicList;
+import com.sdvxhelper.model.SongInfo;
+import com.sdvxhelper.model.SongInfoEntry;
+import com.sdvxhelper.model.TierEntry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ * Persists and loads the song/jacket database as {@code musiclist.xml}.
+ *
+ * <p>
+ * Replaces the Python {@code pickle.load/dump} calls on {@code musiclist.pkl}.
+ * Also builds in-memory index maps for O(1) hash lookups during the detection
+ * loop.
+ * </p>
+ *
+ * @author Throdax
+ * @since 2.0.0
+ */
+public class MusicListRepository extends JaxbRepository<MusicList> {
+
+    private static final Logger log = LoggerFactory.getLogger(MusicListRepository.class);
+    private static final String DEFAULT_PATH = "resources/musiclist.xml";
+
+    private File file;
+
+    /** In-memory index: perceptual hash → (difficulty, title). */
+    private Map<String, String[]> jacketHashIndex = new HashMap<>();
+
+    /** In-memory index: song title → {@link SongInfo}. */
+    private Map<String, SongInfo> titleIndex = new HashMap<>();
+
+    /**
+     * Cached last-loaded music list, used by
+     * {@link #registerHash(String, String, String)}.
+     */
+    private MusicList cached;
+
+    /**
+     * Constructs a repository backed by the default file.
+     */
+    public MusicListRepository() {
+        this(new File(DEFAULT_PATH));
+    }
+
+    /**
+     * Constructs a repository backed by a custom file.
+     *
+     * @param file
+     *            XML file to read from / write to
+     */
+    public MusicListRepository(File file) {
+        super(MusicList.class, DifficultyHashGroup.class, DifficultyHashes.class, HashEntry.class, SongInfoEntry.class,
+                SongInfo.class, GradeSEntry.class, TierEntry.class);
+        this.file = file;
+    }
+
+    /**
+     * Loads the music list from disk and rebuilds in-memory indices.
+     *
+     * <p>
+     * Returns {@code null} if the file does not exist; the caller should trigger a
+     * download in that case.
+     * </p>
+     *
+     * @return loaded {@link MusicList}, or {@code null} if the file is absent
+     */
+    public MusicList load() {
+        if (!file.exists()) {
+            log.info("musiclist.xml not found at {}", file.getAbsolutePath());
+            return null;
+        }
+        try {
+            MusicList musiclist = super.load(file);
+            buildIndices(musiclist);
+            this.cached = musiclist;
+            log.info("Loaded musiclist.xml ({} songs)", musiclist.getTitles().size());
+            return musiclist;
+        } catch (JAXBException e) {
+            log.error("Failed to load musiclist.xml", e);
+            return null;
+        }
+    }
+
+    /**
+     * Saves the music list to disk atomically.
+     *
+     * @param musicList
+     *            music list to persist
+     * @throws IOException
+     *             if the file cannot be written
+     */
+    public void save(MusicList musicList) throws IOException {
+        try {
+            super.save(musicList, file);
+            buildIndices(musicList);
+        } catch (JAXBException e) {
+            throw new IOException("Failed to marshal music list to XML", e);
+        }
+    }
+
+    /**
+     * Maximum Hamming distance allowed for a fuzzy jacket-hash match. Mirrors
+     * Python's {@code hash_threshold = 4}.
+     */
+    private static final int JACKET_HASH_THRESHOLD = 4;
+
+    /**
+     * Looks up the song title and difficulty for a given jacket perceptual hash.
+     *
+     * <p>
+     * First tries an exact string match (O(1)). If that fails, falls back to a
+     * fuzzy search using Hamming distance, accepting the closest entry whose
+     * distance is strictly less than {@value #JACKET_HASH_THRESHOLD} bits —
+     * matching Python's {@code abs(hash_cur - hash_jacket) < 4} comparison.
+     * </p>
+     *
+     * @param hash
+     *            perceptual hash hex string
+     * @return {@code String[]{title, difficulty}} or {@code null} if not found
+     */
+    public String[] findByJacketHash(String hash) {
+        String[] exact = jacketHashIndex.get(hash);
+        if (exact != null) {
+            return exact;
+        }
+        String[] best = null;
+        int bestDist = JACKET_HASH_THRESHOLD;
+        for (Map.Entry<String, String[]> entry : jacketHashIndex.entrySet()) {
+            String candidate = entry.getKey();
+            if (candidate.length() != hash.length()) {
+                continue;
+            }
+            int dist = hammingDistance(hash, candidate);
+            if (dist < bestDist) {
+                bestDist = dist;
+                best = entry.getValue();
+            }
+        }
+        if (best != null) {
+            log.debug("findByJacketHash: fuzzy match (dist={}) for hash {}", bestDist, hash);
+        }
+        return best;
+    }
+
+    private static int hammingDistance(String h1, String h2) {
+        int dist = 0;
+        for (int i = 0; i < h1.length(); i++) {
+            int diff = Integer.parseInt(h1.substring(i, i + 1), 16) ^ Integer.parseInt(h2.substring(i, i + 1), 16);
+            dist += Integer.bitCount(diff);
+        }
+        return dist;
+    }
+
+    /**
+     * Returns the {@link SongInfo} for a given title, or {@code null} if unknown.
+     *
+     * <p>
+     * Triggers a lazy {@link #load()} on the first call when the music list has not
+     * yet been loaded, mirroring the behaviour of {@link #getAll()} and
+     * {@link #getHashesForDifficulty(String)}.
+     * </p>
+     *
+     * @param title
+     *            song title
+     * @return song metadata or {@code null}
+     */
+    public SongInfo findSongInfo(String title) {
+        if (cached == null) {
+            load();
+        }
+        return titleIndex.get(title);
+    }
+
+    /**
+     * Returns an unmodifiable view of the title → SongInfo index.
+     *
+     * @return title index map
+     */
+    public Map<String, SongInfo> getTitleIndex() {
+        return java.util.Collections.unmodifiableMap(titleIndex);
+    }
+
+    /**
+     * Builds in-memory indices for O(1) lookups by jacket hash and title.
+     *
+     * @param musicList
+     *            the music list to index
+     */
+    private void buildIndices(MusicList musicList) {
+        jacketHashIndex = new HashMap<>();
+        titleIndex = new HashMap<>();
+
+        // Build jacket hash index.
+        // putIfAbsent ensures the first difficulty entry for a given hash wins
+        // (nov/adv/exh appear before APPEND in the XML), so songs that share
+        // their jacket across multiple difficulties are not incorrectly labelled
+        // as APPEND — mirroring Python's per-difficulty bucket search.
+        for (DifficultyHashGroup group : musicList.getJacket()) {
+            String diff = group.getDifficulty();
+            for (HashEntry entry : group.getHashes().getEntries()) {
+                jacketHashIndex.putIfAbsent(entry.getHash(), new String[]{entry.getTitle(), diff});
+            }
+        }
+
+        // Build title index
+        for (SongInfoEntry sie : musicList.getTitles()) {
+            titleIndex.put(sie.getTitle(), sie.getSongInfo());
+        }
+
+        log.debug("Built indices: {} jacket hashes, {} titles", jacketHashIndex.size(), titleIndex.size());
+    }
+
+    /**
+     * Returns the backing file.
+     *
+     * @return backing XML file
+     */
+    public File getFile() {
+        return file;
+    }
+
+    /**
+     * Returns a flat list of {@link MusicInfo} rows for all known songs, primarily
+     * intended for display in table views.
+     *
+     * @return list of song metadata rows (empty if music list not loaded)
+     */
+    public List<MusicInfo> getAll() {
+        if (cached == null) {
+            MusicList ml = load();
+            if (ml == null) {
+                return new ArrayList<>();
+            }
+        }
+        List<MusicInfo> out = new ArrayList<>();
+        for (SongInfoEntry sie : cached.getTitles()) {
+            SongInfo si = sie.getSongInfo();
+            MusicInfo mi = new MusicInfo();
+            mi.setTitle(sie.getTitle());
+            if (si != null) {
+                mi.setArtist(si.getArtist());
+                mi.setBpm(si.getBpm());
+                mi.setLv(si.getLvExh());
+            }
+            out.add(mi);
+        }
+        return out;
+    }
+
+    /**
+     * Returns all hash entries registered for the given difficulty.
+     *
+     * @param difficulty
+     *            chart difficulty code (e.g. nov, adv, exh, APPEND); empty or
+     *            {@code null} returns all entries across all difficulties
+     * @return list of registered {@link HashEntry} rows
+     */
+    public List<HashEntry> getHashesForDifficulty(String difficulty) {
+        if (cached == null) {
+            MusicList ml = load();
+            if (ml == null) {
+                return new ArrayList<>();
+            }
+        }
+        List<HashEntry> out = new ArrayList<>();
+        for (DifficultyHashGroup g : cached.getJacket()) {
+            if (difficulty == null || difficulty.isBlank() || difficulty.equals(g.getDifficulty())) {
+                out.addAll(g.getHashes().getEntries());
+            }
+        }
+        return out;
+    }
+
+    /**
+     * Registers a new jacket hash → title mapping for the given difficulty and
+     * persists the music list to disk.
+     *
+     * @param hash
+     *            perceptual hash hex string
+     * @param title
+     *            song title
+     * @param difficulty
+     *            chart difficulty code (e.g. nov, adv, exh, mxm)
+     * @throws IOException
+     *             if the music list cannot be saved
+     */
+    public void registerHash(String hash, String title, String difficulty) throws IOException {
+        if (cached == null) {
+            MusicList ml = load();
+            if (ml == null) {
+                throw new IOException("Cannot register hash: musiclist.xml not loaded");
+            }
+        }
+        DifficultyHashGroup group = null;
+        for (DifficultyHashGroup g : cached.getJacket()) {
+            if (difficulty.equals(g.getDifficulty())) {
+                group = g;
+                break;
+            }
+        }
+        if (group == null) {
+            group = new DifficultyHashGroup();
+            group.setDifficulty(difficulty);
+            group.setHashes(new DifficultyHashes());
+            cached.getJacket().add(group);
+        }
+        HashEntry entry = new HashEntry();
+        entry.setTitle(title);
+        entry.setHash(hash);
+        group.getHashes().getEntries().add(entry);
+
+        save(cached);
+        log.info("Registered hash {} for {} [{}]", hash, title, difficulty);
+    }
+
+    /**
+     * Merges all jacket hashes from another {@code musiclist.xml} file into this
+     * repository, skipping duplicates, then persists the merged list to disk.
+     *
+     * <p>
+     * Mirrors the Python {@code merge_musiclist()} function in
+     * {@code ocr_reporter.py}.
+     * </p>
+     *
+     * @param sourceFile
+     *            path to the external musiclist.xml to import from
+     * @return number of new entries imported
+     * @throws IOException
+     *             if either file cannot be read or the merged list cannot be saved
+     */
+    public int merge(File sourceFile) throws IOException {
+        MusicList source;
+        try {
+            source = load(sourceFile);
+        } catch (JAXBException e) {
+            throw new IOException("Failed to parse source musiclist: " + e.getMessage(), e);
+        }
+        if (source == null) {
+            return 0;
+        }
+
+        if (cached == null) {
+            MusicList ml = load();
+            if (ml == null) {
+                throw new IOException("Cannot merge: local musiclist.xml not loaded");
+            }
+        }
+
+        // Build set of existing hashes for deduplication
+        java.util.Set<String> existingHashes = new java.util.HashSet<>();
+        for (DifficultyHashGroup g : cached.getJacket()) {
+            if (g.getHashes() != null) {
+                for (HashEntry e : g.getHashes().getEntries()) {
+                    existingHashes.add(e.getHash());
+                }
+            }
+        }
+
+        int added = 0;
+        for (DifficultyHashGroup srcGroup : source.getJacket()) {
+            if (srcGroup.getHashes() == null) {
+                continue;
+            }
+            // Find or create matching group in cached
+            DifficultyHashGroup destGroup = null;
+            for (DifficultyHashGroup g : cached.getJacket()) {
+                if (srcGroup.getDifficulty().equals(g.getDifficulty())) {
+                    destGroup = g;
+                    break;
+                }
+            }
+            if (destGroup == null) {
+                destGroup = new DifficultyHashGroup();
+                destGroup.setDifficulty(srcGroup.getDifficulty());
+                destGroup.setHashes(new DifficultyHashes());
+                cached.getJacket().add(destGroup);
+            }
+            for (HashEntry srcEntry : srcGroup.getHashes().getEntries()) {
+                if (!existingHashes.contains(srcEntry.getHash())) {
+                    HashEntry newEntry = new HashEntry();
+                    newEntry.setTitle(srcEntry.getTitle());
+                    newEntry.setHash(srcEntry.getHash());
+                    destGroup.getHashes().getEntries().add(newEntry);
+                    existingHashes.add(srcEntry.getHash());
+                    added++;
+                }
+            }
+        }
+
+        save(cached);
+        log.info("Merged {} new hashes from {}", added, sourceFile.getName());
+        return added;
+    }
+}

@@ -1,0 +1,244 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.PasswordField?>
+<?import javafx.scene.control.RadioButton?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.Spinner?>
+<?import javafx.scene.control.SpinnerValueFactory?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.TitledPane?>
+<?import javafx.scene.control.ToggleGroup?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Priority?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.control.Tooltip?>
+
+<ScrollPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml" fx:controller="com.sdvxhelper.app.controller.SettingsController" fitToWidth="true" prefWidth="720" prefHeight="900">
+
+    <VBox spacing="8">
+    
+        <padding>
+            <Insets top="5" right="5" bottom="5" left="5" />
+        </padding>
+
+        <!-- OBS group -->
+        <TitledPane text="%label.settings.obs" collapsible="false" expanded="true">
+            <GridPane hgap="12" vgap="8">
+                <padding>
+                    <Insets top="5" right="5" bottom="5" left="5" />
+                </padding>
+                <columnConstraints>
+                    <ColumnConstraints minWidth="180" />
+                    <ColumnConstraints hgrow="ALWAYS" />
+                </columnConstraints>
+
+                <Label text="%text.settings.obsHost" GridPane.columnIndex="0" GridPane.rowIndex="0" styleClass="muted" />
+                <TextField fx:id="obsHostField" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+
+                <Label text="%text.settings.obsPort" GridPane.columnIndex="0" GridPane.rowIndex="1" styleClass="muted" />
+                <TextField fx:id="obsPortField" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+
+                <Label text="%text.settings.obsPassword" GridPane.columnIndex="0" GridPane.rowIndex="2" styleClass="muted" />
+                <PasswordField fx:id="obsPasswordField" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+            </GridPane>
+        </TitledPane>
+
+        <!-- Screen orientation group -->
+        <TitledPane text="%text.settings.screenOrientation.title" collapsible="false" expanded="true">
+            <VBox spacing="6">
+                <padding>
+                    <Insets top="5" right="5" bottom="5" left="5" />
+                </padding>
+                
+                <GridPane hgap="16" vgap="12" alignment="CENTER">
+                    <!-- Row 0: Top | Bottom -->
+                    <VBox spacing="4" alignment="CENTER" GridPane.columnIndex="0" GridPane.rowIndex="0">
+                        <ImageView fitWidth="159" fitHeight="89" preserveRatio="false">
+                            <image>
+                                <Image url="@../../../../images/orientation_top.jpg" />
+                            </image>
+                        </ImageView>
+                        <RadioButton fx:id="orientationTopRadio" text="%text.settings.screenOrientation.top"/>
+                    </VBox>
+                    <VBox spacing="4" alignment="CENTER" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                        <ImageView fitWidth="159" fitHeight="89" preserveRatio="false">
+                            <image>
+                                <Image url="@../../../../images/orientation_bottom.jpg" />
+                            </image>
+                        </ImageView>
+                        <RadioButton fx:id="orientationBottomRadio" text="%text.settings.screenOrientation.bottom"/>
+                    </VBox>
+                    <VBox spacing="4" alignment="CENTER" GridPane.columnIndex="0" GridPane.rowIndex="1">
+                        <ImageView fitWidth="159" fitHeight="89" preserveRatio="false">
+                            <image>
+                                <Image url="@../../../../images/orientation_right.jpg" />
+                            </image>
+                        </ImageView>
+                        <RadioButton fx:id="orientationRightRadio" text="%text.settings.screenOrientation.right" />
+                    </VBox>
+                    <VBox spacing="4" alignment="CENTER" GridPane.columnIndex="1" GridPane.rowIndex="1">
+                        <ImageView fitWidth="159" fitHeight="89" preserveRatio="false">
+                            <image>
+                                <Image url="@../../../../images/orientation_left.jpg" />
+                            </image>
+                        </ImageView>
+                        <RadioButton fx:id="orientationLeftRadio" text="%text.settings.screenOrientation.left" />
+                    </VBox>
+                </GridPane>
+            </VBox>
+        </TitledPane>
+
+        <!-- General group -->
+        <TitledPane text="%label.settings.general" collapsible="false" expanded="true">
+            <GridPane hgap="12" vgap="8">
+                <padding>
+                    <Insets top="5" right="5" bottom="5" left="5" />
+                </padding>
+                <columnConstraints>
+                    <ColumnConstraints minWidth="180" />
+                    <ColumnConstraints hgrow="ALWAYS" />
+                </columnConstraints>
+
+                <Label text="%label.settings.player.name" GridPane.columnIndex="0" GridPane.rowIndex="0" styleClass="muted" />
+                <TextField fx:id="playerNameField" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+
+                <CheckBox fx:id="autoUpdateCheck" text="%checkbox.settings.checkForUpdatesAtStart" GridPane.columnIndex="0" GridPane.rowIndex="1" GridPane.columnSpan="2" />
+                <CheckBox fx:id="ignoreRankDCheck" text="%checkbox.settings.ignoreRankD" GridPane.columnIndex="0" GridPane.rowIndex="2" GridPane.columnSpan="2" />
+                <CheckBox fx:id="clipLxlyCheck" text="%label.settings.clip.lxly" GridPane.columnIndex="0" GridPane.rowIndex="3" GridPane.columnSpan="2" />
+                <CheckBox fx:id="alwaysUpdateVfCheck" text="%checkbox.settings.allwaysUpdateVF" GridPane.columnIndex="0" GridPane.rowIndex="4" GridPane.columnSpan="2" />
+                
+                <Label text="%text.settings.rta.target" GridPane.columnIndex="0" GridPane.rowIndex="5" styleClass="muted" />
+                <TextField fx:id="rtaTargetVfField" GridPane.columnIndex="1" GridPane.rowIndex="5" prefColumnCount="10" maxWidth="120" />
+
+                <CheckBox fx:id="blasterGaugeMaxCheck" text="%checkbox.settings.blasterGaugeMax"
+                          GridPane.columnIndex="0" GridPane.rowIndex="6" GridPane.columnSpan="2" />
+
+                <Label text="%text.settings.logWindowTransparency"
+                       GridPane.columnIndex="0" GridPane.rowIndex="7" styleClass="muted" />
+                <TextField fx:id="logWindowTransparencyField"
+                           GridPane.columnIndex="1" GridPane.rowIndex="7" prefColumnCount="5" maxWidth="80" />
+
+                <CheckBox fx:id="importFromSelectCheck" text="%checkbox.settings.importFromSelect"
+                          GridPane.columnIndex="0" GridPane.rowIndex="8" />
+                <CheckBox fx:id="includeArcadeScoresCheck" text="%checkbox.settings.includeArcadeScores"
+                          GridPane.columnIndex="1" GridPane.rowIndex="8" />
+            </GridPane>
+        </TitledPane>
+
+        <!-- Detection / auto-save group -->
+        <TitledPane text="%label.settings.detection" collapsible="false" expanded="true">
+            <GridPane hgap="12" vgap="8">
+                <padding>
+                    <Insets top="5" right="5" bottom="5" left="5" />
+                </padding>
+                <columnConstraints>
+                    <ColumnConstraints minWidth="180" />
+                    <ColumnConstraints hgrow="ALWAYS" />
+                </columnConstraints>
+
+                <Label text="%text.settings.resultsAutoSaveFolder" GridPane.columnIndex="0" GridPane.rowIndex="1" styleClass="muted" />
+                <HBox spacing="6" GridPane.columnIndex="1" GridPane.rowIndex="1">
+                    <TextField fx:id="autosaveDirField" prefColumnCount="100" HBox.hgrow="ALWAYS" />
+                    <Button text="%button.settings.browse" onAction="#onBrowseAutosaveDir" />
+                </HBox>
+
+                <Label text="%label.settings.autosave.int" GridPane.columnIndex="0" GridPane.rowIndex="2" styleClass="muted" />
+                <TextField fx:id="autosaveIntervalField" GridPane.columnIndex="1" GridPane.rowIndex="2" prefColumnCount="10" maxWidth="120" />
+
+                <Label text="%text.settings.screenshotDelay" GridPane.columnIndex="0" GridPane.rowIndex="3" styleClass="muted" />
+                <TextField fx:id="autosavePrewaitField" GridPane.columnIndex="1" GridPane.rowIndex="3" prefColumnCount="10" maxWidth="120" />
+
+                <Label text="%text.settings.detectSampleCount"
+                       GridPane.columnIndex="0" GridPane.rowIndex="4" styleClass="muted">
+                    <tooltip>
+                        <Tooltip text="%text.settings.detectSampleCount.tooltip" wrapText="true" maxWidth="340" />
+                    </tooltip>
+                </Label>
+                <Spinner fx:id="detectSampleCountSpinner" GridPane.columnIndex="1" GridPane.rowIndex="4"
+                         maxWidth="80" editable="true" />
+
+                <CheckBox fx:id="autosaveAlwaysCheck" text="%checkbox.settings.autoSaveAlways" GridPane.columnIndex="0" GridPane.rowIndex="5" GridPane.columnSpan="2" />
+                <CheckBox fx:id="saveJacketImgCheck" text="%checkbox.settings.autoSaveCover" GridPane.columnIndex="0" GridPane.rowIndex="6" GridPane.columnSpan="2" />
+                <CheckBox fx:id="vfOcrEnabledCheck" text="%checkbox.settings.vfOcrEnabled" GridPane.columnIndex="0" GridPane.rowIndex="7" GridPane.columnSpan="2">
+                    <tooltip>
+                        <Tooltip text="%checkbox.settings.vfOcrEnabled.tooltip" wrapText="true" maxWidth="340" />
+                    </tooltip>
+                </CheckBox>
+
+                <HBox spacing="8" GridPane.columnIndex="0" GridPane.rowIndex="8" GridPane.columnSpan="2">
+                    <Button text="%button.settings.processPastResults" onAction="#onProcessPastResults" />
+                    <Button text="%button.settings.generateJackets" onAction="#onGenerateJackets" />
+                </HBox>
+
+                <Label text="%text.settings.textNumberOfNumbersPlayed"
+                       GridPane.columnIndex="0" GridPane.rowIndex="9" styleClass="muted">
+                    <tooltip>
+                        <Tooltip text="%text.settinss.textNumberOfNumbersPlayed.tooltip" />
+                    </tooltip>
+                </Label>
+                <HBox spacing="6" GridPane.columnIndex="1" GridPane.rowIndex="9">
+                    <Label text="%text.settings.textNumberOfNumbersPlayed.prefix" />
+                    <TextField fx:id="playsPrefixField" prefColumnCount="12">
+                        <tooltip>
+                            <Tooltip text="%text.settings.textNumberOfNumbersPlayed.prefix.tooltip" />
+                        </tooltip>
+                    </TextField>
+                    <Label text="%text.settings.textNumberOfNumbersPlayed.suffix" />
+                    <TextField fx:id="playsSuffixField" prefColumnCount="10">
+                        <tooltip>
+                            <Tooltip text="%text.settings.textNumberOfNumbersPlayed.suffix.tooltip" />
+                        </tooltip>
+                    </TextField>
+                </HBox>
+
+                <Label text="%text.settings.textPlayTime"
+                       GridPane.columnIndex="0" GridPane.rowIndex="10" styleClass="muted" />
+                <HBox spacing="6" GridPane.columnIndex="1" GridPane.rowIndex="10">
+                    <Label text="%text.settings.textPlayTime.prefix" />
+                    <TextField fx:id="playtimePrefixField" prefColumnCount="12">
+                        <tooltip>
+                            <Tooltip text="%text.settings.textPlayTime.prefix.tooltip" />
+                        </tooltip>
+                    </TextField>
+                </HBox>
+            </GridPane>
+        </TitledPane>
+
+        <!-- Discord -->
+        <TitledPane text="%label.settings.integrations" collapsible="false" expanded="true">
+            <HBox spacing="12">
+                <CheckBox fx:id="discordEnableCheck" text="%checkbox.settings.discordPresence">
+                    <tooltip>
+                        <Tooltip text="%checkbox.settings.discordPresence.tooltip" />
+                    </tooltip>
+                </CheckBox>
+
+                <CheckBox fx:id="discordUseSongName" text="%checkbox.settings.discordPresence.useSongAsTitle">
+                    <tooltip>
+                        <Tooltip text="%checkbox.settings.discordPresence.useSongAsTitle.tooltip" />
+                    </tooltip>
+                </CheckBox>
+
+                <CheckBox fx:id="discordUploadJacket" text="%checkbox.settings.discordPresence.uploadJacket">
+                    <tooltip>
+                        <Tooltip text="%checkbox.settings.discordPresence.uploadJacket.tooltip" />
+                    </tooltip>
+                </CheckBox>
+
+                <CheckBox fx:id="discordUseOCR" text="%checkbox.settings.discordPresence.ocrTitles">
+                    <tooltip>
+                        <Tooltip text="%checkbox.settings.discordPresence.ocrTitles.tooltip" />
+                    </tooltip>
+                </CheckBox>
+            </HBox>
+        </TitledPane>
+    </VBox>
+</ScrollPane>

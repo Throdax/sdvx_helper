@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.Tab?>
+<?import javafx.scene.control.TabPane?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Priority?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox xmlns="http://javafx.com/javafx"
+      xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.sdvxhelper.app.controller.ObsControlController"
+      prefWidth="720" prefHeight="560" spacing="8">
+
+    <padding><Insets top="12" right="12" bottom="12" left="12"/></padding>
+
+    <HBox spacing="12" alignment="CENTER_LEFT">
+        <Label text="%label.obs.control.status" styleClass="muted"/>
+        <Label fx:id="connStatusLabel" text="%label.obs.control.disconnected" styleClass="obs-disconnected"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Button text="%button.obs.connect"    fx:id="connectButton"    onAction="#onConnect"    styleClass="button-success"/>
+        <Button text="%button.obs.disconnect" fx:id="disconnectButton" onAction="#onDisconnect" styleClass="button-danger" disable="true"/>
+    </HBox>
+
+    <Separator/>
+
+    <VBox spacing="6">
+        <HBox spacing="8" alignment="CENTER_LEFT">
+            <Label text="%label.obs.sdvxScene" styleClass="muted"/>
+            <ComboBox fx:id="sdvxSceneCombo" prefWidth="180"/>
+            <Label text="%label.obs.sdvxSource" styleClass="muted"/>
+            <ComboBox fx:id="sdvxSourceCombo" prefWidth="220"/>
+            <Button text="%button.obs.selectSource" fx:id="selectSourceButton" onAction="#onSelectSource"/>
+        </HBox>
+        <HBox spacing="6" alignment="CENTER_LEFT">
+            <Label text="%label.obs.sdvxSourceSaved" styleClass="muted"/>
+            <Label fx:id="savedSourceLabel" text=""/>
+        </HBox>
+    </VBox>
+
+    <Separator/>
+
+    <TabPane tabClosingPolicy="UNAVAILABLE" VBox.vgrow="ALWAYS">
+
+        <Tab text="%label.obs.boot">
+            <GridPane hgap="12" vgap="8">
+                <padding><Insets top="10" right="10" bottom="10" left="10"/></padding>
+                <columnConstraints>
+                    <ColumnConstraints minWidth="140"/>
+                    <ColumnConstraints hgrow="ALWAYS"/>
+                </columnConstraints>
+
+                <Label text="%label.obs.scene"   GridPane.columnIndex="0" GridPane.rowIndex="0" styleClass="muted"/>
+                <ComboBox fx:id="bootSceneCombo"   GridPane.columnIndex="1" GridPane.rowIndex="0" maxWidth="Infinity"/>
+
+                <Label text="%label.obs.enable"  GridPane.columnIndex="0" GridPane.rowIndex="1" styleClass="muted"/>
+                <ListView fx:id="bootEnableList"  GridPane.columnIndex="1" GridPane.rowIndex="1" prefHeight="140"/>
+
+                <Label text="%label.obs.disable" GridPane.columnIndex="0" GridPane.rowIndex="2" styleClass="muted"/>
+                <ListView fx:id="bootDisableList" GridPane.columnIndex="1" GridPane.rowIndex="2" prefHeight="140"/>
+            </GridPane>
+        </Tab>
+
+        <Tab text="%label.obs.select">
+            <GridPane hgap="12" vgap="8">
+                <padding><Insets top="10" right="10" bottom="10" left="10"/></padding>
+                <columnConstraints>
+                    <ColumnConstraints minWidth="140"/>
+                    <ColumnConstraints hgrow="ALWAYS"/>
+                </columnConstraints>
+
+                <Label text="%label.obs.scene"     GridPane.columnIndex="0" GridPane.rowIndex="0" styleClass="muted"/>
+                <ComboBox fx:id="selectSceneCombo"   GridPane.columnIndex="1" GridPane.rowIndex="0" maxWidth="Infinity"/>
+
+                <Label text="%label.obs.enable"    GridPane.columnIndex="0" GridPane.rowIndex="1" styleClass="muted"/>
+                <ListView fx:id="selectEnableList"  GridPane.columnIndex="1" GridPane.rowIndex="1" prefHeight="140"/>
+
+                <Label text="%label.obs.disable"   GridPane.columnIndex="0" GridPane.rowIndex="2" styleClass="muted"/>
+                <ListView fx:id="selectDisableList" GridPane.columnIndex="1" GridPane.rowIndex="2" prefHeight="140"/>
+            </GridPane>
+        </Tab>
+
+        <Tab text="%label.obs.play">
+            <GridPane hgap="12" vgap="8">
+                <padding><Insets top="10" right="10" bottom="10" left="10"/></padding>
+                <columnConstraints>
+                    <ColumnConstraints minWidth="140"/>
+                    <ColumnConstraints hgrow="ALWAYS"/>
+                </columnConstraints>
+
+                <Label text="%label.obs.scene"   GridPane.columnIndex="0" GridPane.rowIndex="0" styleClass="muted"/>
+                <ComboBox fx:id="playSceneCombo"   GridPane.columnIndex="1" GridPane.rowIndex="0" maxWidth="Infinity"/>
+
+                <Label text="%label.obs.enable"  GridPane.columnIndex="0" GridPane.rowIndex="1" styleClass="muted"/>
+                <ListView fx:id="playEnableList"  GridPane.columnIndex="1" GridPane.rowIndex="1" prefHeight="140"/>
+
+                <Label text="%label.obs.disable" GridPane.columnIndex="0" GridPane.rowIndex="2" styleClass="muted"/>
+                <ListView fx:id="playDisableList" GridPane.columnIndex="1" GridPane.rowIndex="2" prefHeight="140"/>
+            </GridPane>
+        </Tab>
+
+        <Tab text="%label.obs.result">
+            <GridPane hgap="12" vgap="8">
+                <padding><Insets top="10" right="10" bottom="10" left="10"/></padding>
+                <columnConstraints>
+                    <ColumnConstraints minWidth="140"/>
+                    <ColumnConstraints hgrow="ALWAYS"/>
+                </columnConstraints>
+
+                <Label text="%label.obs.scene"     GridPane.columnIndex="0" GridPane.rowIndex="0" styleClass="muted"/>
+                <ComboBox fx:id="resultSceneCombo"   GridPane.columnIndex="1" GridPane.rowIndex="0" maxWidth="Infinity"/>
+
+                <Label text="%label.obs.enable"    GridPane.columnIndex="0" GridPane.rowIndex="1" styleClass="muted"/>
+                <ListView fx:id="resultEnableList"  GridPane.columnIndex="1" GridPane.rowIndex="1" prefHeight="140"/>
+
+                <Label text="%label.obs.disable"   GridPane.columnIndex="0" GridPane.rowIndex="2" styleClass="muted"/>
+                <ListView fx:id="resultDisableList" GridPane.columnIndex="1" GridPane.rowIndex="2" prefHeight="140"/>
+            </GridPane>
+        </Tab>
+
+        <Tab text="%label.obs.quit">
+            <GridPane hgap="12" vgap="8">
+                <padding><Insets top="10" right="10" bottom="10" left="10"/></padding>
+                <columnConstraints>
+                    <ColumnConstraints minWidth="140"/>
+                    <ColumnConstraints hgrow="ALWAYS"/>
+                </columnConstraints>
+
+                <Label text="%label.obs.scene"   GridPane.columnIndex="0" GridPane.rowIndex="0" styleClass="muted"/>
+                <ComboBox fx:id="quitSceneCombo"   GridPane.columnIndex="1" GridPane.rowIndex="0" maxWidth="Infinity"/>
+
+                <Label text="%label.obs.enable"  GridPane.columnIndex="0" GridPane.rowIndex="1" styleClass="muted"/>
+                <ListView fx:id="quitEnableList"  GridPane.columnIndex="1" GridPane.rowIndex="1" prefHeight="140"/>
+
+                <Label text="%label.obs.disable" GridPane.columnIndex="0" GridPane.rowIndex="2" styleClass="muted"/>
+                <ListView fx:id="quitDisableList" GridPane.columnIndex="1" GridPane.rowIndex="2" prefHeight="140"/>
+            </GridPane>
+        </Tab>
+    </TabPane>
+</VBox>

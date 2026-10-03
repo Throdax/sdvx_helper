@@ -1,0 +1,405 @@
+package com.sdvxhelper.app.controller;
+
+import java.io.IOException;
+import java.net.URL;
+import java.util.List;
+import java.util.Map;
+import java.util.ResourceBundle;
+import java.util.stream.Collectors;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.SimpleBooleanProperty;
+import javafx.event.ActionEvent;
+import javafx.fxml.FXML;
+import javafx.fxml.Initializable;
+import javafx.scene.control.Button;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.Label;
+import javafx.scene.control.ListView;
+import javafx.scene.control.cell.CheckBoxListCell;
+import javafx.util.Callback;
+
+import com.sdvxhelper.network.ObsWebSocketClient;
+import com.sdvxhelper.repository.SettingsRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ * Controller for the OBS Control dialog ({@code obs_control.fxml}).
+ *
+ * <p>
+ * Provides connect/disconnect controls and per-state (boot, select, play,
+ * result, quit) scene and source visibility configuration. Changes are written
+ * back to {@code settings.json} when the user confirms the dialog (OK button
+ * triggers {@link #save()}).
+ * </p>
+ *
+ * @author Throdax
+ * @since 2.0.0
+ */
+public class ObsControlController implements Initializable {
+
+    private static final Logger log = LoggerFactory.getLogger(ObsControlController.class);
+
+    @FXML
+    private Label connStatusLabel;
+    @FXML
+    private Button connectButton;
+    @FXML
+    private Button disconnectButton;
+
+    @FXML
+    private ComboBox<String> sdvxSceneCombo;
+    @FXML
+    private ComboBox<String> sdvxSourceCombo;
+    @FXML
+    private Button selectSourceButton;
+    @FXML
+    private Label savedSourceLabel;
+
+    @FXML
+    private ComboBox<String> bootSceneCombo;
+    @FXML
+    private ListView<String> bootEnableList;
+    @FXML
+    private ListView<String> bootDisableList;
+
+    @FXML
+    private ComboBox<String> selectSceneCombo;
+    @FXML
+    private ListView<String> selectEnableList;
+    @FXML
+    private ListView<String> selectDisableList;
+
+    @FXML
+    private ComboBox<String> playSceneCombo;
+    @FXML
+    private ListView<String> playEnableList;
+    @FXML
+    private ListView<String> playDisableList;
+
+    @FXML
+    private ComboBox<String> resultSceneCombo;
+    @FXML
+    private ListView<String> resultEnableList;
+    @FXML
+    private ListView<String> resultDisableList;
+
+    @FXML
+    private ComboBox<String> quitSceneCombo;
+    @FXML
+    private ListView<String> quitEnableList;
+    @FXML
+    private ListView<String> quitDisableList;
+
+    private SettingsRepository settingsRepo = new SettingsRepository();
+    private Map<String, String> settings;
+    private ObsWebSocketClient obsClient;
+
+    private Map<String, BooleanProperty> checkStates = new java.util.HashMap<>();
+
+    @Override
+    public void initialize(URL location, ResourceBundle resources) {
+        settings = settingsRepo.load();
+        updateConnectionUi(false);
+        wireSceneChangeListeners();
+        populateFields();
+        savedSourceLabel.setText(settings.getOrDefault("obs_source", ""));
+        onConnect(null);
+    }
+
+    /**
+     * Persists the current field values to {@code settings.json}. Called by
+     * {@code MainController} when the OK button is pressed.
+     */
+    public void save() {
+        collectFields();
+        try {
+            settingsRepo.save(settings);
+            log.info("OBS control settings saved");
+        } catch (IOException e) {
+            log.error("Failed to save OBS control settings", e);
+        }
+    }
+
+    /**
+     * Establishes a connection to the OBS WebSocket server and discovers scenes.
+     *
+     * @param event
+     *            the action event triggered by the Connect button
+     */
+    @FXML
+    public void onConnect(ActionEvent event) {
+        String host = settings.getOrDefault("host", "127.0.0.1");
+        int port = parseInt(settings.get("port"), 4455);
+        String passwd = settings.getOrDefault("passwd", "");
+        obsClient = new ObsWebSocketClient(host, port, passwd);
+        try {
+            obsClient.connect();
+            updateConnectionUi(true);
+            log.info("Connected to OBS at {}:{}", host, port);
+            discoverScenes();
+        } catch (IOException e) {
+            log.warn("Failed to connect to OBS: {}", e.getMessage());
+            connStatusLabel.setText("Error: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Persists the source currently selected in the SDVX source combo box as the
+     * {@code obs_source} setting and refreshes the saved-value label to reflect it.
+     * The write happens immediately, independently of the dialog's OK/Cancel flow,
+     * so the selection is not lost if the dialog is later cancelled.
+     *
+     * @param event
+     *            the action event triggered by the Select button
+     */
+    @FXML
+    public void onSelectSource(ActionEvent event) {
+        String source = sdvxSourceCombo.getValue();
+        if (source == null || source.isBlank()) {
+            log.warn("onSelectSource: no SDVX source selected, ignoring");
+            return;
+        }
+        settings.put("obs_source", source);
+        savedSourceLabel.setText(source);
+        try {
+            settingsRepo.save(settings);
+            log.info("Saved obs_source setting: {}", source);
+        } catch (IOException e) {
+            log.error("Failed to save obs_source setting", e);
+        }
+    }
+
+    /**
+     * Closes the connection to the OBS WebSocket server.
+     *
+     * @param event
+     *            the action event triggered by the Disconnect button
+     */
+    @FXML
+    public void onDisconnect(ActionEvent event) {
+        if (obsClient != null) {
+            obsClient.close();
+            obsClient = null;
+        }
+        updateConnectionUi(false);
+        log.info("Disconnected from OBS");
+    }
+
+    private void discoverScenes() {
+        if (obsClient == null) {
+            log.warn("discoverScenes: obsClient is null, cannot perform action");
+            return;
+        }
+        try {
+            List<String> scenes = obsClient.getSceneNames();
+            List<String> withEmpty = new java.util.ArrayList<>();
+            withEmpty.add("");
+            withEmpty.addAll(scenes);
+            for (ComboBox<String> cb : allSceneCombos()) {
+                String current = cb.getValue();
+                cb.getItems().setAll(withEmpty);
+                if (current != null && withEmpty.contains(current)) {
+                    cb.setValue(current);
+                }
+            }
+            // setValue() does not re-fire the listener when the value is unchanged,
+            // so explicitly reload sources for every tab now that OBS is live.
+            reloadAllSources();
+        } catch (IOException e) {
+            log.warn("Failed to discover OBS scenes: {}", e.getMessage());
+        }
+    }
+
+    private void reloadAllSources() {
+        loadSdvxSources(sdvxSceneCombo.getValue());
+        loadSources(bootSceneCombo.getValue(), bootEnableList, bootDisableList, "obs_enable_boot", "obs_disable_boot");
+        loadSources(selectSceneCombo.getValue(), selectEnableList, selectDisableList, "obs_enable_select0",
+                "obs_disable_select0");
+        loadSources(playSceneCombo.getValue(), playEnableList, playDisableList, "obs_enable_play0",
+                "obs_disable_play0");
+        loadSources(resultSceneCombo.getValue(), resultEnableList, resultDisableList, "obs_enable_result0",
+                "obs_disable_result0");
+        loadSources(quitSceneCombo.getValue(), quitEnableList, quitDisableList, "obs_enable_quit", "obs_disable_quit");
+    }
+
+    private List<ComboBox<String>> allSceneCombos() {
+        return List.of(sdvxSceneCombo, bootSceneCombo, selectSceneCombo, playSceneCombo, resultSceneCombo,
+                quitSceneCombo);
+    }
+
+    private void wireSceneChangeListeners() {
+        sdvxSceneCombo.valueProperty().addListener((_, _, scene) -> loadSdvxSources(scene));
+        wire(bootSceneCombo, bootEnableList, bootDisableList, "obs_enable_boot", "obs_disable_boot");
+        wire(selectSceneCombo, selectEnableList, selectDisableList, "obs_enable_select0", "obs_disable_select0");
+        wire(playSceneCombo, playEnableList, playDisableList, "obs_enable_play0", "obs_disable_play0");
+        wire(resultSceneCombo, resultEnableList, resultDisableList, "obs_enable_result0", "obs_disable_result0");
+        wire(quitSceneCombo, quitEnableList, quitDisableList, "obs_enable_quit", "obs_disable_quit");
+    }
+
+    /**
+     * Populates {@link #sdvxSourceCombo} with the source names available in the
+     * given OBS scene, preserving the previously selected value when it is still
+     * present in the refreshed list. Clears the combo entirely when OBS is not
+     * connected or no scene is selected.
+     *
+     * @param scene
+     *            the OBS scene name to load sources for, may be {@code null}
+     */
+    private void loadSdvxSources(String scene) {
+        String current = sdvxSourceCombo.getValue();
+        if (obsClient == null || scene == null || scene.isBlank()) {
+            sdvxSourceCombo.getItems().clear();
+            return;
+        }
+        try {
+            List<String> sources = obsClient.getSourceNames(scene);
+            sdvxSourceCombo.getItems().setAll(sources);
+            if (current != null && sources.contains(current)) {
+                sdvxSourceCombo.setValue(current);
+            }
+        } catch (IOException e) {
+            log.warn("Failed to load OBS sources for SDVX scene '{}': {}", scene, e.getMessage());
+            sdvxSourceCombo.getItems().clear();
+        }
+    }
+
+    private void wire(ComboBox<String> cb, ListView<String> enable, ListView<String> disable, String enKey,
+            String disKey) {
+        cb.valueProperty().addListener((_, _, scene) -> loadSources(scene, enable, disable, enKey, disKey));
+    }
+
+    private void loadSources(String scene, ListView<String> enable, ListView<String> disable, String enKey,
+            String disKey) {
+        List<String> enSel = parseCsv(settings.get(enKey));
+        List<String> disSel = parseCsv(settings.get(disKey));
+
+        if (obsClient == null || scene == null || scene.isBlank()) {
+            // OBS not connected — show the previously-saved source names so the
+            // user can still inspect or deselect them.
+            populateCheckList(enable, enSel, enSel, enKey);
+            populateCheckList(disable, disSel, disSel, disKey);
+            return;
+        }
+        try {
+            List<String> sources = obsClient.getSourceNames(scene);
+            // Merge any saved-but-absent sources so previously configured items
+            // are never silently dropped after an OBS scene change.
+            List<String> all = new java.util.ArrayList<>(sources);
+            for (String s : enSel) {
+                if (!all.contains(s)) {
+                    all.add(s);
+                }
+            }
+            for (String s : disSel) {
+                if (!all.contains(s)) {
+                    all.add(s);
+                }
+            }
+            populateCheckList(enable, all, enSel, enKey);
+            populateCheckList(disable, all, disSel, disKey);
+        } catch (IOException e) {
+            log.warn("Failed to load OBS sources for scene '{}': {}", scene, e.getMessage());
+            populateCheckList(enable, enSel, enSel, enKey);
+            populateCheckList(disable, disSel, disSel, disKey);
+        }
+    }
+
+    private void populateCheckList(ListView<String> lv, List<String> items, List<String> selected, String key) {
+        lv.getItems().setAll(items);
+        Callback<String, javafx.beans.value.ObservableValue<Boolean>> cb = item -> {
+            BooleanProperty prop = checkStates.computeIfAbsent(key + ":" + item,
+                    _ -> new SimpleBooleanProperty(selected.contains(item)));
+            prop.set(selected.contains(item));
+            return prop;
+        };
+        lv.setCellFactory(CheckBoxListCell.forListView(cb));
+    }
+
+    private void populateFields() {
+        setValue(bootSceneCombo, "obs_scene_boot");
+        setValue(selectSceneCombo, "obs_scene_select");
+        setValue(playSceneCombo, "obs_scene_play");
+        setValue(resultSceneCombo, "obs_scene_result");
+        setValue(quitSceneCombo, "obs_scene_quit");
+    }
+
+    private void setValue(ComboBox<String> cb, String key) {
+        String v = settings.get(key);
+        cb.getItems().clear();
+        cb.getItems().add("");
+        if (v != null && !v.isEmpty()) {
+            cb.getItems().add(v);
+            cb.setValue(v);
+        } else {
+            cb.setValue("");
+        }
+    }
+
+    private void collectFields() {
+        putScene("obs_scene_boot", bootSceneCombo);
+        putScene("obs_scene_select", selectSceneCombo);
+        putScene("obs_scene_play", playSceneCombo);
+        putScene("obs_scene_result", resultSceneCombo);
+        putScene("obs_scene_quit", quitSceneCombo);
+
+        collectChecked("obs_enable_boot");
+        collectChecked("obs_disable_boot");
+        collectChecked("obs_enable_select0");
+        collectChecked("obs_disable_select0");
+        collectChecked("obs_enable_play0");
+        collectChecked("obs_disable_play0");
+        collectChecked("obs_enable_result0");
+        collectChecked("obs_disable_result0");
+        collectChecked("obs_enable_quit");
+        collectChecked("obs_disable_quit");
+    }
+
+    private void putScene(String key, ComboBox<String> cb) {
+        String v = cb.getValue();
+        settings.put(key, v == null ? "" : v);
+    }
+
+    private void collectChecked(String key) {
+        List<String> checked = new java.util.ArrayList<>();
+        String prefix = key + ":";
+        for (Map.Entry<String, BooleanProperty> e : checkStates.entrySet()) {
+            if (e.getKey().startsWith(prefix) && e.getValue().get()) {
+                checked.add(e.getKey().substring(prefix.length()));
+            }
+        }
+        // Save in Python-compatible list format: "[item1, item2]" or "[]"
+        settings.put(key, checked.isEmpty() ? "[]" : "[" + String.join(", ", checked) + "]");
+    }
+
+    private void updateConnectionUi(boolean connected) {
+        connStatusLabel.setText(connected ? "Connected" : "Disconnected");
+        connStatusLabel.getStyleClass().removeAll("obs-connected", "obs-disconnected");
+        connStatusLabel.getStyleClass().add(connected ? "obs-connected" : "obs-disconnected");
+        connectButton.setDisable(connected);
+        disconnectButton.setDisable(!connected);
+    }
+
+    private static int parseInt(String s, int fallback) {
+        if (s == null || s.isBlank()) {
+            return fallback;
+        }
+        try {
+            return Integer.parseInt(s.trim());
+        } catch (NumberFormatException e) {
+            return fallback;
+        }
+    }
+
+    private static List<String> parseCsv(String s) {
+        if (s == null || s.isBlank()) {
+            return List.of();
+        }
+        String trimmed = s.trim();
+        if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
+            trimmed = trimmed.substring(1, trimmed.length() - 1);
+        }
+        return java.util.Arrays.stream(trimmed.split(",")).map(String::trim).filter(x -> !x.isEmpty())
+                .collect(Collectors.toList());
+    }
+}
