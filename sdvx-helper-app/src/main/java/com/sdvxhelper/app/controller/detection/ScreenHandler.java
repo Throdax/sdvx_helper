@@ -11,8 +11,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import javax.imageio.ImageIO;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.UnsupportedAudioFileException;
@@ -22,6 +20,7 @@ import com.sdvxhelper.model.OnePlayData;
 import com.sdvxhelper.ocr.OcrUtils;
 import com.sdvxhelper.ocr.PerceptualHasher;
 import com.sdvxhelper.ocr.TesseractOcr;
+import com.sdvxhelper.ocr.VfOcrReader;
 import com.sdvxhelper.service.CsvExportService;
 import com.sdvxhelper.service.ImageAnalysisService;
 import com.sdvxhelper.service.SdvxPlayLogService;
@@ -63,8 +62,6 @@ public class ScreenHandler {
     private Map<String, String> params;
     private Map<String, String> settings;
 
-    private static final Pattern VF_NUMBER_PATTERN = Pattern.compile("(\\d+\\.\\d{3})");
-
     /**
      * Region within the preprocessed VF badge image (5× scale, 20 px padding →
      * 520×220 px) that contains only the numeric value (e.g. {@code 12.233}).
@@ -79,7 +76,7 @@ public class ScreenHandler {
     // Volforce capture state
     private String lastVfHash = null;
     private String lastVfNumber = null;
-    private TesseractOcr vfOcr = null;
+    private VfOcrReader vfOcrReader = null;
     private boolean genFirstVf = false;
 
     // Discord OCR title state
@@ -831,8 +828,9 @@ public class ScreenHandler {
 
     /**
      * Determines whether the Volforce number in {@code vfCrop} has changed since
-     * the last capture by running Tesseract OCR on the pre-processed crop and
-     * comparing the extracted number to the stored {@link #lastVfNumber}.
+     * the last capture by running combined-engine OCR (see {@link VfOcrReader}) on
+     * the pre-processed crop and comparing the extracted number to the stored
+     * {@link #lastVfNumber}.
      *
      * <p>
      * If OCR fails to produce a valid VF number ({@code \d+\.\d{3}}), the method
@@ -844,11 +842,9 @@ public class ScreenHandler {
      * @return {@code true} if the VF number changed or could not be determined
      */
     private boolean hasVfChangedByOcr(BufferedImage vfCrop) {
-        if (vfOcr == null) {
-            vfOcr = new TesseractOcr("eng");
-            vfOcr.setVariable("tessedit_char_whitelist", "0123456789.");
-            vfOcr.setPageSegMode(8);
-            log.info("captureVolforce: VF OCR engine initialised (PSM 8, scale 5x, number region crop)");
+        if (vfOcrReader == null) {
+            vfOcrReader = new VfOcrReader();
+            log.info("captureVolforce: VF OCR reader initialised (combined legacy+LSTM engines, scale 5x)");
         }
         File outDir = new File("out");
         outDir.mkdirs();
@@ -862,23 +858,15 @@ public class ScreenHandler {
             log.debug("captureVolforce: could not save VF debug crops: {}", saveEx.getMessage());
         }
         Rectangle numberRegion = new Rectangle(VF_NUMBER_CROP_X, VF_NUMBER_CROP_Y, VF_NUMBER_CROP_W, VF_NUMBER_CROP_H);
-        String raw = vfOcr.recognizeText(preprocessedFile, numberRegion);
-        String normalized = restoreMissingVfDot(raw);
-        if (normalized != null && !normalized.equals(raw)) {
-            log.debug("captureVolforce: OCR dot recovery '{}' -> '{}'", raw, normalized);
-        }
-        Matcher matcher = VF_NUMBER_PATTERN.matcher(normalized != null ? normalized : "");
-        if (!matcher.find()) {
-            log.warn(
-                    "captureVolforce: OCR produced '{}' (normalized: '{}') - no valid VF number found, "
-                            + "see out/part_volforce_preprocessed.png for diagnosis; falling back to pHash",
-                    raw, normalized);
+        String detectedNumber = vfOcrReader.read(preprocessedFile, numberRegion);
+        if (detectedNumber == null) {
+            log.warn("captureVolforce: OCR produced no valid VF number, "
+                    + "see out/part_volforce_preprocessed.png for diagnosis; falling back to pHash");
             String vfHash = perceptualHasher.phash(vfCrop);
             boolean changed = (lastVfHash == null) || (perceptualHasher.hammingDistance(vfHash, lastVfHash) > 2);
             lastVfHash = vfHash;
             return changed;
         }
-        String detectedNumber = matcher.group(1);
         boolean changed = !detectedNumber.equals(lastVfNumber);
         if (changed) {
             log.info("captureVolforce OCR: new VF detected '{}' (was '{}')", detectedNumber, lastVfNumber);
@@ -887,46 +875,6 @@ public class ScreenHandler {
         }
         lastVfNumber = detectedNumber;
         return changed;
-    }
-
-    /**
-     * Recovers a missing decimal point from a Tesseract OCR result for the VF
-     * number when the period pixel was erased by the binary threshold step.
-     *
-     * <p>
-     * VF numbers always follow the pattern {@code ##.###} (two integer digits) or
-     * {@code #.###} (one integer digit). When Tesseract returns a pure digit string
-     * with no period, we can unambiguously reinsert it:
-     * </p>
-     * <ul>
-     * <li>5 consecutive digits → {@code ##.###} (e.g. {@code "12233"} →
-     * {@code "12.233"})</li>
-     * <li>4 consecutive digits → {@code #.###} (e.g. {@code "9999"} →
-     * {@code "9.999"})</li>
-     * </ul>
-     *
-     * <p>
-     * If the raw string already contains a period, or is {@code null}/empty, it is
-     * returned unchanged. Any surrounding whitespace is stripped first.
-     * </p>
-     *
-     * @param raw
-     *            the raw string returned by Tesseract (may be {@code null})
-     * @return the normalised string with the period restored, or {@code raw} if no
-     *         recovery was possible
-     */
-    private static String restoreMissingVfDot(String raw) {
-        if (raw == null || raw.isBlank()) {
-            return raw;
-        }
-        String trimmed = raw.strip();
-        if (trimmed.matches("\\d{5}")) {
-            return trimmed.substring(0, 2) + "." + trimmed.substring(2);
-        }
-        if (trimmed.matches("\\d{4}")) {
-            return trimmed.substring(0, 1) + "." + trimmed.substring(1);
-        }
-        return raw;
     }
 
     private long computeTopLeftPixelSum(BufferedImage frame) {

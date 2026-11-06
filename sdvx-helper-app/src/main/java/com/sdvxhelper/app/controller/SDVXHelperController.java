@@ -1,5 +1,6 @@
 package com.sdvxhelper.app.controller;
 
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
@@ -575,23 +576,50 @@ public class SDVXHelperController implements Initializable, DetectionListener {
     /**
      * Saves the Volforce and class-badge images to disk (F4).
      *
+     * <p>
+     * The Volforce badge is only drawn on the result screen, so this handler
+     * requires {@link DetectMode#RESULT} to be the currently detected mode; the
+     * capture would otherwise crop a meaningless region of whatever other screen is
+     * showing. Every outcome — the initial key-press, a guard rejection, and a
+     * capture failure — is logged at {@code INFO}/{@code WARN} level (not
+     * {@code DEBUG}) so it is visible in the log file by default without needing to
+     * reproduce the issue with debug logging enabled.
+     * </p>
+     *
      * @param event
      *            action event
      */
     @FXML
     public void onSaveVolforce(ActionEvent event) {
-        if (detectionEngine == null || detectionEngine.getCurrentMode() != DetectMode.RESULT
-                || detectionEngine.getCurrentFrame() == null) {
-            log.debug("onSaveVolforce: not on result screen (engine={}, mode={}, frame={})",
-                    detectionEngine == null ? "null" : "present",
-                    detectionEngine != null ? detectionEngine.getCurrentMode() : "n/a",
-                    detectionEngine != null ? detectionEngine.getCurrentFrame() : "null");
+        log.info("onSaveVolforce: F4/Save Volforce pressed");
+        if (detectionEngine == null) {
+            log.warn("onSaveVolforce: blocked - detection engine is not running");
+            setStatus("F4: detection not running");
+            return;
+        }
+        DetectMode mode = detectionEngine.getCurrentMode();
+        BufferedImage frame = detectionEngine.getCurrentFrame();
+        if (mode != DetectMode.RESULT || frame == null) {
+            log.warn("onSaveVolforce: blocked - not on result screen (mode={}, frame={})", mode,
+                    frame == null ? "null" : frame.getWidth() + "x" + frame.getHeight());
             setStatus("F4: not on result screen");
             return;
         }
         executor.submit(() -> {
-            detectionEngine.triggerCaptureVolforce();
-            Platform.runLater(() -> setStatus("F4: Volforce saved"));
+            try {
+                detectionEngine.triggerCaptureVolforce();
+                log.info("onSaveVolforce: capture completed (mode={}, frame={}x{})", mode, frame.getWidth(),
+                        frame.getHeight());
+                Platform.runLater(() -> setStatus("F4: Volforce saved"));
+            } catch (RuntimeException e) {
+                // Safety net only: ExecutorService.submit(Runnable) silently discards any
+                // exception thrown by the task unless the returned Future is polled, so
+                // without this catch a capture failure here would leave no trace at all -
+                // the exact "nothing happened, nothing in the logs" symptom this handler
+                // must never produce again.
+                log.error("onSaveVolforce: capture failed unexpectedly", e);
+                Platform.runLater(() -> setStatus("F4: Volforce capture failed - see log"));
+            }
         });
     }
 

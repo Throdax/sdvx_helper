@@ -124,6 +124,25 @@ public class TesseractOcr {
     }
 
     /**
+     * Overrides the Tesseract OCR engine mode (OEM).
+     *
+     * <p>
+     * The constructor defaults to OEM 1 (LSTM neural-network engine only), which is
+     * tuned for natural-language fonts. Stylised/stencil fonts (such as the SDVX VF
+     * badge digits) can be read more reliably by the legacy pattern-matching engine
+     * (OEM 0) or the combined mode (OEM 2). Must be called before
+     * {@link #recognizeText(BufferedImage)}.
+     * </p>
+     *
+     * @param mode
+     *            Tesseract OEM constant ({@code 0} legacy, {@code 1} LSTM,
+     *            {@code 2} legacy+LSTM, {@code 3} default)
+     */
+    public void setOcrEngineMode(int mode) {
+        tess.setOcrEngineMode(mode);
+    }
+
+    /**
      * Recognises text from the given image region.
      *
      * @param image

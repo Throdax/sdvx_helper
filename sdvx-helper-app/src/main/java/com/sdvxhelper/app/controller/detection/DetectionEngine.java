@@ -528,6 +528,19 @@ public class DetectionEngine {
             obsOverlayService.updatePlaytime(playtime.plus(elapsed));
         }
 
+        if (currentMode == DetectMode.RESULT) {
+            // Mirrors Python's per-frame "if detect_mode == result: save_playerinfo()"
+            // call (sdvx_helper.pyw:1378-1380). The VF badge animates into its final
+            // value over roughly a second, so a single snapshot taken exactly at the
+            // INIT->RESULT transition edge (see handleTransitionToResult) can catch it
+            // mid-animation and miss the change entirely. Re-sampling on every loop
+            // iteration for as long as the result screen stays on screen gives many
+            // chances to catch the settled value and attribute it to the correct
+            // song, instead of carrying a stale number forward to the next result
+            // screen.
+            screenHandler.captureVolforce(frame);
+        }
+
         if (currentMode == DetectMode.INIT && !doneThisSong && imageAnalysisService.isDetectScreen(frame, params)) {
             processDetectMode(frame);
         }
