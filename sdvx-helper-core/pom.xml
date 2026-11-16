@@ -151,22 +151,17 @@
 
     <build>
         <!--
-          version.properties is filtered so the bundled classpath fallback used
-          by VersionUtil (and the JAR embedded inside every jpackage image)
-          always reflects the root ../version.properties values loaded below by
-          properties-maven-plugin, instead of a hand-maintained copy that can
-          silently drift out of sync. All other resources are copied verbatim
-          (filtering binary files such as icon.ico/wav/png would corrupt them),
-          and secrets.properties is excluded from the packaged JAR entirely.
+          version.properties here is the single source of truth for every
+          module's version string (literal values, no filtering). It is
+          copied verbatim into this module's JAR, where it is also the
+          classpath fallback read by VersionUtil. All other modules'
+          properties-maven-plugin executions read this same file (see their
+          poms) instead of keeping a separate copy, so the jpackage appVersion
+          and the dist ZIP's root version.properties can never drift out of
+          sync with each other. secrets.properties is excluded from the
+          packaged JAR entirely.
         -->
         <resources>
-            <resource>
-                <filtering>true</filtering>
-                <directory>src/main/resources</directory>
-                <includes>
-                    <include>version.properties</include>
-                </includes>
-            </resource>
             <resource>
                 <directory>src/main/resources</directory>
                 <includes>
@@ -174,7 +169,6 @@
                 </includes>
                 <excludes>
                     <exclude>secrets.properties</exclude>
-                    <exclude>version.properties</exclude>
                 </excludes>
             </resource>
         </resources>
@@ -192,7 +186,7 @@
                 <artifactId>properties-maven-plugin</artifactId>
                 <configuration>
                     <files>
-                        <file>..\version.properties</file>
+                        <file>src\main\resources\version.properties</file>
                     </files>
                 </configuration>
             </plugin>

@@ -377,13 +377,13 @@
             </plugins>
         </pluginManagement>
         <plugins>
-            <!-- Read version properties from file -->
+            <!-- Read version properties from the single source of truth -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>properties-maven-plugin</artifactId>
                 <configuration>
                     <files>
-                        <file>version.properties</file>
+                        <file>sdvx-helper-core/src/main/resources/version.properties</file>
                     </files>
                 </configuration>
             </plugin>

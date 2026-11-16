@@ -85,7 +85,7 @@
                 <artifactId>properties-maven-plugin</artifactId>
                 <configuration>
                     <files>
-                        <file>..\version.properties</file>
+                        <file>..\sdvx-helper-core\src\main\resources\version.properties</file>
                     </files>
                 </configuration>
             </plugin>
