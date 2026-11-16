@@ -410,7 +410,9 @@ public class OcrReporterController implements Initializable {
     }
 
     /**
-     * Copies the current title field value to the system clipboard.
+     * Copies the current title field value to the system clipboard, logging a short
+     * confirmation to the on-screen log window (not the log file) so the user has
+     * visible feedback that the copy actually happened.
      *
      * @param event
      *            action event
@@ -418,11 +420,14 @@ public class OcrReporterController implements Initializable {
     @FXML
     public void onCopyTitle(ActionEvent event) {
         String text = titleField.getText();
-        if (text != null && !text.isBlank()) {
-            ClipboardContent content = new ClipboardContent();
-            content.putString(text);
-            Clipboard.getSystemClipboard().setContent(content);
+        if (text == null || text.isBlank()) {
+            appendLog("Copy to clipboard: title field is empty, nothing copied");
+            return;
         }
+        ClipboardContent content = new ClipboardContent();
+        content.putString(text);
+        Clipboard.getSystemClipboard().setContent(content);
+        appendLog("Copied to clipboard: " + text);
     }
 
     /**

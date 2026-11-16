@@ -44,6 +44,7 @@ import com.sdvxhelper.app.controller.detection.DetectionListener;
 import com.sdvxhelper.app.controller.detection.ObsOverlayService;
 import com.sdvxhelper.app.controller.detection.ScreenHandler;
 import com.sdvxhelper.app.controller.detection.WebhookDispatcher;
+import com.sdvxhelper.app.controller.factories.ActionThreadFactory;
 import com.sdvxhelper.app.controller.factories.DetectionThreadFactory;
 import com.sdvxhelper.app.controller.listeners.GlobalHotkeyService;
 import com.sdvxhelper.config.SecretConfig;
@@ -167,6 +168,7 @@ public class SDVXHelperController implements Initializable, DetectionListener {
 
     private ObservableList<OnePlayData> sessionLogData = FXCollections.observableArrayList();
     private ExecutorService executor;
+    private ExecutorService actionExecutor;
     private GlobalHotkeyService hotkeyService;
     private Map<String, String> settings = Collections.emptyMap();
     private boolean windowCloseDone = false;
@@ -206,6 +208,7 @@ public class SDVXHelperController implements Initializable, DetectionListener {
         languageCombo.setOnAction(_ -> LocaleManager.getInstance().setLocale(languageCombo.getValue()));
 
         executor = Executors.newSingleThreadExecutor(new DetectionThreadFactory());
+        actionExecutor = Executors.newSingleThreadExecutor(new ActionThreadFactory());
 
         hotkeyService = new GlobalHotkeyService();
         Map<Integer, Runnable> hotkeys = new LinkedHashMap<>();
@@ -605,7 +608,7 @@ public class SDVXHelperController implements Initializable, DetectionListener {
             setStatus("F4: not on result screen");
             return;
         }
-        executor.submit(() -> {
+        actionExecutor.submit(() -> {
             try {
                 detectionEngine.triggerCaptureVolforce();
                 log.info("onSaveVolforce: capture completed (mode={}, frame={}x{})", mode, frame.getWidth(),
@@ -641,7 +644,7 @@ public class SDVXHelperController implements Initializable, DetectionListener {
             setStatus("F5: not ready");
             return;
         }
-        executor.submit(() -> {
+        actionExecutor.submit(() -> {
             boolean generated = detectionEngine.triggerSaveSummary();
             Platform.runLater(() -> setStatus(generated ? "F5: Summary updated" : "F5: Summary update failed"));
         });
@@ -668,7 +671,7 @@ public class SDVXHelperController implements Initializable, DetectionListener {
             setStatus("F6: not on result screen (mode=" + detectionEngine.getCurrentMode() + ")");
             return;
         }
-        executor.submit(() -> {
+        actionExecutor.submit(() -> {
             detectionEngine.triggerResultScreen();
             Platform.runLater(() -> setStatus("F6: Result screen processing done"));
         });
@@ -687,7 +690,7 @@ public class SDVXHelperController implements Initializable, DetectionListener {
             return;
         }
         if (detectionEngine.getCurrentMode() == DetectMode.SELECT && detectionEngine.getCurrentFrame() != null) {
-            executor.submit(detectionEngine::triggerSelectScreen);
+            actionExecutor.submit(detectionEngine::triggerSelectScreen);
         } else {
             setStatus("F7: not on select screen");
         }
@@ -701,7 +704,7 @@ public class SDVXHelperController implements Initializable, DetectionListener {
      */
     @FXML
     public void onUpdateRival(ActionEvent event) {
-        executor.submit(() -> {
+        actionExecutor.submit(() -> {
             loggerService.refreshBestAndVf();
             ObsWebSocketClient obsClient = detectionEngine != null ? detectionEngine.getObsClient() : null;
             if (obsClient != null && obsClient.isConnected()) {
@@ -832,7 +835,7 @@ public class SDVXHelperController implements Initializable, DetectionListener {
      */
     @FXML
     public void onGoogleDrive(ActionEvent event) {
-        executor.submit(() -> {
+        actionExecutor.submit(() -> {
             Map<String, String> currentSettings = new SettingsRepository().load();
             String fileId = currentSettings.getOrDefault("my_googledrive", "").trim();
             if (fileId.isEmpty()) {
@@ -911,7 +914,7 @@ public class SDVXHelperController implements Initializable, DetectionListener {
         File file = chooser.showSaveDialog(statusLabel.getScene().getWindow());
         if (file != null) {
             final File target = file;
-            executor.submit(() -> {
+            actionExecutor.submit(() -> {
                 try {
                     csvExportService.writeAllLogCsv(loggerService.getPlayLog().getPlays(), target);
                     Platform.runLater(() -> setStatus("Exported all plays CSV to " + target.getName()));
@@ -941,7 +944,7 @@ public class SDVXHelperController implements Initializable, DetectionListener {
         File file = chooser.showSaveDialog(statusLabel.getScene().getWindow());
         if (file != null) {
             final File target = file;
-            executor.submit(() -> {
+            actionExecutor.submit(() -> {
                 try {
                     csvExportService.writeBestCsv(loggerService.getBestAllFumen(), target);
                     Platform.runLater(() -> setStatus("Exported best scores CSV to " + target.getName()));
@@ -1126,8 +1129,8 @@ public class SDVXHelperController implements Initializable, DetectionListener {
     }
 
     /**
-     * Stops the detection loop, unregisters global hotkeys, and shuts down the
-     * executor. Called by the app on window close and before a locale-triggered
+     * Stops the detection loop, unregisters global hotkeys, and shuts down both
+     * executors. Called by the app on window close and before a locale-triggered
      * scene rebuild.
      */
     public void cleanup() {
@@ -1136,6 +1139,9 @@ public class SDVXHelperController implements Initializable, DetectionListener {
         }
         if (executor != null) {
             executor.shutdownNow();
+        }
+        if (actionExecutor != null) {
+            actionExecutor.shutdownNow();
         }
         if (hotkeyService != null) {
             hotkeyService.stop();

@@ -150,6 +150,42 @@
     </dependencies>
 
     <build>
+        <!--
+          version.properties is filtered so the bundled classpath fallback used
+          by VersionUtil (and the JAR embedded inside every jpackage image)
+          always reflects the root ../version.properties values loaded below by
+          properties-maven-plugin, instead of a hand-maintained copy that can
+          silently drift out of sync. All other resources are copied verbatim
+          (filtering binary files such as icon.ico/wav/png would corrupt them),
+          and secrets.properties is excluded from the packaged JAR entirely.
+        -->
+        <resources>
+            <resource>
+                <filtering>true</filtering>
+                <directory>src/main/resources</directory>
+                <includes>
+                    <include>version.properties</include>
+                </includes>
+            </resource>
+            <resource>
+                <directory>src/main/resources</directory>
+                <includes>
+                    <include>**/*</include>
+                </includes>
+                <excludes>
+                    <exclude>secrets.properties</exclude>
+                    <exclude>version.properties</exclude>
+                </excludes>
+            </resource>
+        </resources>
+        <testResources>
+            <testResource>
+                <directory>src/test/resources</directory>
+                <includes>
+                    <include>**/*</include>
+                </includes>
+            </testResource>
+        </testResources>
         <plugins>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
@@ -158,32 +194,6 @@
                     <files>
                         <file>..\version.properties</file>
                     </files>
-                </configuration>
-            </plugin>
-
-            <!--             Exclude secrets.properties from the packaged JAR -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-resources-plugin</artifactId>
-                <version>3.4.0</version>
-                <configuration>
-                    <resources>
-                        <resource>
-                            <directory>src/main/resources</directory>
-                            <includes>
-                                <include>**/*</include>
-                            </includes>
-                            <excludes>
-                                <exclude>secrets.properties</exclude>
-                            </excludes>
-                        </resource>
-                        <resource>
-                            <directory>src/test/resources</directory>
-                            <includes>
-                                <include>**/*</include>
-                            </includes>
-                        </resource>
-                    </resources>
                 </configuration>
             </plugin>
 

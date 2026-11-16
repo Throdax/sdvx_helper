@@ -182,9 +182,18 @@
              ================================================================ -->
 
         <!-- version.properties: per-tool version strings, equivalent to the
-             Python build's version.properties at the ZIP root. -->
+             Python build's version.properties at the ZIP root.
+
+             Sourced from the repo-root version.properties (the single source
+             of truth also read by properties-maven-plugin for the jpackage
+             appVersion and by the filtered classpath fallback in
+             sdvx-helper-core), not a separate copy under src/assembly/ - a
+             second hand-maintained copy would silently drift out of sync with
+             the version actually built. The shipped file can still be edited
+             in place after installation; VersionUtil reads it from the
+             current working directory in preference to the classpath. -->
         <fileSet>
-            <directory>src/assembly</directory>
+            <directory>..</directory>
             <outputDirectory>.</outputDirectory>
             <includes>
                 <include>version.properties</include>
